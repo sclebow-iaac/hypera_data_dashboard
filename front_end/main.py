@@ -12,7 +12,7 @@ import plotly.express as px
 #--------------------------
 #PAGE CONFIG
 st.set_page_config(
-page_title="Speckle Stream Activity",
+page_title="Speckle Dashboard",
 page_icon="📊"
 )
 #--------------------------
@@ -32,10 +32,9 @@ graphs = st.container()
 with header:
     st.title("Speckle Stream Activity App📈")
 #About info
-    with header.expander("About this app🔽", expanded=True):
+    with header.expander("Hyper Building A🔽", expanded=True):
         st.markdown(
-        """This is a beginner web app developed using Streamlit. My goal was to understand how to interact with Speckle API using SpecklePy,
-analyze what is received and its structure. This was easy and fun experiment.
+        """We use this space to record collaborators, commits, and timelines, to collect project data in a cohesive, accessible format.
 """
 )
 #--------------------------
@@ -84,9 +83,10 @@ commits = client.commit.list(stream.id, limit=100)
 #--------------------------
 #create a definition that generates an iframe from commit id
 def commit2viewer(stream, commit, height=400) -> str:
-    embed_src = "<https://macad.speckle.xyz/embed?stream="+stream.id+"&commit=>"+commit.id
-    print (embed_src)
+    embed_src = f"https://macad.speckle.xyz/embed?stream={stream.id}&commit={commit.id}"
+    print(embed_src)  # Print the URL to verify correctness
     return st.components.v1.iframe(src=embed_src, height=height)
+
 #--------------------------
 
 #VIEWER👁‍🗨
