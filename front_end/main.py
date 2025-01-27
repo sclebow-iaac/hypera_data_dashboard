@@ -12,7 +12,7 @@ import plotly.express as px
 #--------------------------
 #PAGE CONFIG
 st.set_page_config(
-page_title="Speckle Dashboard",
+page_title="Hyperbuilding_A Dashboard",
 page_icon="📊"
 )
 #--------------------------
