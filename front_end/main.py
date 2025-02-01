@@ -161,7 +161,7 @@ client.authenticate_with_account(account)
 #-------
 #Streams List👇
 streams = client.stream.list()
-#print(streams)
+print(streams)
 #Get Stream Names
 streamNames = [s.name for s in streams]
 #Dropdown for stream selection
