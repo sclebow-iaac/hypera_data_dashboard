@@ -7,11 +7,13 @@ from specklepy.api.client import SpeckleClient
 from specklepy.api.credentials import get_account_from_token
 from specklepy.transports.server import ServerTransport
 
-
 #import pandas
 import pandas as pd
 #import plotly express
 import plotly.express as px
+
+# import os
+import os
 
 #--------------------------
 #PAGE CONFIG
@@ -147,7 +149,7 @@ with input:
 #-------
 #User Input boxes
 speckleServer = serverCol.text_input("Server URL", "macad.speckle.xyz", help="Speckle server to connect.")
-speckleToken = tokenCol.text_input("Speckle token", "", help="If you don't know how to get your token, take a look at this [link](<https://speckle.guide/dev/tokens.html>)👈")
+speckleToken = tokenCol.text_input("Speckle token", "670c19d1e7f05e6936ddc40eea8c5b86dfe4918dd4", help="If you don't know how to get your token, take a look at this [link](<https://speckle.guide/dev/tokens.html>)👈")
 
 #-------
 #CLIENT
@@ -160,10 +162,10 @@ client.authenticate_with_account(account)
 
 #-------
 #Streams List👇
+# projects = client.projects.list()
+# print(f'Projects: {projects}')
 streams = client.stream.list()
-
-print(f'streams: {streams}')
-
+os.write(f'Streams: {streams}')
 #Get Stream Names
 # streamNames = [s.name for s in streams]
 # #Dropdown for stream selection
