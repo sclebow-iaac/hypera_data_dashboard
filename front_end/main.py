@@ -147,7 +147,7 @@ with input:
 #-------
 #User Input boxes
 speckleServer = serverCol.text_input("Server URL", "macad.speckle.xyz", help="Speckle server to connect.")
-speckleToken = tokenCol.text_input("Speckle token", "b623e9b4f9889139d00e1af4bf5a4a9de444fe792b", help="If you don't know how to get your token, take a look at this [link](<https://speckle.guide/dev/tokens.html>)👈")
+speckleToken = tokenCol.text_input("Speckle token", "", help="If you don't know how to get your token, take a look at this [link](<https://speckle.guide/dev/tokens.html>)👈")
 
 #-------
 #CLIENT
