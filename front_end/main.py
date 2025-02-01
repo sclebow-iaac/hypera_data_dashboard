@@ -165,7 +165,7 @@ client.authenticate_with_account(account)
 # projects = client.projects.list()
 # print(f'Projects: {projects}')
 streams = client.stream.list()
-os.write(1, f'Streams: {streams}')
+os.write(1, f'Streams: {streams}'.encode())
 #Get Stream Names
 # streamNames = [s.name for s in streams]
 # #Dropdown for stream selection
