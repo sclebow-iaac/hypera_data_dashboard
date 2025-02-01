@@ -161,13 +161,11 @@ client.authenticate_with_account(account)
 #-------
 #Streams List👇
 streams = client.stream.list()
-try:
-    #Get Stream Names
-    streamNames = [s.name for s in streams]
-    #Dropdown for stream selection
-    sName = st.selectbox(label="Select your stream", options=streamNames, help="Select your stream from the dropdown")
-except:
-    pass
+#Get Stream Names
+streamNames = [s.name for s in streams]
+#Dropdown for stream selection
+sName = st.selectbox(label="Select your stream", options=streamNames, help="Select your stream from the dropdown")
+
 #SELECTED STREAM ✅
 stream = client.stream.search(sName)[0]
 
