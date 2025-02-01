@@ -166,6 +166,7 @@ streamNames = [s.name for s in streams]
 #Dropdown for stream selection
 sName = st.selectbox(label="Select your stream", options=streamNames, help="Select your stream from the dropdown")
 
+'''
 #SELECTED STREAM ✅
 stream = client.stream.search(sName)[0]
 
@@ -480,3 +481,4 @@ else: # Facade
     st.plotly_chart(facade_chart, use_container_width=True)
 
 
+'''
