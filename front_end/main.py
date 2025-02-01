@@ -162,14 +162,13 @@ client.authenticate_with_account(account)
 
 #-------
 #Streams List👇
-# projects = client.projects.list()
-# print(f'Projects: {projects}')
 streams = client.stream.list()
 os.write(1, f'Streams: {streams}'.encode())
+
 #Get Stream Names
-# streamNames = [s.name for s in streams]
-# #Dropdown for stream selection
-# sName = st.selectbox(label="Select your stream", options=streamNames, help="Select your stream from the dropdown")
+streamNames = [s.name for s in streams]
+#Dropdown for stream selection
+sName = st.selectbox(label="Select your stream", options=streamNames, help="Select your stream from the dropdown")
 
 # #SELECTED STREAM ✅
 # stream = client.stream.search(sName)[0]
