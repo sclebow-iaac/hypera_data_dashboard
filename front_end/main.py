@@ -119,14 +119,14 @@ with header:
         </div>
     """, unsafe_allow_html=True)
     
-    # Center the image
-    col1, col2, col3 = st.columns([1,2,1])
-    with col2:
-        st.image(
-            r"E:\IAAC term 2\Layer 3.png",
-            caption="building visualization",
-            width=400
-        )
+    # # Center the image
+    # col1, col2, col3 = st.columns([1,2,1])
+    # with col2:
+    #     st.image(
+    #         r"E:\IAAC term 2\Layer 3.png",
+    #         caption="building visualization",
+    #         width=400
+    #     )
 #About info
     with header.expander("Hyper Building A🔽", expanded=True):
         st.markdown(
@@ -181,31 +181,32 @@ res = operations.receive(test.referencedObject, transport)
 
 print("RESSS\n\n\n", res  )
 print("RESSS\n\n\n", res.__dict__  )
-# # Add branch selection
-# selected_branch = st.selectbox(
-#     label="Select branch to analyze",
-#     options=[b.name for b in branches],
-#     help="Select a specific branch to analyze its data"
-# )
+# Add branch selection
+selected_branch = st.selectbox(
+    label="Select branch to analyze",
+    options=[b.name for b in branches],
+    help="Select a specific branch to analyze its data"
+)
 
-# # Get commits for selected branch
-# branch_commits = [
-#     commit for commit in client.commit.list(stream.id, limit=100)
-#     if commit.branchName == selected_branch
-# ]
+# Get commits for selected branch
+branch_commits = [
+    commit for commit in client.commit.list(stream.id, limit=100)
+    if commit.branchName == selected_branch
+]
 
-# # Add commit selection
-# selected_commit = st.selectbox(
-#     label="Select commit to view",
-#     options=[(f"{c.message} - {c.authorName} - {c.createdAt}") for c in branch_commits],
-#     help="Select a specific commit to analyze"
-# )
-
-# # Get the selected commit object
-# selected_commit_obj = branch_commits[[
-#     (f"{c.message} - {c.authorName} - {c.createdAt}") for c in branch_commits
-# ].index(selected_commit)]
-
+# Add commit selection
+selected_commit = st.selectbox(
+    label="Select commit to view",
+    options=[(f"{c.message} - {c.authorName} - {c.createdAt}") for c in branch_commits],
+    help="Select a specific commit to analyze"
+)
+try:
+    # Get the selected commit object
+    selected_commit_obj = branch_commits[[
+        (f"{c.message} - {c.authorName} - {c.createdAt}") for c in branch_commits
+    ].index(selected_commit)]
+except:
+    pass
 
 #--------------------------
 #create a definition that generates an iframe from commit id
