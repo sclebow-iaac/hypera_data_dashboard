@@ -1,5 +1,6 @@
 #IMPORT LIBRARIES
 #import streamlit
+import json
 import streamlit as st
 #specklepy libraries
 from specklepy.api import operations
@@ -14,6 +15,9 @@ import plotly.express as px
 
 # import os
 import os
+
+from typing import Dict, Any
+from specklepy.objects.base import Base
 
 #--------------------------
 #PAGE CONFIG
@@ -101,6 +105,8 @@ st.markdown("""
 
 #--------------------------
 
+PROJECTS_FILE = "projects.json"
+
 #--------------------------
 #CONTAINERS
 header = st.container()
@@ -180,6 +186,18 @@ selected_model_name = st.selectbox(
     help="Select a specific model to analyze its data"
 )
 
+# #Stream Branches 🌴
+# branches = client.branch.list(stream.id)
+# #Stream Commits 🏹
+# commits = client.commit.list(stream.id, limit=100)        
+        
+# # Add branch selection
+# selected_branch = st.selectbox(
+#     label="Select branch to analyze",
+#     options=[b.name for b in branches],
+#     help="Select a specific branch to analyze its data"
+# )
+
 print()
 print(f'Selected model name: {selected_model_name}')
 
@@ -220,6 +238,192 @@ def version2viewer(project, model, version, height=400) -> str:
     print()
     return st.components.v1.iframe(src=embed_src, height=height)
 
+def extract_data_dynamically(data):
+    # adapt to different data structures
+    extracted_info = {}
+
+    try:
+    # Get all base properties
+        if hasattr(data, 'data'):
+            base_props = data.data
+            for prop_name, prop_value in base_props.items():
+                extracted_info[prop_name] = prop_value
+                print(f"Property: {prop_name} = {prop_value}")
+        
+        # Get displayValue if it exists (contains geometry info)
+        if hasattr(data, 'displayValue'):
+            display_props = data.displayValue
+            extracted_info['displayValue'] = display_props
+            print("Display properties:", display_props)
+            
+    # Get units if present
+        if hasattr(data, 'units'):
+            extracted_info['units'] = data.units
+            
+    # Get totalChildrenCount if present
+        if hasattr(data, 'totalChildrenCount'):
+            extracted_info['totalChildrenCount'] = data.totalChildrenCount
+            
+    except Exception as e:
+        print(f"Error extracting properties: {e}")
+        print("Data structure:", dir(data))
+    
+    return extracted_info
+
+def get_object_parameters(obj: Base) -> Dict[str, Any]:
+    try:
+        parameters_data = obj["parameters"]
+        parameters = parameters_data.get_dynamic_member_names()
+
+        result_dict: Dict[str, Any] = {
+            parameters_data[parameter]["name"]: parameters_data[parameter]["value"]
+            for parameter in parameters
+        }
+        return result_dict
+    except Exception as e:
+        print(f"Error getting parameters: {e}")
+        return {}
+
+def get_object_data(stream_id: str, object_id: str) -> Dict[str, Any]:
+    try:
+        transport = ServerTransport(client=client, stream_id=stream_id)
+        original_object: Any = operations.receive(
+            obj_id=object_id, remote_transport=transport
+        )
+        result_dict: Dict[str, Any] = {}
+
+        if hasattr(original_object, 'speckle_type') and (
+            original_object.speckle_type
+            == "Objects.Other.Instance:Objects.Other.Revit.RevitInstance"
+        ):
+            definition_object: Any = original_object["definition"]
+        else:
+            definition_object: Any = original_object
+
+        if hasattr(definition_object, 'type'):
+            result_dict["type"] = definition_object.type
+        if hasattr(definition_object, 'family'):
+            result_dict["family"] = definition_object.family
+            
+        result_dict.update(get_object_parameters(definition_object))
+        return result_dict
+    except Exception as e:
+        print(f"Error getting object data: {e}")
+        return {}
+
+# if commits:
+#     latest_commit = commits[-1]
+#     print("SOURCEAPPLICATION", commits[0].sourceApplication)
+    
+#     object_data = get_object_data(stream.id, latest_commit.referencedObject)
+#     if object_data:
+#         print("Object Data received:", object_data)
+        
+#         object_df = pd.DataFrame([object_data])
+#         print("DataFrame created:", object_df)
+        
+#         st.subheader("Object Data")
+#         st.dataframe(object_df)
+        
+#         parameters_df = pd.DataFrame([{
+#             'Parameter': key,
+#             'Value': value
+#         } for key, value in object_data.items() 
+#         if key not in ['type', 'family']])
+        
+#         st.subheader("Parameters")
+#         st.dataframe(parameters_df)
+# else:
+#     st.warning("No commits found for this stream.")
+
+# Get commits for selected branch
+# branch_commits = [
+#     commit for commit in client.commit.list(stream.id, limit=100)
+#     if commit.branchName == selected_branch
+# ]
+
+if st.button("Fetch Data"):
+    specific_object_id = "22cf45139a693bae7cb1a71d54b80c98"
+    
+    transport = ServerTransport(client=client, stream_id=selected_model.id)
+    try:
+        specific_obj = operations.receive(specific_object_id, transport)
+        
+        def collect_object_data(obj, prefix=""):
+            data = []
+            
+            # Get all attributes
+            for attr in dir(obj):
+                if not attr.startswith('_'):  # Skip private attributes
+                    try:
+                        value = getattr(obj, attr)
+                        # Skip methods, only include data
+                        if not callable(value):
+                            data.append({
+                                'Object': prefix,
+                                'Property': attr,
+                                'Value': str(value),
+                                'Type': type(value).__name__
+                            })
+                            
+                            # Recursively process nested objects
+                            if hasattr(value, '__dict__') and not isinstance(value, (str, int, float, bool)):
+                                nested_data = collect_object_data(value, f"{prefix}.{attr}")
+                                data.extend(nested_data)
+                    except:
+                        continue
+            
+            return data
+
+        # Collect all data
+        all_data = collect_object_data(specific_obj, "root")
+        
+        # Convert to DataFrame
+        df = pd.DataFrame(all_data)
+        
+        # Display as table
+        st.write("All Object Properties:")
+        st.dataframe(df)
+        
+        # Optional: Save to CSV
+        df.to_csv("speckle_object_data.csv", index=False)
+        
+    except Exception as e:
+        st.error(f"Error processing object: {e}")
+
+def process_all_projects():
+    try:
+        projects = load_project_urls()
+        all_project_data = []
+
+        for project in projects:
+            try:
+                print(f"Processing project: {project['name']} ({project['url']})")
+                extracted_info = get_speckle_data(project['url'])
+                # extracted_info = extract_data_dynamically(data)
+                all_project_data.append({"name": project['name'], "data": [extracted_info]})
+            except Exception as e:
+                st.warning(f"Error processing project {project['name']}: {str(e)}")
+            continue 
+
+        return all_project_data
+    except Exception as e:
+        st.error(f"Error loading projects: {str(e)}")
+        return []
+
+def get_speckle_data(url):
+    parts = url.split("/")
+    stream_id = parts[-3]
+    commit_id = parts[-1]
+    return dict({"stream_id": stream_id, "commit_id": commit_id})
+
+#--------------------------
+#create a definition that generates an iframe from commit id
+def commit2viewer(stream, commit, height=400) -> str:
+    embed_src = f"https://macad.speckle.xyz/embed?stream={stream.id}&commit={commit.id}"
+    print(embed_src)  # Print the URL to verify correctness
+    return st.components.v1.iframe(src=embed_src, height=height)
+
 # <iframe title="Speckle" src="https://macad.speckle.xyz/projects/31f8cca4e0/models/e2578d4a64@671a67a8c1#embed=%7B%22isEnabled%22%3Atrue%2C%22hideControls%22%3Atrue%7D" width="600" height="400" frameborder="0"></iframe>
 # #--------------------------
 # #create a definition that generates an iframe from commit id
@@ -229,6 +433,10 @@ def version2viewer(project, model, version, height=400) -> str:
 #     return st.components.v1.iframe(src=embed_src, height=height)
 
 # #--------------------------
+
+def load_project_urls():
+    with open(PROJECTS_FILE, 'r') as file:
+        return json.load(file)
 
 #VIEWER👁‍🗨
 with viewer:
@@ -421,6 +629,31 @@ fig.update_traces(line_color="red")
 st.plotly_chart(fig, use_container_width=True)
 
 #--------------------------
+#create a definition that generates an iframe from commit id
+def commit2viewer(stream, commit, height=400) -> str:
+    embed_src = f"https://macad.speckle.xyz/embed?stream={stream.id}&commit={commit.id}"
+    print(embed_src)  # Print the URL to verify correctness
+    return st.components.v1.iframe(src=embed_src, height=height)
+
+#--------------------------
+
+#data from speckle model
+
+try:
+    projects_data = process_all_projects()
+
+    if projects_data:
+        df = pd.json_normalize(projects_data, "data", ["name"])
+        st.write("Project Data:")
+        st.dataframe(df)
+except Exception as e:
+    st.error(f"Error processing projects: {str(e)}")
+
+
+df.to_csv("extracted_data.csv", index=False)
+
+st.dataframe(df)
+
 # TEAM SPECIFIC METRICS
 st.subheader("Team Specific Metrics 👥 [TOTALLY FAKE DATA RIGHT NOW]")
 
@@ -483,7 +716,7 @@ elif selected_team == "Structure":
         'Element': ['Self-Energy Generation', 'Existing Energy Consumption'],
         'Percentage Efficiency (%)': [25, 90]
     })
-    structure_chart = px.bar(structure_data, x='Element', y='Percentage (%)')
+    structure_chart = px.bar(structure_data, x='Element', y='Percentage Efficiency (%)')
     structure_chart.update_layout(
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
