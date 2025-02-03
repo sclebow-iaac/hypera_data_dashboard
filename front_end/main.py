@@ -160,76 +160,86 @@ account = get_account_from_token(speckleToken, speckleServer)
 client.authenticate_with_account(account)
 #-------
 
-#-------
-#Streams List👇
-streams = client.stream.list()
-os.write(1, f'Streams: {streams}'.encode())
+# Get projects
+project = client.project.get(project_id="31f8cca4e0")
+print(f'Project: {project.name}')
 
-#Get Stream Names
-streamNames = [s.name for s in streams]
-#Dropdown for stream selection
-sName = st.selectbox(label="Select your stream", options=streamNames, help="Select your stream from the dropdown")
+# Get models
+project = client.project.get_with_models(project_id="31f8cca4e0", models_limit=100)
 
-#SELECTED STREAM ✅
-stream = client.stream.search(sName)[0]
+models = project.models.items
 
-#Stream Branches 🌴
-branches = client.branch.list(stream.id)
-#Stream Commits 🏹
-commits = client.commit.list(stream.id, limit=100)
-test = commits[0]
+for model in models:
+    print()
+    print(f'Model: {model}')
 
-transport = ServerTransport(client=client, stream_id=stream.id)
-res = operations.receive(test.referencedObject, transport)   
-
-print("RESSS\n\n\n", res  )
-print("RESSS\n\n\n", res.__dict__  )
-# Add branch selection
-selected_branch = st.selectbox(
-    label="Select branch to analyze",
-    options=[b.name for b in branches],
-    help="Select a specific branch to analyze its data"
+# Add model selection
+selected_model_name = st.selectbox(
+    label="Select model to analyze",
+    options=[m.name for m in models],
+    help="Select a specific model to analyze its data"
 )
 
-# Get commits for selected branch
-branch_commits = [
-    commit for commit in client.commit.list(stream.id, limit=100)
-    if commit.branchName == selected_branch
-]
+print()
+print(f'Selected model name: {selected_model_name}')
 
-# Add commit selection
-selected_commit = st.selectbox(
-    label="Select commit to view",
-    options=[(f"{c.message} - {c.authorName} - {c.createdAt}") for c in branch_commits],
-    help="Select a specific commit to analyze"
+# Get the selected model object
+selected_model = [m for m in models if m.name == selected_model_name][0]
+
+print()
+print(f'Selected model: {selected_model}')
+print()
+
+# Get the versions for the selected model
+versions = client.version.get_versions(model_id=selected_model.id, project_id=project.id, limit=100).items
+
+for version in versions:
+    print(f'Version: {version}')
+    print()
+
+def versionName(version):
+    timestamp = version.createdAt.strftime("%Y-%m-%d %H:%M:%S")
+    return ' - '.join([version.authorUser.name, timestamp, version.message])
+
+keys = [versionName(version) for version in versions]
+
+# Add version selection
+selected_version_key = st.selectbox(
+    label="Select version to analyze",
+    options=keys,
+    help="Select a specific version to analyze"
 )
-try:
-    # Get the selected commit object
-    selected_commit_obj = branch_commits[[
-        (f"{c.message} - {c.authorName} - {c.createdAt}") for c in branch_commits
-    ].index(selected_commit)]
-except:
-    pass
 
-#--------------------------
-#create a definition that generates an iframe from commit id
-def commit2viewer(stream, commit, height=400) -> str:
-    embed_src = f"https://macad.speckle.xyz/embed?stream={stream.id}&commit={commit.id}"
-    print(embed_src)  # Print the URL to verify correctness
+selected_version = versions[keys.index(selected_version_key)]
+
+
+# Create a iframe to display the selected version
+def version2viewer(project, model, version, height=400) -> str:
+    embed_src = f"https://macad.speckle.xyz/projects/{project.id}/models/{model.id}@{version.id}#embed=%7B%22isEnabled%22%3Atrue%2C%7D"
+    print(f'embed_src {embed_src}')  # Print the URL to verify correctness
+    print()
     return st.components.v1.iframe(src=embed_src, height=height)
 
-#--------------------------
+# <iframe title="Speckle" src="https://macad.speckle.xyz/projects/31f8cca4e0/models/e2578d4a64@671a67a8c1#embed=%7B%22isEnabled%22%3Atrue%2C%22hideControls%22%3Atrue%7D" width="600" height="400" frameborder="0"></iframe>
+# #--------------------------
+# #create a definition that generates an iframe from commit id
+# def commit2viewer(stream, commit, height=400) -> str:
+#     embed_src = f"https://macad.speckle.xyz/embed?stream={stream.id}&commit={commit.id}"
+#     # print(embed_src)  # Print the URL to verify correctness
+#     return st.components.v1.iframe(src=embed_src, height=height)
+
+# #--------------------------
 
 #VIEWER👁‍🗨
 with viewer:
-    st.subheader("Latest Commit👇")
-    commit2viewer(stream, commits[0])
+    st.subheader("Selected Commit👇")
+    version2viewer(project, selected_model, selected_version)
 
 with report:
     st.subheader("Statistics")
 
 # Columns for Cards
-branchCol, commitCol, connectorCol, contributorCol = st.columns(4)
+modelCol, versionCol, connectorCol, contributorCol = st.columns(4)
 
 #DEFINITIONS
 #create a definition to convert your list to markdown
@@ -238,61 +248,86 @@ def listToMarkdown(list, column):
     list = "".join(list)
     return column.markdown(list)
 
-#Branch Card 💳
-branchCol.metric(label = "Number of branches", value= stream.branches.totalCount)
+#Model Card 💳
+modelCol.metric(label = "Number of Models in Project", value= len(models))
 #branch names as markdown list
-branchNames = [b.name for b in branches]
-listToMarkdown(branchNames, branchCol)
+modelNames = [m.name for m in models]
+listToMarkdown(modelNames, modelCol)
 
-#Commit Card 💳
-commitCol.metric(label = "Number of commits", value= len(commits))
+#Version Card 💳
+versionCol.metric(label = "Number of Versions in Selected Model", value= len(versions))
+
+def get_all_versions_in_project(project):
+    all_versions = []
+    for model in project.models.items:
+        versions = client.version.get_versions(model_id=model.id, project_id=project.id, limit=100).items
+        all_versions.extend(versions)
+    return all_versions
 
 #Connector Card 💳
 #connector list
-connectorList = [c.sourceApplication for c in commits]
+all_versions_in_project = get_all_versions_in_project(project)
+connectorList = [v.sourceApplication for v in all_versions_in_project]
 #number of connectors
-connectorCol.metric(label="Number of connectors", value= len(dict.fromkeys(connectorList)))
+connectorCol.metric(label="Number of Connectors in Project", value= len(dict.fromkeys(connectorList)))
 #get connector names
 connectorNames = list(dict.fromkeys(connectorList))
 #convert it to markdown list
 listToMarkdown(connectorNames, connectorCol)
 
+def get_all_coillaborators_in_project(project):
+    all_collaborators = []
+    for model in project.models.items:
+        versions = client.version.get_versions(model_id=model.id, project_id=project.id, limit=100).items
+        for version in versions:
+            all_collaborators.append(version.authorUser)
+    return all_collaborators
+
 #Contributor Card 💳
-contributorCol.metric(label = "Number of contributors", value= len(stream.collaborators))
+all_collaborators = get_all_coillaborators_in_project(project)
+contributorCol.metric(label = "Number of Contributors to Project", value= len(all_collaborators))
 #unique contributor names
-contributorNames = list(dict.fromkeys([col.name for col in stream.collaborators]))
+contributorNames = list(dict.fromkeys([col.name for col in all_collaborators]))
 #convert it to markdown list
 listToMarkdown(contributorNames,contributorCol)
 
-with graphs:
-    st.subheader("Graphs")
+st.subheader("Graphs for Entire Project 📊")
 #COLUMNS FOR CHARTS
-branch_graph_col, connector_graph_col, collaborator_graph_col = st.columns([2,1,1])
+model_graph_col, connector_graph_col, collaborator_graph_col = st.columns([2,1,1])
 
-#BRANCH GRAPH 📊
-#branch count dataframe
-branch_counts = pd.DataFrame([[branch.name, branch.commits.totalCount] for branch in branches])
+#model GRAPH 📊
+#model count dataframe
+model_names = []
+version_counts = []
+for model in models:
+    model_names.append(model.name)
+    version_count = len(client.version.get_versions(model_id=model.id, project_id=project.id, limit=100).items)
+    print(f'Model: {model.name} - Version count: {version_count}\n')
+    version_counts.append(version_count)
+
+model_counts = pd.DataFrame([[model_name, version_count] for model_name, version_count in zip(model_names, version_counts)])
+
 #rename dataframe columns
-branch_counts.columns = ["branchName", "totalCommits"]
+model_counts.columns = ["modelName", "totalCommits"]
 #create graph
-branch_count_graph = px.bar(branch_counts, x=branch_counts.branchName, y=branch_counts.totalCommits, color=branch_counts.branchName, labels={"branchName":"","totalCommits":""})
+model_count_graph = px.bar(model_counts, x=model_counts.modelName, y=model_counts.totalCommits, color=model_counts.modelName, labels={"modelName":"","totalCommits":""})
 #update layout
-branch_count_graph.update_layout(
+model_count_graph.update_layout(
     showlegend = False,
     margin = dict(l=1,r=1,t=1,b=1),
     height=220,
-    paper_bgcolor='rgba(0,0,0,0)',  # Transparent background
-    plot_bgcolor='rgba(0,0,0,0)',   # Transparent plot area
+    paper_bgcolor='rgb(255, 255, 255)',  # Transparent background
+    plot_bgcolor='rgb(255, 255, 255)',   # Transparent plot area
     font_family="Arial",
-    font_color="#2c3e50"
+    font_color="black"
 )
 #show graph
-branch_graph_col.plotly_chart(branch_count_graph, use_container_width=True)
+model_graph_col.plotly_chart(model_count_graph, use_container_width=True)
 
 #CONNECTOR CHART 🍩
-commits= pd.DataFrame.from_dict([c.dict() for c in commits])
+version_frame = pd.DataFrame.from_dict([c.dict() for c in all_versions_in_project])
 #get apps from commits
-apps = commits["sourceApplication"]
+apps = version_frame["sourceApplication"]
 #reset index
 apps = apps.value_counts().reset_index()
 #rename columns
@@ -313,7 +348,14 @@ connector_graph_col.plotly_chart(fig, use_container_width=True)
 
 #COLLABORATOR CHART 🍩
 #get authors from commits
-authors = commits["authorName"].value_counts().reset_index()
+
+version_user_names = []
+for user in version_frame["authorUser"]:
+    print(f'type: {type(user)}')
+    print(f'user: {user.get('name')}\n')
+    version_user_names.append(user.get('name'))
+
+authors = pd.DataFrame(version_user_names).value_counts().reset_index()
 #rename columns
 authors.columns=["author","count"]
 #create our chart
@@ -333,19 +375,32 @@ collaborator_graph_col.plotly_chart(authorFig, use_container_width=True)
 #COMMIT PANDAS TABLE 🔲
 st.subheader("Commit Activity Timeline 🕒")
 #created at parameter to dataframe with counts
-print("VALUE")
-print(pd.to_datetime(commits["createdAt"]).dt.date.value_counts().reset_index())
-cdate = pd.to_datetime(commits["createdAt"]).dt.date.value_counts().reset_index().sort_values("createdAt")
-#date range to fill null dates.
-null_days = pd.date_range(start=cdate["createdAt"].min(), end=cdate["createdAt"].max())
-#add null days to table
-cdate = cdate.set_index("createdAt").reindex(null_days, fill_value=0)
-#reset index
-cdate = cdate.reset_index()
+# print("VALUE")
+# print(pd.to_datetime(commits["createdAt"]).dt.date.value_counts().reset_index())
+
+timestamps = [version.createdAt.date() for version in all_versions_in_project]
+print(f'timestamps: {timestamps}\n')
+
+#convert to pandas dataframe and
+# rename the column of the timestamps frame to createdAt
+timestamps_frame = pd.DataFrame(timestamps, columns=["createdAt"]).value_counts().reset_index().sort_values("createdAt")
+
+print(f'timestamps_frame: {timestamps_frame}\n')
+
+cdate = timestamps_frame
+# cdate = pd.to_datetime(timestamps).dt.date.value_counts().reset_index().sort_values("createdAt")
+# #date range to fill null dates.
+# null_days = pd.date_range(start=cdate["createdAt"].min(), end=cdate["createdAt"].max())
+# #add null days to table
+# cdate = cdate.set_index("createdAt").reindex(null_days, fill_value=0)
+# #reset index
+# cdate = cdate.reset_index()
 #rename columns
 cdate.columns = ["date", "count"]
 #redate indexed dates
 cdate["date"] = pd.to_datetime(cdate["date"]).dt.date
+
+print(f'cdate: {cdate}\n')
 
 #COMMIT ACTIVITY LINE CHART📈
 #line chart
@@ -366,15 +421,8 @@ fig.update_traces(line_color="red")
 st.plotly_chart(fig, use_container_width=True)
 
 #--------------------------
-#create a definition that generates an iframe from commit id
-def commit2viewer(stream, commit, height=400) -> str:
-    embed_src = f"https://macad.speckle.xyz/embed?stream={stream.id}&commit={commit.id}"
-    print(embed_src)  # Print the URL to verify correctness
-    return st.components.v1.iframe(src=embed_src, height=height)
-
-#--------------------------
 # TEAM SPECIFIC METRICS
-st.subheader("Team Specific Metrics 👥")
+st.subheader("Team Specific Metrics 👥 [TOTALLY FAKE DATA RIGHT NOW]")
 
 # Team selection dropdown
 selected_team = st.selectbox(
