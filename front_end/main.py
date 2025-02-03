@@ -236,6 +236,7 @@ def version2viewer(project, model, version, height=400) -> str:
     embed_src = f"https://macad.speckle.xyz/projects/{project.id}/models/{model.id}@{version.id}#embed=%7B%22isEnabled%22%3Atrue%2C%7D"
     print(f'embed_src {embed_src}')  # Print the URL to verify correctness
     print()
+    return st.components.v1.iframe(src=embed_src, height=height)
 
 def extract_data_dynamically(data):
     # adapt to different data structures
