@@ -105,8 +105,6 @@ st.markdown("""
 
 #--------------------------
 
-PROJECTS_FILE = "projects.json"
-
 #--------------------------
 #CONTAINERS
 header = st.container()
@@ -127,14 +125,7 @@ with header:
         </div>
     """, unsafe_allow_html=True)
     
-    # # Center the image
-    # col1, col2, col3 = st.columns([1,2,1])
-    # with col2:
-    #     st.image(
-    #         r"E:\IAAC term 2\Layer 3.png",
-    #         caption="building visualization",
-    #         width=400
-    #     )
+ 
 #About info
     with header.expander("Hyper Building A🔽", expanded=True):
         st.markdown(
@@ -167,12 +158,23 @@ client.authenticate_with_account(account)
 #-------
 
 # Get projects
-project = client.project.get(project_id="31f8cca4e0")
+projects = client.stream.list()
+
+# Create project selection drop down
+selected_project_name = st.selectbox(
+    label="Select project to analyze",
+    options=[p.name for p in projects],
+    help="Select object to analyze"
+)
+
+# Get the selected project object
+selected_project = [p for p in projects if p.name == selected_project_name][0]
+
+# Get the project with models
+project = client.project.get_with_models(project_id=selected_project.id, models_limit=100)
 print(f'Project: {project.name}')
 
-# Get models
-project = client.project.get_with_models(project_id="31f8cca4e0", models_limit=100)
-
+# Get the models
 models = project.models.items
 
 for model in models:
@@ -186,17 +188,6 @@ selected_model_name = st.selectbox(
     help="Select a specific model to analyze its data"
 )
 
-# #Stream Branches 🌴
-# branches = client.branch.list(stream.id)
-# #Stream Commits 🏹
-# commits = client.commit.list(stream.id, limit=100)        
-        
-# # Add branch selection
-# selected_branch = st.selectbox(
-#     label="Select branch to analyze",
-#     options=[b.name for b in branches],
-#     help="Select a specific branch to analyze its data"
-# )
 
 print()
 print(f'Selected model name: {selected_model_name}')
@@ -230,6 +221,11 @@ selected_version_key = st.selectbox(
 
 selected_version = versions[keys.index(selected_version_key)]
 
+def get_speckle_data(url):
+    parts = url.split("/")
+    stream_id = parts[-3]
+    commit_id = parts[-1]
+    return dict({"stream_id": stream_id, "commit_id": commit_id})
 
 # Create a iframe to display the selected version
 def version2viewer(project, model, version, height=400) -> str:
@@ -270,80 +266,12 @@ def extract_data_dynamically(data):
     
     return extracted_info
 
-def get_object_parameters(obj: Base) -> Dict[str, Any]:
-    try:
-        parameters_data = obj["parameters"]
-        parameters = parameters_data.get_dynamic_member_names()
-
-        result_dict: Dict[str, Any] = {
-            parameters_data[parameter]["name"]: parameters_data[parameter]["value"]
-            for parameter in parameters
-        }
-        return result_dict
-    except Exception as e:
-        print(f"Error getting parameters: {e}")
-        return {}
-
-def get_object_data(stream_id: str, object_id: str) -> Dict[str, Any]:
-    try:
-        transport = ServerTransport(client=client, stream_id=stream_id)
-        original_object: Any = operations.receive(
-            obj_id=object_id, remote_transport=transport
-        )
-        result_dict: Dict[str, Any] = {}
-
-        if hasattr(original_object, 'speckle_type') and (
-            original_object.speckle_type
-            == "Objects.Other.Instance:Objects.Other.Revit.RevitInstance"
-        ):
-            definition_object: Any = original_object["definition"]
-        else:
-            definition_object: Any = original_object
-
-        if hasattr(definition_object, 'type'):
-            result_dict["type"] = definition_object.type
-        if hasattr(definition_object, 'family'):
-            result_dict["family"] = definition_object.family
-            
-        result_dict.update(get_object_parameters(definition_object))
-        return result_dict
-    except Exception as e:
-        print(f"Error getting object data: {e}")
-        return {}
-
-# if commits:
-#     latest_commit = commits[-1]
-#     print("SOURCEAPPLICATION", commits[0].sourceApplication)
-    
-#     object_data = get_object_data(stream.id, latest_commit.referencedObject)
-#     if object_data:
-#         print("Object Data received:", object_data)
-        
-#         object_df = pd.DataFrame([object_data])
-#         print("DataFrame created:", object_df)
-        
-#         st.subheader("Object Data")
-#         st.dataframe(object_df)
-        
-#         parameters_df = pd.DataFrame([{
-#             'Parameter': key,
-#             'Value': value
-#         } for key, value in object_data.items() 
-#         if key not in ['type', 'family']])
-        
-#         st.subheader("Parameters")
-#         st.dataframe(parameters_df)
-# else:
-#     st.warning("No commits found for this stream.")
-
-# Get commits for selected branch
-# branch_commits = [
-#     commit for commit in client.commit.list(stream.id, limit=100)
-#     if commit.branchName == selected_branch
-# ]
 
 if st.button("Fetch Data"):
     specific_object_id = "22cf45139a693bae7cb1a71d54b80c98"
+
+    # stream_id = selected_project_name
+    # object_id = selected_version.referencedObject
     
     transport = ServerTransport(client=client, stream_id=selected_model.id)
     try:
@@ -390,32 +318,7 @@ if st.button("Fetch Data"):
         
     except Exception as e:
         st.error(f"Error processing object: {e}")
-
-def process_all_projects():
-    try:
-        projects = load_project_urls()
-        all_project_data = []
-
-        for project in projects:
-            try:
-                print(f"Processing project: {project['name']} ({project['url']})")
-                extracted_info = get_speckle_data(project['url'])
-                # extracted_info = extract_data_dynamically(data)
-                all_project_data.append({"name": project['name'], "data": [extracted_info]})
-            except Exception as e:
-                st.warning(f"Error processing project {project['name']}: {str(e)}")
-            continue 
-
-        return all_project_data
-    except Exception as e:
-        st.error(f"Error loading projects: {str(e)}")
-        return []
-
-def get_speckle_data(url):
-    parts = url.split("/")
-    stream_id = parts[-3]
-    commit_id = parts[-1]
-    return dict({"stream_id": stream_id, "commit_id": commit_id})
+            
 
 #--------------------------
 #create a definition that generates an iframe from commit id
@@ -424,19 +327,7 @@ def commit2viewer(stream, commit, height=400) -> str:
     print(embed_src)  # Print the URL to verify correctness
     return st.components.v1.iframe(src=embed_src, height=height)
 
-# <iframe title="Speckle" src="https://macad.speckle.xyz/projects/31f8cca4e0/models/e2578d4a64@671a67a8c1#embed=%7B%22isEnabled%22%3Atrue%2C%22hideControls%22%3Atrue%7D" width="600" height="400" frameborder="0"></iframe>
-# #--------------------------
-# #create a definition that generates an iframe from commit id
-# def commit2viewer(stream, commit, height=400) -> str:
-#     embed_src = f"https://macad.speckle.xyz/embed?stream={stream.id}&commit={commit.id}"
-#     # print(embed_src)  # Print the URL to verify correctness
-#     return st.components.v1.iframe(src=embed_src, height=height)
 
-# #--------------------------
-
-def load_project_urls():
-    with open(PROJECTS_FILE, 'r') as file:
-        return json.load(file)
 
 #VIEWER👁‍🗨
 with viewer:
@@ -637,22 +528,6 @@ def commit2viewer(stream, commit, height=400) -> str:
 
 #--------------------------
 
-#data from speckle model
-
-try:
-    projects_data = process_all_projects()
-
-    if projects_data:
-        df = pd.json_normalize(projects_data, "data", ["name"])
-        st.write("Project Data:")
-        st.dataframe(df)
-except Exception as e:
-    st.error(f"Error processing projects: {str(e)}")
-
-
-df.to_csv("extracted_data.csv", index=False)
-
-st.dataframe(df)
 
 # TEAM SPECIFIC METRICS
 st.subheader("Team Specific Metrics 👥 [TOTALLY FAKE DATA RIGHT NOW]")
