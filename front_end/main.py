@@ -637,7 +637,12 @@ if show_attribute_extraction:
         attribute_found = search_for_attribute(base_data, attribute_to_search, single=search_single)
         print(f'Attribute {attribute_to_search} found: {attribute_found}\n')
 
-        # Display the found attribute as a markdown list
-        st.markdown(f"### Found attribute: `{attribute_to_search}`")
-        for i, value in enumerate(attribute_found[1]):
-            st.markdown(f"{i+1}. {value}")
+        # Display the found attribute as a markdown table
+        if attribute_found[0]:
+            table_header = "| Attribute | Value |\n| --- | --- |\n"
+            table_data = ""
+            for i, value in enumerate(attribute_found[1]):
+                table_data += f"| {attribute_to_search} | {value} |\n"
+            st.markdown(table_header + table_data)
+        else:
+            st.error(f"Attribute {attribute_to_search} not found in the base data")
