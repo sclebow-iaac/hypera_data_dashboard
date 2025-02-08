@@ -1,6 +1,5 @@
 #IMPORT LIBRARIES
 #import streamlit
-import json
 import streamlit as st
 #specklepy libraries
 from specklepy.api import operations
@@ -16,9 +15,6 @@ import plotly.express as px
 
 # import os
 import os
-
-from typing import Dict, Any
-from specklepy.objects.base import Base
 
 #--------------------------
 #PAGE CONFIG
@@ -425,13 +421,6 @@ if show_statistics:
 
     #Show Chart
     st.plotly_chart(fig, use_container_width=True)
-
-    #--------------------------
-    #create a definition that generates an iframe from commit id
-    def commit2viewer(stream, commit, height=400) -> str:
-        embed_src = f"https://macad.speckle.xyz/embed?stream={stream.id}&commit={commit.id}"
-        print(embed_src)  # Print the URL to verify correctness
-        return st.components.v1.iframe(src=embed_src, height=height)
 
     #--------------------------
 
