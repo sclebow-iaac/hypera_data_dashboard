@@ -20,13 +20,6 @@ import os
 from typing import Dict, Any
 from specklepy.objects.base import Base
 
-show_viewer = True
-# show_viewer = False
-# show_statistics = True
-show_statistics = False
-# show_team_specific_metrics = True
-show_team_specific_metrics = False
-
 #--------------------------
 #PAGE CONFIG
 st.set_page_config(
@@ -143,11 +136,17 @@ with header:
 #--------------------------
 
 with input:
-    st.subheader("Inputs")
+    st.subheader("Inputs") # Add a subheader
+
+
 
 #-------
     #Columns for inputs
     serverCol, tokenCol = st.columns([1,3])
+    
+    # Toggle buttons for showing/hiding viewer, statistics, and team-specific metrics
+    # Columns for toggle buttons
+    viewer_toggle, statistics_toggle, team_metrics_toggle = st.columns(3)
 #-------
 
 
@@ -155,6 +154,12 @@ with input:
 #User Input boxes
 speckleServer = serverCol.text_input("Server URL", "macad.speckle.xyz", help="Speckle server to connect.")
 speckleToken = tokenCol.text_input("Speckle token", "", help="If you don't know how to get your token, take a look at this [link](<https://speckle.guide/dev/tokens.html>)👈")
+
+# #-------
+# #Toggle buttons
+show_viewer = viewer_toggle.checkbox("Show Viewer", value=True, help="Toggle to show/hide the viewer")
+show_statistics = statistics_toggle.checkbox("Show Statistics", value=True, help="Toggle to show/hide the statistics")
+show_team_specific_metrics = team_metrics_toggle.checkbox("Show Team Metrics", value=True, help="Toggle to show/hide the team-specific metrics")
 
 #-------
 #CLIENT
@@ -239,7 +244,7 @@ if show_viewer:
 
     #VIEWER👁‍🗨
     with viewer:
-        st.subheader("Selected Commit👇")
+        st.subheader("Selected Version👇")
         version2viewer(project, selected_model, selected_version)
 
 if show_statistics:
