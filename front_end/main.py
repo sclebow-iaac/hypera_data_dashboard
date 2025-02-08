@@ -168,14 +168,8 @@ client.authenticate_with_account(account)
 # Get projects
 projects = client.stream.list()
 
-# Create project selection drop down
-selected_project_name = st.selectbox(
-    label="Select project to analyze",
-    options=[p.name for p in projects],
-    help="Select object to analyze"
-)
-
 # Get the selected project object
+selected_project_name = "Hyperbuilding_Team_A"
 selected_project = [p for p in projects if p.name == selected_project_name][0]
 
 # Get the project with models
@@ -639,4 +633,24 @@ if show_team_specific_metrics:
         )
         st.plotly_chart(facade_chart, use_container_width=True)
 
-wrapper = StreamWrapper("https://macad.speckle.xyz/projects/31f8cca4e0/models/544f70ad2f@5285d2ee63")
+print(f'selected_model: {selected_model}\n')
+print(f'selected_version: {selected_version}\n')
+
+# Get geometry data from the selected version
+
+stream = client.stream.get(id=project.id)
+print(f'stream: {stream}\n')
+
+branch = client.branch.get(stream_id=stream.id, name=selected_model.name, commits_limit=100)
+print(f'branch: {branch}\n')
+
+commit = client.commit.get(stream_id=stream.id, commit_id=selected_version.id)
+
+objHash = branch.commits.items[0].referencedObject
+print(f'objHash: {objHash}\n')
+
+transport = ServerTransport(client=client, stream_id=stream.id, token=speckleToken)
+data = operations.receive(objHash, transport)
+print(f'data: {data}\n')
+
+# data should be a Base object with all the data in the version
