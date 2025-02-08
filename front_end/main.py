@@ -7,6 +7,7 @@ from specklepy.api import operations
 from specklepy.api.client import SpeckleClient
 from specklepy.api.credentials import get_account_from_token
 from specklepy.transports.server import ServerTransport
+from specklepy.api.wrapper import StreamWrapper
 
 #import pandas
 import pandas as pd
@@ -18,6 +19,13 @@ import os
 
 from typing import Dict, Any
 from specklepy.objects.base import Base
+
+show_viewer = True
+# show_viewer = False
+# show_statistics = True
+show_statistics = False
+# show_team_specific_metrics = True
+show_team_specific_metrics = False
 
 #--------------------------
 #PAGE CONFIG
@@ -266,375 +274,369 @@ def extract_data_dynamically(data):
     
     return extracted_info
 
+# if st.button("Fetch Data"):
+#     specific_object_id = "22cf45139a693bae7cb1a71d54b80c98"
 
-if st.button("Fetch Data"):
-    specific_object_id = "22cf45139a693bae7cb1a71d54b80c98"
-
-    # stream_id = selected_project_name
-    # object_id = selected_version.referencedObject
+#     # stream_id = selected_project_name
+#     # object_id = selected_version.referencedObject
     
-    transport = ServerTransport(client=client, stream_id=selected_model.id)
-    try:
-        specific_obj = operations.receive(specific_object_id, transport)
+#     transport = ServerTransport(client=client, stream_id=selected_model.id)
+#     # try:
+#     if True:
+#         specific_obj = operations.receive(specific_object_id, transport)
         
-        def collect_object_data(obj, prefix=""):
-            data = []
+#         def collect_object_data(obj, prefix=""):
+#             data = []
             
-            # Get all attributes
-            for attr in dir(obj):
-                if not attr.startswith('_'):  # Skip private attributes
-                    try:
-                        value = getattr(obj, attr)
-                        # Skip methods, only include data
-                        if not callable(value):
-                            data.append({
-                                'Object': prefix,
-                                'Property': attr,
-                                'Value': str(value),
-                                'Type': type(value).__name__
-                            })
+#             # Get all attributes
+#             for attr in dir(obj):
+#                 if not attr.startswith('_'):  # Skip private attributes
+#                     try:
+#                         value = getattr(obj, attr)
+#                         # Skip methods, only include data
+#                         if not callable(value):
+#                             data.append({
+#                                 'Object': prefix,
+#                                 'Property': attr,
+#                                 'Value': str(value),
+#                                 'Type': type(value).__name__
+#                             })
                             
-                            # Recursively process nested objects
-                            if hasattr(value, '__dict__') and not isinstance(value, (str, int, float, bool)):
-                                nested_data = collect_object_data(value, f"{prefix}.{attr}")
-                                data.extend(nested_data)
-                    except:
-                        continue
+#                             # Recursively process nested objects
+#                             if hasattr(value, '__dict__') and not isinstance(value, (str, int, float, bool)):
+#                                 nested_data = collect_object_data(value, f"{prefix}.{attr}")
+#                                 data.extend(nested_data)
+#                     except:
+#                         continue
             
-            return data
+#             return data
 
-        # Collect all data
-        all_data = collect_object_data(specific_obj, "root")
+#         # Collect all data
+#         all_data = collect_object_data(specific_obj, "root")
         
-        # Convert to DataFrame
-        df = pd.DataFrame(all_data)
+#         # Convert to DataFrame
+#         df = pd.DataFrame(all_data)
         
-        # Display as table
-        st.write("All Object Properties:")
-        st.dataframe(df)
+#         # Display as table
+#         st.write("All Object Properties:")
+#         st.dataframe(df)
         
-        # Optional: Save to CSV
-        df.to_csv("speckle_object_data.csv", index=False)
+#         # Optional: Save to CSV
+#         df.to_csv("speckle_object_data.csv", index=False)
         
-    except Exception as e:
-        st.error(f"Error processing object: {e}")
+#     # except Exception as e:
+#     #     st.error(f"Error processing object: {e}")
             
+if show_viewer:
+    #--------------------------
+    #create a definition that generates an iframe from commit id
+    def commit2viewer(stream, commit, height=400) -> str:
+        embed_src = f"https://macad.speckle.xyz/embed?stream={stream.id}&commit={commit.id}"
+        print(embed_src)  # Print the URL to verify correctness
+        return st.components.v1.iframe(src=embed_src, height=height)
 
-#--------------------------
-#create a definition that generates an iframe from commit id
-def commit2viewer(stream, commit, height=400) -> str:
-    embed_src = f"https://macad.speckle.xyz/embed?stream={stream.id}&commit={commit.id}"
-    print(embed_src)  # Print the URL to verify correctness
-    return st.components.v1.iframe(src=embed_src, height=height)
+    #VIEWER👁‍🗨
+    with viewer:
+        st.subheader("Selected Commit👇")
+        version2viewer(project, selected_model, selected_version)
 
+if show_statistics:
+    with report:
+        st.subheader("Statistics")
 
+    # Columns for Cards
+    modelCol, versionCol, connectorCol, contributorCol = st.columns(4)
 
-#VIEWER👁‍🗨
-with viewer:
-    st.subheader("Selected Commit👇")
-    version2viewer(project, selected_model, selected_version)
+    #DEFINITIONS
+    #create a definition to convert your list to markdown
+    def listToMarkdown(list, column):
+        list = ["- " + i +  "\n" for i in list]
+        list = "".join(list)
+        return column.markdown(list)
 
-with report:
-    st.subheader("Statistics")
+    #Model Card 💳
+    modelCol.metric(label = "Number of Models in Project", value= len(models))
+    #branch names as markdown list
+    modelNames = [m.name for m in models]
+    listToMarkdown(modelNames, modelCol)
 
-# Columns for Cards
-modelCol, versionCol, connectorCol, contributorCol = st.columns(4)
+    #Version Card 💳
+    versionCol.metric(label = "Number of Versions in Selected Model", value= len(versions))
 
-#DEFINITIONS
-#create a definition to convert your list to markdown
-def listToMarkdown(list, column):
-    list = ["- " + i +  "\n" for i in list]
-    list = "".join(list)
-    return column.markdown(list)
+    def get_all_versions_in_project(project):
+        all_versions = []
+        for model in project.models.items:
+            versions = client.version.get_versions(model_id=model.id, project_id=project.id, limit=100).items
+            all_versions.extend(versions)
+        return all_versions
 
-#Model Card 💳
-modelCol.metric(label = "Number of Models in Project", value= len(models))
-#branch names as markdown list
-modelNames = [m.name for m in models]
-listToMarkdown(modelNames, modelCol)
+    #Connector Card 💳
+    #connector list
+    all_versions_in_project = get_all_versions_in_project(project)
+    connectorList = [v.sourceApplication for v in all_versions_in_project]
+    #number of connectors
+    connectorCol.metric(label="Number of Connectors in Project", value= len(dict.fromkeys(connectorList)))
+    #get connector names
+    connectorNames = list(dict.fromkeys(connectorList))
+    #convert it to markdown list
+    listToMarkdown(connectorNames, connectorCol)
 
-#Version Card 💳
-versionCol.metric(label = "Number of Versions in Selected Model", value= len(versions))
+    def get_all_coillaborators_in_project(project):
+        all_collaborators = []
+        for model in project.models.items:
+            versions = client.version.get_versions(model_id=model.id, project_id=project.id, limit=100).items
+            for version in versions:
+                all_collaborators.append(version.authorUser)
+        return all_collaborators
 
-def get_all_versions_in_project(project):
-    all_versions = []
-    for model in project.models.items:
-        versions = client.version.get_versions(model_id=model.id, project_id=project.id, limit=100).items
-        all_versions.extend(versions)
-    return all_versions
+    #Contributor Card 💳
+    all_collaborators = get_all_coillaborators_in_project(project)
+    contributorCol.metric(label = "Number of Contributors to Project", value= len(all_collaborators))
+    #unique contributor names
+    contributorNames = list(dict.fromkeys([col.name for col in all_collaborators]))
+    #convert it to markdown list
+    listToMarkdown(contributorNames,contributorCol)
 
-#Connector Card 💳
-#connector list
-all_versions_in_project = get_all_versions_in_project(project)
-connectorList = [v.sourceApplication for v in all_versions_in_project]
-#number of connectors
-connectorCol.metric(label="Number of Connectors in Project", value= len(dict.fromkeys(connectorList)))
-#get connector names
-connectorNames = list(dict.fromkeys(connectorList))
-#convert it to markdown list
-listToMarkdown(connectorNames, connectorCol)
+    st.subheader("Graphs for Entire Project 📊")
+    #COLUMNS FOR CHARTS
+    model_graph_col, connector_graph_col, collaborator_graph_col = st.columns([2,1,1])
 
-def get_all_coillaborators_in_project(project):
-    all_collaborators = []
-    for model in project.models.items:
-        versions = client.version.get_versions(model_id=model.id, project_id=project.id, limit=100).items
-        for version in versions:
-            all_collaborators.append(version.authorUser)
-    return all_collaborators
+    #model GRAPH 📊
+    #model count dataframe
+    model_names = []
+    version_counts = []
+    for model in models:
+        model_names.append(model.name)
+        version_count = len(client.version.get_versions(model_id=model.id, project_id=project.id, limit=100).items)
+        print(f'Model: {model.name} - Version count: {version_count}\n')
+        version_counts.append(version_count)
 
-#Contributor Card 💳
-all_collaborators = get_all_coillaborators_in_project(project)
-contributorCol.metric(label = "Number of Contributors to Project", value= len(all_collaborators))
-#unique contributor names
-contributorNames = list(dict.fromkeys([col.name for col in all_collaborators]))
-#convert it to markdown list
-listToMarkdown(contributorNames,contributorCol)
+    model_counts = pd.DataFrame([[model_name, version_count] for model_name, version_count in zip(model_names, version_counts)])
 
-st.subheader("Graphs for Entire Project 📊")
-#COLUMNS FOR CHARTS
-model_graph_col, connector_graph_col, collaborator_graph_col = st.columns([2,1,1])
+    #rename dataframe columns
+    model_counts.columns = ["modelName", "totalCommits"]
+    #create graph
+    model_count_graph = px.bar(model_counts, x=model_counts.modelName, y=model_counts.totalCommits, color=model_counts.modelName, labels={"modelName":"","totalCommits":""})
+    #update layout
+    model_count_graph.update_layout(
+        showlegend = False,
+        margin = dict(l=1,r=1,t=1,b=1),
+        height=220,
+        paper_bgcolor='rgb(255, 255, 255)',  # Transparent background
+        plot_bgcolor='rgb(255, 255, 255)',   # Transparent plot area
+        font_family="Arial",
+        font_color="black"
+    )
+    #show graph
+    model_graph_col.plotly_chart(model_count_graph, use_container_width=True)
 
-#model GRAPH 📊
-#model count dataframe
-model_names = []
-version_counts = []
-for model in models:
-    model_names.append(model.name)
-    version_count = len(client.version.get_versions(model_id=model.id, project_id=project.id, limit=100).items)
-    print(f'Model: {model.name} - Version count: {version_count}\n')
-    version_counts.append(version_count)
-
-model_counts = pd.DataFrame([[model_name, version_count] for model_name, version_count in zip(model_names, version_counts)])
-
-#rename dataframe columns
-model_counts.columns = ["modelName", "totalCommits"]
-#create graph
-model_count_graph = px.bar(model_counts, x=model_counts.modelName, y=model_counts.totalCommits, color=model_counts.modelName, labels={"modelName":"","totalCommits":""})
-#update layout
-model_count_graph.update_layout(
-    showlegend = False,
-    margin = dict(l=1,r=1,t=1,b=1),
-    height=220,
-    paper_bgcolor='rgb(255, 255, 255)',  # Transparent background
-    plot_bgcolor='rgb(255, 255, 255)',   # Transparent plot area
-    font_family="Arial",
-    font_color="black"
-)
-#show graph
-model_graph_col.plotly_chart(model_count_graph, use_container_width=True)
-
-#CONNECTOR CHART 🍩
-version_frame = pd.DataFrame.from_dict([c.dict() for c in all_versions_in_project])
-#get apps from commits
-apps = version_frame["sourceApplication"]
-#reset index
-apps = apps.value_counts().reset_index()
-#rename columns
-apps.columns=["app","count"]
-#donut chart
-fig = px.pie(apps, names=apps["app"],values=apps["count"], hole=0.5)
-#set dimensions of the chart
-fig.update_layout(
-    showlegend=False,
-    margin=dict(l=1, r=1, t=1, b=1),
-    height=200,
-    paper_bgcolor='rgba(0,0,0,0)',
-    font_family="Roboto Mono",
-    font_color="#2c3e50"
-)
-#set width of the chart so it uses column width
-connector_graph_col.plotly_chart(fig, use_container_width=True)
-
-#COLLABORATOR CHART 🍩
-#get authors from commits
-
-version_user_names = []
-for user in version_frame["authorUser"]:
-    print(f'type: {type(user)}')
-    print(f'user: {user.get('name')}\n')
-    version_user_names.append(user.get('name'))
-
-authors = pd.DataFrame(version_user_names).value_counts().reset_index()
-#rename columns
-authors.columns=["author","count"]
-#create our chart
-authorFig = px.pie(authors, names=authors["author"], values=authors["count"],hole=0.5)
-authorFig.update_layout(
-    showlegend=False,
-    margin=dict(l=1,r=1,t=1,b=1),
-    height=200,
-    paper_bgcolor='rgba(0,0,0,0)',  # Add transparent background
-    plot_bgcolor='rgba(0,0,0,0)',   # Add transparent plot background
-    font_family="Roboto Mono",
-    font_color="#2c3e50",
-    yaxis_scaleanchor="x",
-)
-collaborator_graph_col.plotly_chart(authorFig, use_container_width=True)
-
-#COMMIT PANDAS TABLE 🔲
-st.subheader("Commit Activity Timeline 🕒")
-#created at parameter to dataframe with counts
-# print("VALUE")
-# print(pd.to_datetime(commits["createdAt"]).dt.date.value_counts().reset_index())
-
-timestamps = [version.createdAt.date() for version in all_versions_in_project]
-print(f'timestamps: {timestamps}\n')
-
-#convert to pandas dataframe and
-# rename the column of the timestamps frame to createdAt
-timestamps_frame = pd.DataFrame(timestamps, columns=["createdAt"]).value_counts().reset_index().sort_values("createdAt")
-
-print(f'timestamps_frame: {timestamps_frame}\n')
-
-cdate = timestamps_frame
-# cdate = pd.to_datetime(timestamps).dt.date.value_counts().reset_index().sort_values("createdAt")
-# #date range to fill null dates.
-# null_days = pd.date_range(start=cdate["createdAt"].min(), end=cdate["createdAt"].max())
-# #add null days to table
-# cdate = cdate.set_index("createdAt").reindex(null_days, fill_value=0)
-# #reset index
-# cdate = cdate.reset_index()
-#rename columns
-cdate.columns = ["date", "count"]
-#redate indexed dates
-cdate["date"] = pd.to_datetime(cdate["date"]).dt.date
-
-print(f'cdate: {cdate}\n')
-
-#COMMIT ACTIVITY LINE CHART📈
-#line chart
-fig = px.line(cdate, x=cdate["date"], y=cdate["count"], markers =True)
-#recolor line
-fig.update_layout(
-    showlegend=False,
-    margin=dict(l=1,r=1,t=1,b=1),
-    height=200,
-    paper_bgcolor='rgba(0,0,0,0)',  # Add transparent background
-    plot_bgcolor='rgba(0,0,0,0)',   # Add transparent plot background
-    font_family="Roboto Mono",
-    font_color="#2c3e50"
-)
-fig.update_traces(line_color="red")
-
-#Show Chart
-st.plotly_chart(fig, use_container_width=True)
-
-#--------------------------
-#create a definition that generates an iframe from commit id
-def commit2viewer(stream, commit, height=400) -> str:
-    embed_src = f"https://macad.speckle.xyz/embed?stream={stream.id}&commit={commit.id}"
-    print(embed_src)  # Print the URL to verify correctness
-    return st.components.v1.iframe(src=embed_src, height=height)
-
-#--------------------------
-
-
-# TEAM SPECIFIC METRICS
-st.subheader("Team Specific Metrics 👥 [TOTALLY FAKE DATA RIGHT NOW]")
-
-# Team selection dropdown
-selected_team = st.selectbox(
-    "Select Team",
-    ["Residential", "Service", "Structure", "Industrial", "Facade"],
-    key="team_selector"
-)
-
-# Create columns for team metrics
-metric_col1, metric_col2, metric_col3 = st.columns(3)
-
-# Display team-specific metrics based on selection
-if selected_team == "Residential":
-    metric_col1.metric("Floor Count", "25")
-    metric_col2.metric("Unit Types", "4")
-    metric_col3.metric("Normalized Travel Time", "from formula")
-    
-    # Residential-specific chart
-    residential_data = pd.DataFrame({
-        'Unit Type': ['housing', 'social', 'retail', 'open space'],
-        'Travel Time (min)': [40, 60, 30, 20]
-    })
-    res_chart = px.bar(residential_data, x='Unit Type', y='Travel Time (min)')
-    res_chart.update_layout(
+    #CONNECTOR CHART 🍩
+    version_frame = pd.DataFrame.from_dict([c.dict() for c in all_versions_in_project])
+    #get apps from commits
+    apps = version_frame["sourceApplication"]
+    #reset index
+    apps = apps.value_counts().reset_index()
+    #rename columns
+    apps.columns=["app","count"]
+    #donut chart
+    fig = px.pie(apps, names=apps["app"],values=apps["count"], hole=0.5)
+    #set dimensions of the chart
+    fig.update_layout(
+        showlegend=False,
+        margin=dict(l=1, r=1, t=1, b=1),
+        height=200,
         paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
         font_family="Roboto Mono",
         font_color="#2c3e50"
     )
-    st.plotly_chart(res_chart, use_container_width=True)
+    #set width of the chart so it uses column width
+    connector_graph_col.plotly_chart(fig, use_container_width=True)
 
-elif selected_team == "Service":
-    metric_col1.metric("Circulation Areas", "8")
-    metric_col2.metric("Service Cores", "3")
-    metric_col3.metric("Normalized Value", "from formula")
-    
-    # Service-specific chart
-    service_data = pd.DataFrame({
-        'System': ['Distance Efficiency', 'Vertical Circulation'],
-        'Percentage (%)': [95, 90]
-    })
-    service_chart = px.bar(service_data, x='System', y='Percentage (%)')
-    service_chart.update_layout(
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
+    #COLLABORATOR CHART 🍩
+    #get authors from commits
+
+    version_user_names = []
+    for user in version_frame["authorUser"]:
+        print(f'type: {type(user)}')
+        print(f'user: {user.get('name')}\n')
+        version_user_names.append(user.get('name'))
+
+    authors = pd.DataFrame(version_user_names).value_counts().reset_index()
+    #rename columns
+    authors.columns=["author","count"]
+    #create our chart
+    authorFig = px.pie(authors, names=authors["author"], values=authors["count"],hole=0.5)
+    authorFig.update_layout(
+        showlegend=False,
+        margin=dict(l=1,r=1,t=1,b=1),
+        height=200,
+        paper_bgcolor='rgba(0,0,0,0)',  # Add transparent background
+        plot_bgcolor='rgba(0,0,0,0)',   # Add transparent plot background
+        font_family="Roboto Mono",
+        font_color="#2c3e50",
+        yaxis_scaleanchor="x",
+    )
+    collaborator_graph_col.plotly_chart(authorFig, use_container_width=True)
+
+    #COMMIT PANDAS TABLE 🔲
+    st.subheader("Commit Activity Timeline 🕒")
+    #created at parameter to dataframe with counts
+    # print("VALUE")
+    # print(pd.to_datetime(commits["createdAt"]).dt.date.value_counts().reset_index())
+
+    timestamps = [version.createdAt.date() for version in all_versions_in_project]
+    print(f'timestamps: {timestamps}\n')
+
+    #convert to pandas dataframe and
+    # rename the column of the timestamps frame to createdAt
+    timestamps_frame = pd.DataFrame(timestamps, columns=["createdAt"]).value_counts().reset_index().sort_values("createdAt")
+
+    print(f'timestamps_frame: {timestamps_frame}\n')
+
+    cdate = timestamps_frame
+    #rename columns
+    cdate.columns = ["date", "count"]
+    #redate indexed dates
+    cdate["date"] = pd.to_datetime(cdate["date"]).dt.date
+
+    print(f'cdate: {cdate}\n')
+
+    #COMMIT ACTIVITY LINE CHART📈
+    #line chart
+    fig = px.line(cdate, x=cdate["date"], y=cdate["count"], markers =True)
+    #recolor line
+    fig.update_layout(
+        showlegend=False,
+        margin=dict(l=1,r=1,t=1,b=1),
+        height=200,
+        paper_bgcolor='rgba(0,0,0,0)',  # Add transparent background
+        plot_bgcolor='rgba(0,0,0,0)',   # Add transparent plot background
         font_family="Roboto Mono",
         font_color="#2c3e50"
     )
-    st.plotly_chart(service_chart, use_container_width=True)
+    fig.update_traces(line_color="red")
 
-elif selected_team == "Structure":
-    metric_col1.metric("Column Grid", "8m x 8m")
-    metric_col2.metric("Core Walls", "6")
-    metric_col3.metric("Noarmalized Floor Usage", "from formula")
-    
-    # Structure-specific chart
-    structure_data = pd.DataFrame({
-        'Element': ['Self-Energy Generation', 'Existing Energy Consumption'],
-        'Percentage Efficiency (%)': [25, 90]
-    })
-    structure_chart = px.bar(structure_data, x='Element', y='Percentage Efficiency (%)')
-    structure_chart.update_layout(
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        font_family="Roboto Mono",
-        font_color="#2c3e50"
+    #Show Chart
+    st.plotly_chart(fig, use_container_width=True)
+
+    #--------------------------
+    #create a definition that generates an iframe from commit id
+    def commit2viewer(stream, commit, height=400) -> str:
+        embed_src = f"https://macad.speckle.xyz/embed?stream={stream.id}&commit={commit.id}"
+        print(embed_src)  # Print the URL to verify correctness
+        return st.components.v1.iframe(src=embed_src, height=height)
+
+    #--------------------------
+
+if show_team_specific_metrics:
+    # TEAM SPECIFIC METRICS
+    st.subheader("Team Specific Metrics 👥 [TOTALLY FAKE DATA RIGHT NOW]")
+
+    # Team selection dropdown
+    selected_team = st.selectbox(
+        "Select Team",
+        ["Residential", "Service", "Structure", "Industrial", "Facade"],
+        key="team_selector"
     )
-    st.plotly_chart(structure_chart, use_container_width=True)
 
-elif selected_team == "Industrial":
-    metric_col1.metric("Production Areas", "4")
-    metric_col2.metric("Storage Capacity", "2000m³")
-    metric_col3.metric("Normalized Recycling Efficiency", "from formula")
-    
-    # Industrial-specific chart
-    industrial_data = pd.DataFrame({
-        'Values': ['Energy Production', 'Energy Storage'],
-        'Efficiency (%)': [50, 50]
-    })
-    industrial_chart = px.bar(industrial_data, x='Values', y='Efficiency (%)')
-    industrial_chart.update_layout(
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        font_family="Roboto Mono",
-        font_color="#2c3e50"
-    )
-    st.plotly_chart(industrial_chart, use_container_width=True)
+    # Create columns for team metrics
+    metric_col1, metric_col2, metric_col3 = st.columns(3)
+
+    # Display team-specific metrics based on selection
+    if selected_team == "Residential":
+        metric_col1.metric("Floor Count", "25")
+        metric_col2.metric("Unit Types", "4")
+        metric_col3.metric("Normalized Travel Time", "from formula")
+        
+        # Residential-specific chart
+        residential_data = pd.DataFrame({
+            'Unit Type': ['housing', 'social', 'retail', 'open space'],
+            'Travel Time (min)': [40, 60, 30, 20]
+        })
+        res_chart = px.bar(residential_data, x='Unit Type', y='Travel Time (min)')
+        res_chart.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font_family="Roboto Mono",
+            font_color="#2c3e50"
+        )
+        st.plotly_chart(res_chart, use_container_width=True)
+
+    elif selected_team == "Service":
+        metric_col1.metric("Circulation Areas", "8")
+        metric_col2.metric("Service Cores", "3")
+        metric_col3.metric("Normalized Value", "from formula")
+        
+        # Service-specific chart
+        service_data = pd.DataFrame({
+            'System': ['Distance Efficiency', 'Vertical Circulation'],
+            'Percentage (%)': [95, 90]
+        })
+        service_chart = px.bar(service_data, x='System', y='Percentage (%)')
+        service_chart.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font_family="Roboto Mono",
+            font_color="#2c3e50"
+        )
+        st.plotly_chart(service_chart, use_container_width=True)
+
+    elif selected_team == "Structure":
+        metric_col1.metric("Column Grid", "8m x 8m")
+        metric_col2.metric("Core Walls", "6")
+        metric_col3.metric("Noarmalized Floor Usage", "from formula")
+        
+        # Structure-specific chart
+        structure_data = pd.DataFrame({
+            'Element': ['Self-Energy Generation', 'Existing Energy Consumption'],
+            'Percentage Efficiency (%)': [25, 90]
+        })
+        structure_chart = px.bar(structure_data, x='Element', y='Percentage Efficiency (%)')
+        structure_chart.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font_family="Roboto Mono",
+            font_color="#2c3e50"
+        )
+        st.plotly_chart(structure_chart, use_container_width=True)
+
+    elif selected_team == "Industrial":
+        metric_col1.metric("Production Areas", "4")
+        metric_col2.metric("Storage Capacity", "2000m³")
+        metric_col3.metric("Normalized Recycling Efficiency", "from formula")
+        
+        # Industrial-specific chart
+        industrial_data = pd.DataFrame({
+            'Values': ['Energy Production', 'Energy Storage'],
+            'Efficiency (%)': [50, 50]
+        })
+        industrial_chart = px.bar(industrial_data, x='Values', y='Efficiency (%)')
+        industrial_chart.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font_family="Roboto Mono",
+            font_color="#2c3e50"
+        )
+        st.plotly_chart(industrial_chart, use_container_width=True)
 
 
-else: # Facade
-    metric_col1.metric("Facade Area", "1000m²")
-    metric_col2.metric("Facade Type", "Curtain Wall")
-    metric_col3.metric("Normalized Value", "from formula")
+    else: # Facade
+        metric_col1.metric("Facade Area", "1000m²")
+        metric_col2.metric("Facade Type", "Curtain Wall")
+        metric_col3.metric("Normalized Value", "from formula")
 
-    # Facade-specific chart
-    facade_data = pd.DataFrame({
-        'Values': ['Daylight Used', 'Incoming Daylight'],
-        'Efficiency (%)': [50, 50]
-    })
-    facade_chart = px.pie(facade_data, names=facade_data["Values"], values=facade_data["Efficiency (%)"], hole=0.5)
-    facade_chart.update_layout(
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        font_family="Roboto Mono",
-        font_color="#2c3e50"
-    )
-    st.plotly_chart(facade_chart, use_container_width=True)
+        # Facade-specific chart
+        facade_data = pd.DataFrame({
+            'Values': ['Daylight Used', 'Incoming Daylight'],
+            'Efficiency (%)': [50, 50]
+        })
+        facade_chart = px.pie(facade_data, names=facade_data["Values"], values=facade_data["Efficiency (%)"], hole=0.5)
+        facade_chart.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font_family="Roboto Mono",
+            font_color="#2c3e50"
+        )
+        st.plotly_chart(facade_chart, use_container_width=True)
+
+wrapper = StreamWrapper("https://macad.speckle.xyz/projects/31f8cca4e0/models/544f70ad2f@5285d2ee63")
