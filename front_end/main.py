@@ -7,6 +7,7 @@ from specklepy.api.client import SpeckleClient
 from specklepy.api.credentials import get_account_from_token
 from specklepy.transports.server import ServerTransport
 from specklepy.api.wrapper import StreamWrapper
+from specklepy.objects.base import Base
 
 #import pandas
 import pandas as pd
@@ -142,7 +143,7 @@ with input:
     
     # Toggle buttons for showing/hiding viewer, statistics, and team-specific metrics
     # Columns for toggle buttons
-    viewer_toggle, statistics_toggle, team_metrics_toggle = st.columns(3)
+    viewer_toggle, statistics_toggle, team_metrics_toggle, attribute_selection_toggle = st.columns(4)
 #-------
 
 
@@ -156,6 +157,7 @@ speckleToken = tokenCol.text_input("Speckle token", "", help="If you don't know 
 show_viewer = viewer_toggle.checkbox("Show Viewer", value=True, help="Toggle to show/hide the viewer")
 show_statistics = statistics_toggle.checkbox("Show Statistics", value=True, help="Toggle to show/hide the statistics")
 show_team_specific_metrics = team_metrics_toggle.checkbox("Show Team Metrics", value=True, help="Toggle to show/hide the team-specific metrics")
+show_attribute_extraction = attribute_selection_toggle.checkbox("Show Attribute Extraction", value=True, help="Toggle to show/hide the attribute extraction")
 
 #-------
 #CLIENT
@@ -540,65 +542,102 @@ print(f'selected_version: {selected_version}\n')
 
 # Get geometry data from the selected version
 
-def get_geometry_data(selected_version, verbose=True):
-    objHash = selected_version.referencedObject
-    if verbose:
-        print(f'objHash: {objHash}')
-        print(f'Starting to receive data...\n')
-    transport = ServerTransport(client=client, stream_id=project.id)
-    base = operations.receive(objHash, transport)
-    return base
+if show_attribute_extraction:
+    with st.spinner("Getting geometry data..."):
 
-base = get_geometry_data(selected_version, verbose=True)
-print(f'base: {base}\n')
+        def get_geometry_data(selected_version, verbose=True):
+            objHash = selected_version.referencedObject
+            if verbose:
+                print(f'objHash: {objHash}')
+                print(f'Starting to receive data...\n')
+            transport = ServerTransport(client=client, stream_id=project.id)
+            base = operations.receive(objHash, transport)
+            return base
 
-def get_all_attributes(base_data: Base, flattened=False, depth=0, all_attributes=set()) -> set:
-    # print(f'{"  " * depth}Getting attributes of {base}...')
-    
-    for key in base.__dict__:
-        # print(f'{"  " * depth}Key: {key} - Value: {base.__dict__[key]} - Type: {type(base.__dict__[key])}')
-        all_attributes.add(key)
+        base = get_geometry_data(selected_version, verbose=True)
+        print(f'base: {base}\n')
 
-        if flattened: # If flattened is True, we need to recursively get all attributes of nested objects
-            if base.__getitem__(key) is not None:
-                try:
-                    all_attributes = get_all_attributes(base.__getitem__(key)[0], flattened=True, depth=depth+1, all_attributes=all_attributes)
-                except Exception as e:
-                    # print(f'Error: {e}')
-                    pass
-                    
+        def get_all_attributes(base_data: Base, flattened=False, depth=0, all_attributes=set()) -> set:
+            # print(f'{"-" * depth}Getting attributes of {base}...')
+            
+            for key in base_data.__dict__:
+                if depth < 2:
+                    try:
+                        print(f'depth: {depth} - Key: {key} - Type: {type(base.__dict__[key])}')
+                    except Exception as e:
+                        # print(f'Error: {e}')
+                        pass
+                # print(f'{"  " * depth}Key: {key} - Value: {base.__dict__[key]} - Type: {type(base.__dict__[key])}')
+                all_attributes.add(key)
 
-    return all_attributes
+                if flattened: # If flattened is True, we need to recursively get all attributes of nested objects
+                    if base_data.__getitem__(key) is not None:
+                        try:
+                            all_attributes = get_all_attributes(base_data.__getitem__(key)[0], flattened=True, depth=depth+1, all_attributes=all_attributes)
+                        except Exception as e:
+                            # print(f'Error: {e}')
+                            pass
+                            
 
-def search_for_attribute(base_data: Base, attribute: str, depth=0, single=True, found=False, output=[]): # single=True means we only want to find the first occurrence of the attribute, return all values of the attribute
-    # print(f'{"  " * depth}Searching for attribute {attribute} in {base_data}...')
+            return all_attributes
 
-    for key in base_data.__dict__:
-        # print(f'{"  " * depth}Key: {key} - Value: {base_data.__dict__[key]} - Type: {type(base_data.__dict__[key])}')
-        if key == attribute:
-            found = True
-            output.append(base_data.__dict__[key])
-            if single:
-                break
+        def search_for_attribute(base_data: Base, attribute: str, depth=0, single=True, found=False, output=[]): # single=True means we only want to find the first occurrence of the attribute, return all values of the attribute
+            # print(f'{"  " * depth}Searching for attribute {attribute} in {base_data}...')
 
-        if base_data.__getitem__(key) is not None:
-            try:
-                found, output = search_for_attribute(base_data.__getitem__(key)[0], attribute, depth=depth+1, single=single, found=found, output=output)
-            except Exception as e:
-                # print(f'Error: {e}')
-                pass
+            for key in base_data.__dict__:
+                # print(f'{"  " * depth}Key: {key} - Value: {base_data.__dict__[key]} - Type: {type(base_data.__dict__[key])}')
+                if key == attribute:
+                    found = True
+                    output.append(base_data.__dict__[key])
+                    if single:
+                        break
 
-    return found, output
+                if base_data.__getitem__(key) is not None:
+                    try:
+                        found, output = search_for_attribute(base_data.__getitem__(key)[0], attribute, depth=depth+1, single=single, found=found, output=output)
+                    except Exception as e:
+                        # print(f'Error: {e}')
+                        pass
 
-# all_attributes_unflattened = get_all_attributes(base)
-# print(f'all_attributes_unflattened: {all_attributes_unflattened}\n')
+            return found, output
 
-base_data = base.__getitem__('@Data')
+        # all_attributes_unflattened = get_all_attributes(base)
+        # print(f'all_attributes_unflattened: {all_attributes_unflattened}\n')
 
-all_attributes_flattened = get_all_attributes(base_data, flattened=True)
-print(f'all_attributes_flattened: {all_attributes_flattened}\n')
+        base_data = base.__getitem__('@Data')
+        print(f'base_data: {base_data}\n')
 
-# Check if a specific attribute exists in the base data
-attribute_to_search = '@Floor Slabs'
-attribute_found = search_for_attribute(base_data, attribute_to_search, single=True)
-print(f'Attribute {attribute_to_search} found: {attribute_found}\n')
+        keys = [key for key in dir(base_data) if not key.startswith('__')]
+        print(f'keys: {keys}\n')
+
+
+        # while '@Data' in dir(base_data):
+        #     print(f'base_data: {base_data}')
+        #     base_data = base_data.__getitem__('@Data')
+
+        all_attributes_flattened = get_all_attributes(base_data, flattened=True)
+        print(f'all_attributes_flattened: {all_attributes_flattened}\n')
+
+        # Add a dropdown to select the attribute to search for
+        selected_attribute = st.selectbox(
+            label="Select attribute to search for",
+            options=list(all_attributes_flattened),
+            help="Select a specific attribute to search for in the base data"
+        )
+
+        # Add a toggle to search for a single or all occurrences of the attribute
+        search_single = st.checkbox(
+            label="Search for a single occurrence",
+            value=True,
+            help="Toggle to search for a single or all occurrences of the selected attribute"
+        )
+
+        # Check if a specific attribute exists in the base data
+        attribute_to_search = selected_attribute
+        attribute_found = search_for_attribute(base_data, attribute_to_search, single=search_single)
+        print(f'Attribute {attribute_to_search} found: {attribute_found}\n')
+
+        # Display the found attribute as a markdown list
+        st.markdown(f"### Found attribute: `{attribute_to_search}`")
+        for i, value in enumerate(attribute_found[1]):
+            st.markdown(f"{i+1}. {value}")
