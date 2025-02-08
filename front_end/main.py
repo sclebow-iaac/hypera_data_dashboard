@@ -20,8 +20,8 @@ import os
 from typing import Dict, Any
 from specklepy.objects.base import Base
 
-# show_viewer = True
-show_viewer = False
+show_viewer = True
+# show_viewer = False
 # show_statistics = True
 show_statistics = False
 # show_team_specific_metrics = True
@@ -190,7 +190,6 @@ selected_model_name = st.selectbox(
     help="Select a specific model to analyze its data"
 )
 
-
 print()
 print(f'Selected model name: {selected_model_name}')
 
@@ -223,12 +222,6 @@ selected_version_key = st.selectbox(
 
 selected_version = versions[keys.index(selected_version_key)]
 
-def get_speckle_data(url):
-    parts = url.split("/")
-    stream_id = parts[-3]
-    commit_id = parts[-1]
-    return dict({"stream_id": stream_id, "commit_id": commit_id})
-
 # Create a iframe to display the selected version
 def version2viewer(project, model, version, height=400) -> str:
     embed_src = f"https://macad.speckle.xyz/projects/{project.id}/models/{model.id}@{version.id}#embed=%7B%22isEnabled%22%3Atrue%2C%7D"
@@ -236,91 +229,6 @@ def version2viewer(project, model, version, height=400) -> str:
     print()
     return st.components.v1.iframe(src=embed_src, height=height)
 
-def extract_data_dynamically(data):
-    # adapt to different data structures
-    extracted_info = {}
-
-    try:
-    # Get all base properties
-        if hasattr(data, 'data'):
-            base_props = data.data
-            for prop_name, prop_value in base_props.items():
-                extracted_info[prop_name] = prop_value
-                print(f"Property: {prop_name} = {prop_value}")
-        
-        # Get displayValue if it exists (contains geometry info)
-        if hasattr(data, 'displayValue'):
-            display_props = data.displayValue
-            extracted_info['displayValue'] = display_props
-            print("Display properties:", display_props)
-            
-    # Get units if present
-        if hasattr(data, 'units'):
-            extracted_info['units'] = data.units
-            
-    # Get totalChildrenCount if present
-        if hasattr(data, 'totalChildrenCount'):
-            extracted_info['totalChildrenCount'] = data.totalChildrenCount
-            
-    except Exception as e:
-        print(f"Error extracting properties: {e}")
-        print("Data structure:", dir(data))
-    
-    return extracted_info
-
-# if st.button("Fetch Data"):
-#     specific_object_id = "22cf45139a693bae7cb1a71d54b80c98"
-
-#     # stream_id = selected_project_name
-#     # object_id = selected_version.referencedObject
-    
-#     transport = ServerTransport(client=client, stream_id=selected_model.id)
-#     # try:
-#     if True:
-#         specific_obj = operations.receive(specific_object_id, transport)
-        
-#         def collect_object_data(obj, prefix=""):
-#             data = []
-            
-#             # Get all attributes
-#             for attr in dir(obj):
-#                 if not attr.startswith('_'):  # Skip private attributes
-#                     try:
-#                         value = getattr(obj, attr)
-#                         # Skip methods, only include data
-#                         if not callable(value):
-#                             data.append({
-#                                 'Object': prefix,
-#                                 'Property': attr,
-#                                 'Value': str(value),
-#                                 'Type': type(value).__name__
-#                             })
-                            
-#                             # Recursively process nested objects
-#                             if hasattr(value, '__dict__') and not isinstance(value, (str, int, float, bool)):
-#                                 nested_data = collect_object_data(value, f"{prefix}.{attr}")
-#                                 data.extend(nested_data)
-#                     except:
-#                         continue
-            
-#             return data
-
-#         # Collect all data
-#         all_data = collect_object_data(specific_obj, "root")
-        
-#         # Convert to DataFrame
-#         df = pd.DataFrame(all_data)
-        
-#         # Display as table
-#         st.write("All Object Properties:")
-#         st.dataframe(df)
-        
-#         # Optional: Save to CSV
-#         df.to_csv("speckle_object_data.csv", index=False)
-        
-#     # except Exception as e:
-#     #     st.error(f"Error processing object: {e}")
-            
 if show_viewer:
     #--------------------------
     #create a definition that generates an iframe from commit id
@@ -638,19 +546,65 @@ print(f'selected_version: {selected_version}\n')
 
 # Get geometry data from the selected version
 
-stream = client.stream.get(id=project.id)
-print(f'stream: {stream}\n')
+def get_geometry_data(selected_version, verbose=True):
+    objHash = selected_version.referencedObject
+    if verbose:
+        print(f'objHash: {objHash}')
+        print(f'Starting to receive data...\n')
+    transport = ServerTransport(client=client, stream_id=project.id)
+    base = operations.receive(objHash, transport)
+    return base
 
-branch = client.branch.get(stream_id=stream.id, name=selected_model.name, commits_limit=100)
-print(f'branch: {branch}\n')
+base = get_geometry_data(selected_version, verbose=True)
+print(f'base: {base}\n')
 
-commit = client.commit.get(stream_id=stream.id, commit_id=selected_version.id)
+def get_all_attributes(base_data: Base, flattened=False, depth=0, all_attributes=set()) -> set:
+    # print(f'{"  " * depth}Getting attributes of {base}...')
+    
+    for key in base.__dict__:
+        # print(f'{"  " * depth}Key: {key} - Value: {base.__dict__[key]} - Type: {type(base.__dict__[key])}')
+        all_attributes.add(key)
 
-objHash = branch.commits.items[0].referencedObject
-print(f'objHash: {objHash}\n')
+        if flattened: # If flattened is True, we need to recursively get all attributes of nested objects
+            if base.__getitem__(key) is not None:
+                try:
+                    all_attributes = get_all_attributes(base.__getitem__(key)[0], flattened=True, depth=depth+1, all_attributes=all_attributes)
+                except Exception as e:
+                    # print(f'Error: {e}')
+                    pass
+                    
 
-transport = ServerTransport(client=client, stream_id=stream.id, token=speckleToken)
-data = operations.receive(objHash, transport)
-print(f'data: {data}\n')
+    return all_attributes
 
-# data should be a Base object with all the data in the version
+def search_for_attribute(base_data: Base, attribute: str, depth=0, single=True, found=False, output=[]): # single=True means we only want to find the first occurrence of the attribute, return all values of the attribute
+    # print(f'{"  " * depth}Searching for attribute {attribute} in {base_data}...')
+
+    for key in base_data.__dict__:
+        # print(f'{"  " * depth}Key: {key} - Value: {base_data.__dict__[key]} - Type: {type(base_data.__dict__[key])}')
+        if key == attribute:
+            found = True
+            output.append(base_data.__dict__[key])
+            if single:
+                break
+
+        if base_data.__getitem__(key) is not None:
+            try:
+                found, output = search_for_attribute(base_data.__getitem__(key)[0], attribute, depth=depth+1, single=single, found=found, output=output)
+            except Exception as e:
+                # print(f'Error: {e}')
+                pass
+
+    return found, output
+
+# all_attributes_unflattened = get_all_attributes(base)
+# print(f'all_attributes_unflattened: {all_attributes_unflattened}\n')
+
+base_data = base.__getitem__('@Data')
+
+all_attributes_flattened = get_all_attributes(base_data, flattened=True)
+print(f'all_attributes_flattened: {all_attributes_flattened}\n')
+
+# Check if a specific attribute exists in the base data
+attribute_to_search = '@Floor Slabs'
+attribute_found = search_for_attribute(base_data, attribute_to_search, single=True)
+print(f'Attribute {attribute_to_search} found: {attribute_found}\n')
