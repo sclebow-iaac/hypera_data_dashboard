@@ -20,8 +20,8 @@ import os
 from typing import Dict, Any
 from specklepy.objects.base import Base
 
-show_viewer = True
-# show_viewer = False
+# show_viewer = True
+show_viewer = False
 # show_statistics = True
 show_statistics = False
 # show_team_specific_metrics = True
