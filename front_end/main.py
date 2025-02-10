@@ -443,9 +443,8 @@ if show_team_specific_metrics:
 
     # Display team-specific metrics based on selection
     if selected_team == "Residential":
-        metric_col1.metric("Index of Mixed Use", "0.6")
-        metric_col2.metric("Unit Types", "4")
-        metric_col3.metric("Normalized Travel Time", "0.8 (hours)")
+        metric_col1.metric("Unit Types", "4")
+        metric_col2.metric("Normalized Travel Time", "0.8 (hours)")
 
         number_of_units = [40, 60, 30, 20]  
         unit_types = ['Housing', 'Social', 'Commercial', 'Open Space']
@@ -580,6 +579,8 @@ if show_team_specific_metrics:
         st.markdown("")
         st.markdown("")
 
+        st.markdown("<hr>", unsafe_allow_html=True)  # Add a line after the metric
+
         # Add the math formula
         st.markdown(r"""
             The formula for calculating the metric can be expressed as:
@@ -647,6 +648,8 @@ if show_team_specific_metrics:
         st.markdown("")
         st.markdown("")
 
+        st.markdown("<hr>", unsafe_allow_html=True)  # Add a line after the metric
+
         #structural efficiency: embodied carbon emissions per square meter
         # Define the variables for the new formula
         total_embodied_carbon_emissions = 800  
@@ -695,6 +698,8 @@ if show_team_specific_metrics:
         st.markdown("")
         st.markdown("")
 
+        st.markdown("<hr>", unsafe_allow_html=True)  # Add a line after the metric
+
         #structural efficiency: load capacity per square meter
         # Define the variables for the new formula
         load_capacity = 800  
@@ -742,6 +747,8 @@ if show_team_specific_metrics:
 
         st.markdown("")
         st.markdown("")
+
+        st.markdown("<hr>", unsafe_allow_html=True)  # Add a line after the metric
 
         #structural efficiency: material efficiency ratio
         # Define the variables for the new formula
@@ -832,6 +839,8 @@ if show_team_specific_metrics:
         st.markdown("")
         st.markdown("")
 
+        st.markdown("<hr>", unsafe_allow_html=True)  # Add a line after the metric
+
         # Define the variables for the new formula
         food_production = [800, 850, 900, 950]  # Example values over time
         food_demand = [500, 600, 700, 800]  # Example values over time
@@ -875,6 +884,8 @@ if show_team_specific_metrics:
         st.markdown("")
         st.markdown("")
 
+        st.markdown("<hr>", unsafe_allow_html=True)  # Add a line after the metric
+
         # Define the variables for the new formula
         recycled_water = [800, 850, 900, 950]  # Example values over time
         wastewater_production = [500, 600, 700, 800]  # Example values over time
@@ -917,6 +928,8 @@ if show_team_specific_metrics:
 
         st.markdown("")
         st.markdown("")
+
+        st.markdown("<hr>", unsafe_allow_html=True)  # Add a line after the metric
 
         # Define the variables for the new formula
         recycled_solid_waste = [800, 850, 900, 950]  # Example values over time
@@ -1012,7 +1025,44 @@ if show_team_specific_metrics:
 
         st.markdown("")
         st.markdown("")
+
+        st.markdown("<hr>", unsafe_allow_html=True)  # Add a line after the metric
         
+        # Add the new metric for Normalized Value: Combined Metric
+        st.markdown("<h2>Primary Daylight Factor and Solar Loads Control for Residential and Work Spaces</h2>", unsafe_allow_html=True)
+
+        # Example values for the calculation
+        weight_residential = 0.5  
+        weight_work = 0.5  
+        residential_area_with_daylight = 100  
+        total_residential_area = 200  
+        work_area_with_daylight = 150  
+        total_work_area = 300  
+
+        # Calculate the normalized value
+        normalized_value = (
+            weight_residential * (residential_area_with_daylight / total_residential_area) +
+            weight_work * (work_area_with_daylight / total_work_area) * (10 / 7)
+        )
+
+        # Add the formula for the normalized value
+        st.markdown(r"""
+            The formula for calculating the Normalized Value can be expressed as:
+    
+            $$ 
+            \text{Normalized Value} = 
+            weight_{\text{residential}} \cdot \frac{\text{ResidentialAreaWithDaylight}}{\text{TotalResidentialArea}} + 
+            weight_{\text{work}} \cdot \frac{\text{WorkAreaWithDaylight}}{\text{TotalWorkArea}} \cdot \frac{10}{7}
+            $$
+    """, unsafe_allow_html=True)
+
+        # Display the normalized value
+        st.metric("Normalized Value: Combined Metric", f"{normalized_value:.2f}", help="Combined metric based on residential and work areas with daylight")
+
+        st.markdown("")
+        st.markdown("")
+
+        st.markdown("<hr>", unsafe_allow_html=True)  # Add a line after the metric
 
         # Define the angles and their corresponding effectiveness for each panel
         angles = [0, 15, 30, 45, 60, 75, 90]  # Example angles in degrees
@@ -1046,6 +1096,52 @@ if show_team_specific_metrics:
 
         # Display the optimal angle metric
         st.markdown(f"<h3 style='text-align: center;'>Optimal Angle for Panel Movement: {optimal_angle}°</h3>", unsafe_allow_html=True)
+
+        st.markdown("")
+        st.markdown("")
+
+        st.markdown("<hr>", unsafe_allow_html=True)  # Add a line after the metric
+
+        # Example values for energy generation and energy required
+        energy_generation = 1500  
+        energy_required_by_industrial_team = 1000  
+
+        # Calculate the ratio
+        ratio = energy_generation / energy_required_by_industrial_team
+
+        # Create a DataFrame for the bar chart
+        data = {
+            'Metric': ['Energy Generation', 'Energy Required by Industrial Team'],
+            'Value': [energy_generation, energy_required_by_industrial_team]
+        }
+
+        df = pd.DataFrame(data)
+
+        # Create the bar chart
+        fig = px.bar(df, x='Metric', y='Value',
+             labels={'Value': 'Energy (kWh)', 'Metric': 'Metrics'},
+             color='Metric')
+
+        # Add the ratio as a text annotation
+        fig.add_annotation(
+            x='Energy Generation',
+            y=ratio,
+            text=f'Ratio: {ratio:.2f}',
+            showarrow=True,
+            arrowhead=2,
+            ax=0,
+            ay=-40
+            )
+
+        # Display the chart in Streamlit
+        st.plotly_chart(fig, use_container_width=True)
+
+        st.markdown(f"<h3 style='text-align: center;'>Energy Generation Ratio: {ratio:.2f}</h3>", unsafe_allow_html=True)
+
+        st.markdown("")
+        st.markdown("")
+
+        st.markdown("<hr>", unsafe_allow_html=True)  # Add a line after the metric
 
 print(f'selected_model: {selected_model}\n')
 print(f'selected_version: {selected_version}\n')
