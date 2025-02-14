@@ -146,8 +146,6 @@ with header:
 with input:
     st.subheader("Inputs") # Add a subheader
 
-
-
 #-------
     #Columns for inputs
     serverCol, tokenCol = st.columns([1,3])
