@@ -442,6 +442,8 @@ if show_statistics:
     st.plotly_chart(fig, use_container_width=True)
 
     #--------------------------
+print(f'selected_model: {selected_model}\n')
+print(f'selected_version: {selected_version}\n')
 
 if show_team_specific_metrics:
     # TEAM SPECIFIC METRICS
@@ -459,20 +461,34 @@ if show_team_specific_metrics:
 
     # Display team-specific metrics based on selection
     if selected_team == "Residential":
+        residential_data = residential_extractor.extract(models, client)
+        print(f'Residential data: {residential_data}\n')
+
         residential_dashboard.run(metric_col1, metric_col2, selected_team)
 
     elif selected_team == "Service":
+        service_data = service_extractor.extract(models, client)
+        print(f'Service data: {service_data}\n')
+
         service_dashboard.run(metric_col1, metric_col2, selected_team)
         
     elif selected_team == "Structure":
+        structure_data = structure_extractor.extract(models, client)
+        print(f'Structure data: {structure_data}\n')
+
         structure_dashboard.run(metric_col1, metric_col2, selected_team)
+
     elif selected_team == "Industrial":
+        industrial_data = industrial_extractor.extract(models, client)
+        print(f'Industrial data: {industrial_data}\n')
+
         industrial_dashboard.run(metric_col1, metric_col2, selected_team)
 
     elif selected_team == "Facade":
+        facade_data = facade_extractor.extract(models, client)
+        print(f'Facade data: {facade_data}\n')
+
         facade_dashboard.run(metric_col1, metric_col2, selected_team)
-print(f'selected_model: {selected_model}\n')
-print(f'selected_version: {selected_version}\n')
 
 # Get geometry data from the selected version
 
@@ -536,30 +552,3 @@ if show_attribute_extraction:
                 st.markdown(table_header + table_data)
             else:
                 st.error(f"Attribute {attribute_to_search} not found in the base data")
-
-        selected_team = st.selectbox(
-            "Select Team to Extract Data",
-            ["Residential", "Service", "Structure", "Industrial", "Facade"],
-            key="team_selector"
-        )
-
-        if selected_team == "Residential":
-            residential_data = residential_extractor.extract(models, client)
-            print(f'Residential data: {residential_data}\n')
-
-        elif selected_team == "Service":
-            service_data = service_extractor.extract(models, client)
-            print(f'Service data: {service_data}\n')
-
-        elif selected_team == "Structure":
-            structure_data = structure_extractor.extract(models, client)
-            print(f'Structure data: {structure_data}\n')
-
-        elif selected_team == "Industrial":
-            industrial_data = industrial_extractor.extract(models, client)
-            print(f'Industrial data: {industrial_data}\n')
-
-        elif selected_team == "Facade":
-            facade_data = facade_extractor.extract(models, client)
-            print(f'Facade data: {facade_data}\n')
-
