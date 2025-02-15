@@ -28,6 +28,14 @@ import front_end.dashboards.structure_dashboard as structure_dashboard
 import front_end.dashboards.industrial_dashboard as industrial_dashboard
 import front_end.dashboards.facade_dashboard as facade_dashboard
 
+# import data extractors
+import front_end.data_extraction.data_extractor as data_extractor
+import front_end.data_extraction.residential_extractor as residential_extractor
+import front_end.data_extraction.service_extractor as service_extractor
+import front_end.data_extraction.structure_extractor as structure_extractor
+import front_end.data_extraction.industrial_extractor as industrial_extractor
+import front_end.data_extraction.facade_extractor as facade_extractor
+
 #--------------------------
 #PAGE CONFIG
 st.set_page_config(
@@ -470,105 +478,88 @@ print(f'selected_version: {selected_version}\n')
 
 if show_attribute_extraction:
     with st.spinner("Getting geometry data..."):
-
-        def get_geometry_data(selected_version, verbose=True):
-            objHash = selected_version.referencedObject
-            if verbose:
-                print(f'objHash: {objHash}')
-                print(f'Starting to receive data...\n')
-            transport = ServerTransport(client=client, stream_id=project.id)
-            base = operations.receive(objHash, transport)
-            return base
-
-        base = get_geometry_data(selected_version, verbose=True)
-        print(f'base: {base}\n')
-
-        def get_all_attributes(base_data: Base, flattened=False, depth=0, all_attributes=set()) -> set:
-            # print(f'{"-" * depth}Getting attributes of {base}...')
-            
-            for key in base_data.__dict__:
-                if depth < 2:
-                    try:
-                        print(f'depth: {depth} - Key: {key} - Type: {type(base.__dict__[key])}')
-                    except Exception as e:
-                        # print(f'Error: {e}')
-                        pass
-                # print(f'{"  " * depth}Key: {key} - Value: {base.__dict__[key]} - Type: {type(base.__dict__[key])}')
-                all_attributes.add(key)
-
-                if flattened: # If flattened is True, we need to recursively get all attributes of nested objects
-                    if base_data.__getitem__(key) is not None:
-                        try:
-                            all_attributes = get_all_attributes(base_data.__getitem__(key)[0], flattened=True, depth=depth+1, all_attributes=all_attributes)
-                        except Exception as e:
-                            # print(f'Error: {e}')
-                            pass
-                            
-
-            return all_attributes
-
-        def search_for_attribute(base_data: Base, attribute: str, depth=0, single=True, found=False, output=[]): # single=True means we only want to find the first occurrence of the attribute, return all values of the attribute
-            # print(f'{"  " * depth}Searching for attribute {attribute} in {base_data}...')
-
-            for key in base_data.__dict__:
-                # print(f'{"  " * depth}Key: {key} - Value: {base_data.__dict__[key]} - Type: {type(base_data.__dict__[key])}')
-                if key == attribute:
-                    found = True
-                    output.append(base_data.__dict__[key])
-                    if single:
-                        break
-
-                if base_data.__getitem__(key) is not None:
-                    try:
-                        found, output = search_for_attribute(base_data.__getitem__(key)[0], attribute, depth=depth+1, single=single, found=found, output=output)
-                    except Exception as e:
-                        # print(f'Error: {e}')
-                        pass
-
-            return found, output
-
-        # all_attributes_unflattened = get_all_attributes(base)
-        # print(f'all_attributes_unflattened: {all_attributes_unflattened}\n')
-
-        base_data = base.__getitem__('@Data')
-        print(f'base_data: {base_data}\n')
-
-        keys = [key for key in dir(base_data) if not key.startswith('__')]
-        print(f'keys: {keys}\n')
-
-
-        # while '@Data' in dir(base_data):
-        #     print(f'base_data: {base_data}')
-        #     base_data = base_data.__getitem__('@Data')
-
-        all_attributes_flattened = get_all_attributes(base_data, flattened=True)
-        print(f'all_attributes_flattened: {all_attributes_flattened}\n')
-
-        # Add a dropdown to select the attribute to search for
-        selected_attribute = st.selectbox(
-            label="Select attribute to search for",
-            options=list(all_attributes_flattened),
-            help="Select a specific attribute to search for in the base data"
+        
+        # Add a toggle to show data extraction debug information
+        show_extraction_debug = st.checkbox(
+            label="Show data extraction debug information for the selected version",
+            value=False,
+            help="Toggle to show/hide data extraction debug information"
         )
 
-        # Add a toggle to search for a single or all occurrences of the attribute
-        search_single = st.checkbox(
-            label="Search for a single occurrence",
-            value=True,
-            help="Toggle to search for a single or all occurrences of the selected attribute"
+        if show_extraction_debug:
+        
+            base = data_extractor.get_geometry_data(selected_version, client, project, verbose=True)
+            print(f'base: {base}\n')
+
+            # all_attributes_unflattened = get_all_attributes(base)
+            # print(f'all_attributes_unflattened: {all_attributes_unflattened}\n')
+            try: base_data = base["@Data"]
+            except: base_data = base
+            print(f'base_data: {base_data}\n')
+
+            keys = [key for key in dir(base_data) if not key.startswith('__')]
+            print(f'keys: {keys}\n')
+
+
+            # while '@Data' in dir(base_data):
+            #     print(f'base_data: {base_data}')
+            #     base_data = base_data.__getitem__('@Data')
+
+            all_attributes_flattened = data_extractor.get_all_attributes(base_data, flattened=True)
+            print(f'all_attributes_flattened: {all_attributes_flattened}\n')
+
+            # Add a dropdown to select the attribute to search for
+            selected_attribute = st.selectbox(
+                label="Select attribute to search for",
+                options=sorted(list(all_attributes_flattened)),
+                help="Select a specific attribute to search for in the base data"
+            )
+
+            # Add a toggle to search for a single or all occurrences of the attribute
+            search_single = st.checkbox(
+                label="Search for a single occurrence",
+                value=True,
+                help="Toggle to search for a single or all occurrences of the selected attribute"
+            )
+
+            # Check if a specific attribute exists in the base data
+            attribute_to_search = selected_attribute
+            attribute_found = data_extractor.search_for_attribute(base_data, attribute_to_search, single=search_single)
+            print(f'Attribute {attribute_to_search} found: {attribute_found}\n')
+
+            # Display the found attribute as a markdown table
+            if attribute_found[0]:
+                table_header = "| Attribute | Value |\n| --- | --- |\n"
+                table_data = ""
+                for i, value in enumerate(attribute_found[1]):
+                    table_data += f"| {attribute_to_search} | {value} |\n"
+                st.markdown(table_header + table_data)
+            else:
+                st.error(f"Attribute {attribute_to_search} not found in the base data")
+
+        selected_team = st.selectbox(
+            "Select Team to Extract Data",
+            ["Residential", "Service", "Structure", "Industrial", "Facade"],
+            key="team_selector"
         )
 
-        # Check if a specific attribute exists in the base data
-        attribute_to_search = selected_attribute
-        attribute_found = search_for_attribute(base_data, attribute_to_search, single=search_single)
-        print(f'Attribute {attribute_to_search} found: {attribute_found}\n')
+        if selected_team == "Residential":
+            residential_data = residential_extractor.extract(models, client)
+            print(f'Residential data: {residential_data}\n')
 
-        # Display the found attribute as a markdown table
-        if attribute_found[0]:
-            table_header = "| Attribute | Value |\n| --- | --- |\n"
-            table_data = ""
-            for i, value in enumerate(attribute_found[1]):
-                table_data += f"| {attribute_to_search} | {value} |\n"
-            st.markdown(table_header + table_data)
-        else:
-            st.error(f"Attribute {attribute_to_search} not found in the base data")
+        elif selected_team == "Service":
+            service_data = service_extractor.extract(models, client)
+            print(f'Service data: {service_data}\n')
+
+        elif selected_team == "Structure":
+            structure_data = structure_extractor.extract(models, client)
+            print(f'Structure data: {structure_data}\n')
+
+        elif selected_team == "Industrial":
+            industrial_data = industrial_extractor.extract(models, client)
+            print(f'Industrial data: {industrial_data}\n')
+
+        elif selected_team == "Facade":
+            facade_data = facade_extractor.extract(models, client)
+            print(f'Facade data: {facade_data}\n')
+
