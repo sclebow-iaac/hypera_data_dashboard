@@ -192,6 +192,7 @@ def display_data(data, extracted_data, model_name, verbose=True):
     fig = go.Figure(go.Indicator(
         mode = "gauge+number",
         value = percentage_found * 100,
+        number = {'suffix': "%"},
         domain = {'x': [0, 1], 'y': [0, 1]},
         gauge= {
             'axis': {'range': [0, 100]},
