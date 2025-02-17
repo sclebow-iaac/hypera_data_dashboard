@@ -22,22 +22,22 @@ import os
 import sys
 
 # import dashboards from local files
-import front_end.dashboards.residential_dashboard as residential_dashboard
-import front_end.dashboards.service_dashboard as service_dashboard
-import front_end.dashboards.structure_dashboard as structure_dashboard
-import front_end.dashboards.industrial_dashboard as industrial_dashboard
-import front_end.dashboards.facade_dashboard as facade_dashboard
+import dashboards.residential_dashboard as residential_dashboard
+import dashboards.service_dashboard as service_dashboard
+import dashboards.structure_dashboard as structure_dashboard
+import dashboards.industrial_dashboard as industrial_dashboard
+import dashboards.facade_dashboard as facade_dashboard
 
 # import data extractors
-import front_end.data_extraction.data_extractor as data_extractor
-import front_end.data_extraction.residential_extractor as residential_extractor
-import front_end.data_extraction.service_extractor as service_extractor
-import front_end.data_extraction.structure_extractor as structure_extractor
-import front_end.data_extraction.industrial_extractor as industrial_extractor
-import front_end.data_extraction.facade_extractor as facade_extractor
+import data_extraction.data_extractor as data_extractor
+import data_extraction.residential_extractor as residential_extractor
+import data_extraction.service_extractor as service_extractor
+import data_extraction.structure_extractor as structure_extractor
+import data_extraction.industrial_extractor as industrial_extractor
+import data_extraction.facade_extractor as facade_extractor
 
 #--------------------------
-#PAGE CONFIG
+#PAGE CONFIG AND CUSTOM CSS
 st.set_page_config(
     page_title="Hyperbuilding_A Dashboard",
     page_icon="📊",
@@ -167,7 +167,7 @@ with input:
 #-------
 #User Input boxes
 speckleServer = serverCol.text_input("Server URL", "macad.speckle.xyz", help="Speckle server to connect.")
-speckleToken = tokenCol.text_input("Speckle token", "", help="If you don't know how to get your token, take a look at this [link](<https://speckle.guide/dev/tokens.html>)👈")
+speckleToken = tokenCol.text_input("Speckle token", "61c9dd1efb887a27eb3d52d0144f1e7a4a23f962d7", help="If you don't know how to get your token, take a look at this [link](<https://speckle.guide/dev/tokens.html>)👈")
 
 # #-------
 # #Toggle buttons
@@ -379,8 +379,8 @@ if show_statistics:
 
     version_user_names = []
     for user in version_frame["authorUser"]:
-        print(f'type: {type(user)}')
-        print(f'user: {user.get('name')}\n')
+        # print(f'type: {type(user)}')
+        # print(f'user: {user.get('name')}\n')
         version_user_names.append(user.get('name'))
 
     authors = pd.DataFrame(version_user_names).value_counts().reset_index()

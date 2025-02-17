@@ -1,8 +1,8 @@
 # This file is used to extract data from the industrial model
 
-import front_end.data_extraction.data_extractor as data_extractor
+import data_extraction.data_extractor as data_extractor
 
-model_name = ""
+model_name = "hypera/industrial/data"
 
 data_names = [
     "EnergyGeneration",

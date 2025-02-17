@@ -90,7 +90,20 @@ def extract(data, model_name, models, client, verbose=True):
         if verbose:
             print(f'Model {model_name} found.')
 
-        base_data = get_geometry_data(selected_model, client, verbose=verbose)
+        # Get projects
+        projects = client.stream.list()
+
+        # Get the selected project object
+        selected_project_name = "Hyperbuilding_Team_A"
+        selected_project = [p for p in projects if p.name == selected_project_name][0]
+
+        # Get the project with models
+        project = client.project.get_with_models(project_id=selected_project.id, models_limit=100)
+        print(f'Project: {project.name}')
+
+        versions = client.version.get_versions(model_id=selected_model.id, project_id=project.id, limit=100).items
+        latest_version = versions[0]
+        base_data = get_geometry_data(latest_version, client, project, verbose=verbose)
 
         if verbose:
             print(f'Base data received.')
@@ -105,7 +118,7 @@ def extract(data, model_name, models, client, verbose=True):
 
             for name in data_names:
                 if name in all_attributes:
-                    found, output = search_for_attribute(base_data, name, single=True, found=False, output=[])
+                    found, output = search_for_attribute(base_data, name, single=True)
                     if found:
                         extracted_data[data_name] = output[0]
                         break
