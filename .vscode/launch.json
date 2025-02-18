@@ -22,6 +22,19 @@
       "args": [],
       "console": "integratedTerminal",
       "justMyCode": true
+    },
+    {
+      "name": "Python:Streamlit",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "streamlit",
+      "args": [
+           "run",
+           "${file}",
+           "--server.port",
+           "8501"
+      ]
     }
+  
   ]
 }

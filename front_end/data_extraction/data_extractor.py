@@ -25,12 +25,12 @@ def get_all_attributes(base_data: Base, flattened=False, depth=0, all_attributes
     # print(f'{"-" * depth}Getting attributes of {base}...')
     
     for key in base_data.__dict__:
-        if depth < 2:
-            try:
-                print(f'depth: {depth} - Key: {key} - Type: {type(base_data.__dict__[key])}')
-            except Exception as e:
-                # print(f'Error: {e}')
-                pass
+        # if depth < 2:
+        #     try:
+        #         print(f'depth: {depth} - Key: {key} - Type: {type(base_data.__dict__[key])}')
+        #     except Exception as e:
+        #         # print(f'Error: {e}')
+        #         pass
         # print(f'{"  " * depth}Key: {key} - Value: {base.__dict__[key]} - Type: {type(base.__dict__[key])}')
         all_attributes.add(key)
 
@@ -65,7 +65,7 @@ def search_for_attribute(base_data: Base, attribute: str, depth=0, single=True, 
 
     return found, output
 
-def extract(data, model_name, models, client, verbose=True):
+def extract(data, model_name, models, client, project_id, verbose=True):
 
     if verbose:
         print(f'Model name: {model_name}') # Debugging
@@ -91,11 +91,7 @@ def extract(data, model_name, models, client, verbose=True):
             print(f'Model {model_name} found.')
 
         # Get projects
-        projects = client.stream.list()
-
-        # Get the selected project object
-        selected_project_name = "Hyperbuilding_Team_A"
-        selected_project = [p for p in projects if p.name == selected_project_name][0]
+        selected_project = client.project.get(project_id=project_id)
 
         # Get the project with models
         project = client.project.get_with_models(project_id=selected_project.id, models_limit=100)
@@ -103,7 +99,16 @@ def extract(data, model_name, models, client, verbose=True):
 
         versions = client.version.get_versions(model_id=selected_model.id, project_id=project.id, limit=100).items
         latest_version = versions[0]
+        print(f'latest_version, createdAt: {latest_version.createdAt.strftime("%Y-%m-%d %H:%M:%S")}')
+        print(f'latest_version, authorUser: {latest_version.authorUser.name}')
+        
         base_data = get_geometry_data(latest_version, client, project, verbose=verbose)
+
+        nested_index = 0
+        while '@Data' in dir(base_data):
+            base_data = base_data.__getitem__('@Data')
+            nested_index += 1
+            print(f'Nested index: {nested_index}')
 
         if verbose:
             print(f'Base data received.')
@@ -113,21 +118,24 @@ def extract(data, model_name, models, client, verbose=True):
             print(f'All attributes: {all_attributes}')
 
         for data_name in data.keys():
+            print() # Debugging
             print(f'Data name: {data_name}') # Debugging
             data_names = [data_name, '@' + data_name]
 
             for name in data_names:
+                print(f'Searching for attribute {name}...') # Debugging
                 if name in all_attributes:
                     found, output = search_for_attribute(base_data, name, single=True)
                     if found:
                         extracted_data[data_name] = output[0]
+                        print(f'Attribute {name} found: {output[0]}')
                         break
                 else:
-                    if verbose and name[0] == '@':
-                        print(f'Attribute {name[1:]} not found.')
+                    if verbose:
+                        print(f'Attribute {name} not found.')
                         extracted_data[data_name] = None
 
-    display_data(data, extracted_data, model_name, verbose=verbose)
+    # display_data(data, extracted_data, model_name, verbose=verbose)
 
     return extracted_data
 

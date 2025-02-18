@@ -39,5 +39,5 @@ data_units = [
 
 data = dict(zip(data_names, zip(data_types, data_units)))
 
-def extract(models, client):
-    return data_extractor.extract(data, model_name, models, client)
+def extract(models, client, project_id):
+    return data_extractor.extract(data, model_name, models, client, project_id)
