@@ -1,7 +1,7 @@
-#IMPORT LIBRARIES
-#import streamlit
+# IMPORT LIBRARIES
+# import streamlit
 import streamlit as st
-#specklepy libraries
+# specklepy libraries
 from specklepy.api import operations
 from specklepy.api.client import SpeckleClient
 from specklepy.api.credentials import get_account_from_token
@@ -10,9 +10,9 @@ from specklepy.api.wrapper import StreamWrapper
 from specklepy.objects.base import Base
 import numpy as np
 
-#import pandas
+# import pandas
 import pandas as pd
-#import plotly express
+# import plotly express
 import plotly.express as px
 
 # import os
@@ -42,8 +42,11 @@ import statistics
 # import attribute extraction
 import attribute_extraction
 
-#--------------------------
-#PAGE CONFIG AND CUSTOM CSS
+# import viewer
+import viewer
+
+# --------------------------
+# PAGE CONFIG AND CUSTOM CSS
 st.set_page_config(
     page_title="Hyperbuilding_A Dashboard",
     page_icon="📊",
@@ -126,20 +129,20 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-#--------------------------
+# --------------------------
 
-#--------------------------
-#CONTAINERS
+# --------------------------
+# CONTAINERS
 header = st.container()
 input = st.container()
-viewer = st.container()
+viewer_container = st.container()
 report = st.container()
 graphs = st.container()
-#--------------------------
+# --------------------------
 
-#--------------------------
-#HEADER
-#Page Header
+# --------------------------
+# HEADER
+# Page Header
 with header:
     # Center title and image using HTML/CSS
     st.markdown("""
@@ -147,53 +150,59 @@ with header:
             <h1>Speckle Stream Activity App📈</h1>
         </div>
     """, unsafe_allow_html=True)
-    
- 
-#About info
+
+
+# About info
     with header.expander("Hyper Building A🔽", expanded=True):
         st.markdown(
-        """We use this space to record collaborators, commits, and timelines, to collect project data in a cohesive, accessible format.
+            """We use this space to record collaborators, commits, and timelines, to collect project data in a cohesive, accessible format.
 """
-)
-#--------------------------
+        )
+# --------------------------
 
 with input:
-    st.subheader("Inputs") # Add a subheader
+    st.subheader("Inputs")  # Add a subheader
 
-#-------
+# -------
     # Toggle buttons for showing/hiding viewer, statistics, and team-specific metrics
     # Columns for toggle buttons
-    viewer_toggle, statistics_toggle, team_metrics_toggle, attribute_selection_toggle = st.columns(4)
-#-------
+    viewer_toggle, statistics_toggle, team_metrics_toggle, attribute_selection_toggle = st.columns(
+        4)
+# -------
 
 
-#-------
+# -------
 
 # #-------
 # #Toggle buttons
-show_viewer = viewer_toggle.checkbox("Show Viewer", value=True, help="Toggle to show/hide the viewer")
-show_statistics = statistics_toggle.checkbox("Show Statistics", value=True, help="Toggle to show/hide the statistics")
-show_team_specific_metrics = team_metrics_toggle.checkbox("Show Team Metrics", value=True, help="Toggle to show/hide the team-specific metrics")
-show_attribute_extraction = attribute_selection_toggle.checkbox("Show Attribute Extraction", value=True, help="Toggle to show/hide the attribute extraction")
+show_viewer = viewer_toggle.checkbox(
+    "Show Viewer", value=True, help="Toggle to show/hide the viewer")
+show_statistics = statistics_toggle.checkbox(
+    "Show Statistics", value=True, help="Toggle to show/hide the statistics")
+show_team_specific_metrics = team_metrics_toggle.checkbox(
+    "Show Team Metrics", value=True, help="Toggle to show/hide the team-specific metrics")
+show_attribute_extraction = attribute_selection_toggle.checkbox(
+    "Show Attribute Extraction", value=True, help="Toggle to show/hide the attribute extraction")
 
-#-------
+# -------
 # #Speckle Server and Token
 speckleServer = "macad.speckle.xyz"
 speckleToken = "61c9dd1efb887a27eb3d52d0144f1e7a4a23f962d7"
-#CLIENT
+# CLIENT
 client = SpeckleClient(host=speckleServer)
-#Get account from Token
+# Get account from Token
 account = get_account_from_token(speckleToken, speckleServer)
-#Authenticate
+# Authenticate
 client.authenticate_with_account(account)
-#-------
+# -------
 
 # Get the team project
 project_id = '31f8cca4e0'
 selected_project = client.project.get(project_id=project_id)
 
 # Get the project with models
-project = client.project.get_with_models(project_id=selected_project.id, models_limit=100)
+project = client.project.get_with_models(
+    project_id=selected_project.id, models_limit=100)
 # print(f'Project: {project.name}')
 
 # Get the models
@@ -210,11 +219,14 @@ selected_model_name = st.selectbox(
 selected_model = [m for m in models if m.name == selected_model_name][0]
 
 # Get the versions for the selected model
-versions = client.version.get_versions(model_id=selected_model.id, project_id=project.id, limit=100).items
+versions = client.version.get_versions(
+    model_id=selected_model.id, project_id=project.id, limit=100).items
+
 
 def versionName(version):
     timestamp = version.createdAt.strftime("%Y-%m-%d %H:%M:%S")
     return ' - '.join([version.authorUser.name, timestamp, version.message])
+
 
 keys = [versionName(version) for version in versions]
 
@@ -227,26 +239,10 @@ selected_version_key = st.selectbox(
 
 selected_version = versions[keys.index(selected_version_key)]
 
-# Create a iframe to display the selected version
-def version2viewer(project, model, version, height=400) -> str:
-    embed_src = f"https://macad.speckle.xyz/projects/{project.id}/models/{model.id}@{version.id}#embed=%7B%22isEnabled%22%3Atrue%2C%7D"
-    # print(f'embed_src {embed_src}')  # Print the URL to verify correctness
-    # print()
-    return st.components.v1.iframe(src=embed_src, height=height)
 
 if show_viewer:
-    #--------------------------
-    #create a definition that generates an iframe from commit id
-    def commit2viewer(stream, commit, height=400) -> str:
-        embed_src = f"https://macad.speckle.xyz/embed?stream={stream.id}&commit={commit.id}"
-        # print(embed_src)  # Print the URL to verify correctness
-        return st.components.v1.iframe(src=embed_src, height=height)
-
-    #VIEWER👁‍🗨
-    with viewer:
-        st.subheader("Selected Version👇")
-        version2viewer(project, selected_model, selected_version)
-
+    viewer.show_viewer(viewer_container, project,
+                       selected_model, selected_version)
 if show_statistics:
     statistics.show(report, client, project, models, versions)
 # print(f'selected_model: {selected_model}\n')
@@ -268,7 +264,8 @@ if show_team_specific_metrics:
 
     # Display team-specific metrics based on selection
     if selected_team == "Residential":
-        residential_data = residential_extractor.extract(models, client, project_id)
+        residential_data = residential_extractor.extract(
+            models, client, project_id)
         # print(f'Residential data: {residential_data}\n')
 
         # residential_dashboard.run(metric_col1, metric_col2, selected_team)
@@ -278,15 +275,17 @@ if show_team_specific_metrics:
         # print(f'Service data: {service_data}\n')
 
         # service_dashboard.run(metric_col1, metric_col2, selected_team)
-        
+
     elif selected_team == "Structure":
-        structure_data = structure_extractor.extract(models, client, project_id)
+        structure_data = structure_extractor.extract(
+            models, client, project_id)
         # print(f'Structure data: {structure_data}\n')
 
         # structure_dashboard.run(metric_col1, metric_col2, selected_team)
 
     elif selected_team == "Industrial":
-        industrial_data = industrial_extractor.extract(models, client, project_id)
+        industrial_data = industrial_extractor.extract(
+            models, client, project_id)
         # print(f'Industrial data: {industrial_data}\n')
 
         # industrial_dashboard.run(metric_col1, metric_col2, selected_team)
