@@ -21,48 +21,70 @@ def get_geometry_data(selected_version, client, project, verbose=True):
     base = operations.receive(objHash, transport)
     return base
 
-def get_all_attributes(base_data: Base, flattened=False, depth=0, all_attributes=set()) -> set:
-    # print(f'{"-" * depth}Getting attributes of {base}...')
+def get_all_attributes(base_data, flattened=True, depth=0, all_attributes=set(), verbose=True) -> set:
+    if verbose:
+        print() # Debugging
+        print(f'{"-" * depth}Getting attributes of {base_data}...')
+        print(f'{"-" * depth}Attributes: {base_data.__dict__}')
     
     for key in base_data.__dict__:
-        # if depth < 2:
-        #     try:
-        #         print(f'depth: {depth} - Key: {key} - Type: {type(base_data.__dict__[key])}')
-        #     except Exception as e:
-        #         # print(f'Error: {e}')
-        #         pass
-        # print(f'{"  " * depth}Key: {key} - Value: {base.__dict__[key]} - Type: {type(base.__dict__[key])}')
+        if verbose:
+            print(f'{"-" * depth}Key: {key} - Value: {base_data.__dict__[key]} - Type: {type(base_data.__dict__[key])}')
+        
         all_attributes.add(key)
 
         if flattened: # If flattened is True, we need to recursively get all attributes of nested objects
-            if base_data.__getitem__(key) is not None:
-                try:
-                    all_attributes = get_all_attributes(base_data.__getitem__(key)[0], flattened=True, depth=depth+1, all_attributes=all_attributes)
-                except Exception as e:
-                    # print(f'Error: {e}')
-                    pass
-                    
+            
+            value = base_data.__dict__[key]
 
+            if type(value) != list: # If the value is not a list, we need to make it a list to iterate over it
+                value = [value]
+
+            for item in value:
+                if item is not None:
+                    if verbose:
+                        print(f'{"-" * depth}Item: {item}')
+                    
+                    if type(item) == Base:
+                        if verbose:
+                            print(f'{"-" * depth}Item is a Base object.')
+
+                        all_attributes = get_all_attributes(item, flattened=True, depth=depth+1, all_attributes=all_attributes, verbose=verbose)
+                
     return all_attributes
 
-def search_for_attribute(base_data: Base, attribute: str, depth=0, single=True, found=False, output=[]): # single=True means we only want to find the first occurrence of the attribute, return all values of the attribute
-    # print(f'{"  " * depth}Searching for attribute {attribute} in {base_data}...')
-
+def search_for_attribute(base_data: Base, attribute: str, depth=0, single=True, found=False, output=[], verbose=True): # single=True means we only want to find the first occurrence of the attribute, return all values of the attribute
+    if verbose:
+        print(f'{"  " * depth}Searching for attribute {attribute} in {base_data}...')
+        print(f'{"  " * depth}Attributes: {base_data.__dict__}')
+    
     for key in base_data.__dict__:
-        # print(f'{"  " * depth}Key: {key} - Value: {base_data.__dict__[key]} - Type: {type(base_data.__dict__[key])}')
-        if key == attribute:
-            found = True
-            output.append(base_data.__dict__[key])
-            if single:
+        if key == attribute: # If the key is the attribute we are looking for
+            found = True # Set found to True
+            output.append(base_data.__dict__[key]) # Append the value of the attribute to the output list
+            if single: # If we only want to find the first occurrence of the attribute, break the loop
                 break
 
-        if base_data.__getitem__(key) is not None:
-            try:
-                found, output = search_for_attribute(base_data.__getitem__(key)[0], attribute, depth=depth+1, single=single, found=found, output=output)
-            except Exception as e:
-                # print(f'Error: {e}')
-                pass
+        if verbose: # Debugging
+            print(f'{"-" * depth}Key: {key} - Value: {base_data.__dict__[key]} - Type: {type(base_data.__dict__[key])}')
+        
+            
+        value = base_data.__dict__[key] # Get the value of the key
 
+        if type(value) != list: # If the value is not a list, we need to make it a list to iterate over it
+            value = [value] # Make the value a list
+
+        for item in value: # Iterate over the value
+            if item is not None: # If the item is not None
+                if verbose: # Debugging
+                    print(f'{"-" * depth}Item: {item}') # Debugging
+                
+                if type(item) == Base: # If the item is a Base object, we need to recursively search for the attribute
+                    if verbose: # Debugging
+                        print(f'{"-" * depth}Item is a Base object.') # Debugging
+
+                    found, output = search_for_attribute(item, attribute, depth=depth+1, single=single, found=found, output=output, verbose=verbose) # Recursively search for the attribute in the item object
+    
     return found, output
 
 def extract(data, model_name, models, client, project_id, verbose=True):
@@ -124,18 +146,39 @@ def extract(data, model_name, models, client, project_id, verbose=True):
 
             for name in data_names:
                 print(f'Searching for attribute {name}...') # Debugging
-                if name in all_attributes:
-                    found, output = search_for_attribute(base_data, name, single=True)
-                    if found:
-                        extracted_data[data_name] = output[0]
-                        print(f'Attribute {name} found: {output[0]}')
-                        break
+                if name not in all_attributes:
+                    if verbose:
+                        print(f'Attribute {name} not in all_attributes.')
+                    extracted_data[data_name] = None
                 else:
                     if verbose:
-                        print(f'Attribute {name} not found.')
-                        extracted_data[data_name] = None
+                        print(f'Attribute {name} is in all_attributes.')
+                
+                    found, output = search_for_attribute(base_data, name, single=False, verbose=False)
+                    if verbose:
+                        print(f'Found: {found} - Output: {output}')
+                    if found: # If the attribute is found
+                        extracted_data[data_name] = output[0] # Set the extracted data to the output
+                        # Iterate over the output to get the first non-None value or non-Base object
+                        # Check if the output is a list
+                        if type(output) != list:
+                            output = [output]
+                        for item in output:
+                            if item is not None and type(item) != Base:
+                                extracted_data[data_name] = item
+                                break
+                        # extracted_data[data_name] = output[0] # Set the extracted data to the output
+                        # print(f'Attribute {name} found: {output[0]}') # Debugging
+                        break # Break the loop if the attribute is found
+                #     else:
+                #         print(f'Attribute {name} not found.')
+                        
+                # else:
+                #     if verbose:
+                #         print(f'Attribute {name} not found.')
+                #         extracted_data[data_name] = None
 
-    # display_data(data, extracted_data, model_name, verbose=verbose)
+    display_data(data, extracted_data, model_name, verbose=False)
 
     return extracted_data
 
@@ -160,6 +203,8 @@ def display_data(data, extracted_data, model_name, verbose=True):
         value = extracted_data[key]
         if value is None:
             value = "Not Found"
+        else:
+            value = str(value)
         type_expected = data[key][0]
         unit = data[key][1]
         type_extracted = type(value).__name__        

@@ -10,7 +10,7 @@ data_names = [
     "FoodProduction",
     "FoodDemand",
     "RecycledWater",
-    "WastewaterProduction",
+    "WasteWaterProduction",
     "RecycledSolidWaste",
     "SolidWasteProduction"
 ]
