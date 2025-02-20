@@ -2,7 +2,8 @@
 
 import data_extraction.data_extractor as data_extractor
 
-model_name = ""
+model_name = "hypera/residential/building form/residential
+"
 
 data_names = [
     "ListOfUnitFunctions",
