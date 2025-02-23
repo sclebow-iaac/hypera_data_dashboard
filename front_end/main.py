@@ -1,25 +1,24 @@
-# IMPORT LIBRARIES
-# import streamlit
+#IMPORT LIBRARIES
+#import streamlit
 import streamlit as st
-# specklepy libraries
-from specklepy.api import operations
+#specklepy libraries
 from specklepy.api.client import SpeckleClient
 from specklepy.api.credentials import get_account_from_token
-from specklepy.transports.server import ServerTransport
-from specklepy.api.wrapper import StreamWrapper
-from specklepy.objects.base import Base
 import numpy as np
 
-# import pandas
-import pandas as pd
-# import plotly express
-import plotly.express as px
+#PAGE CONFIG AND CUSTOM CSS
+st.set_page_config(
+    page_title="Hyperbuilding_A Dashboard",
+    page_icon="📊",
+    layout="wide"  # Makes the dashboard use full screen width
+)
 
-# import os
-import os
+# Sidebar for selecting dashboards
+dashboard_options = ["Main", "Residential", "Service", "Structure", "Industrial", "Facade"]
+selected_dashboard = st.sidebar.radio("Select Dashboard", dashboard_options)
 
-# import sys
-import sys
+# Create a placeholder for the dashboard content
+dashboard_placeholder = st.empty()
 
 # import dashboards from local files
 import dashboards.residential_dashboard as residential_dashboard
@@ -28,32 +27,191 @@ import dashboards.structure_dashboard as structure_dashboard
 import dashboards.industrial_dashboard as industrial_dashboard
 import dashboards.facade_dashboard as facade_dashboard
 
-# import data extractors
-import data_extraction.data_extractor as data_extractor
-import data_extraction.residential_extractor as residential_extractor
-import data_extraction.service_extractor as service_extractor
-import data_extraction.structure_extractor as structure_extractor
-import data_extraction.industrial_extractor as industrial_extractor
-import data_extraction.facade_extractor as facade_extractor
-
 # import statistics
-import statistics
+import project_statistics as statistics
 
-# import attribute extraction
-import attribute_extraction
+# Function to display the residential dashboard
+def display_residential_dashboard():
+    with dashboard_placeholder.container():
+        selected_team = "Residential Team"  # Set the selected team or get it from user input
+        residential_dashboard.run(selected_team)  # Call the function from the residential dashboard
 
-# import viewer
-import viewer
+# Function to display the service dashboard
+def display_service_dashboard():
+    with dashboard_placeholder.container():
+        selected_team = "Service Team"  # Set the selected team
+        service_dashboard.run(selected_team)  # Only pass selected_team
 
-# --------------------------
-# PAGE CONFIG AND CUSTOM CSS
-st.set_page_config(
-    page_title="Hyperbuilding_A Dashboard",
-    page_icon="📊",
-    layout="wide"  # Makes the dashboard use full screen width
-)
+# Function to display the structure dashboard
+def display_structure_dashboard():
+    with dashboard_placeholder.container():
+        selected_team = "Structure Team"  # Set the selected team
+        structure_dashboard.run(selected_team)  # Only pass selected_team
 
-# Add custom CSS
+# Function to display the industrial dashboard
+def display_industrial_dashboard():
+    with dashboard_placeholder.container():
+        selected_team = "Industrial Team"  # Set the selected team
+        industrial_dashboard.run(selected_team)  # Only pass selected_team
+
+# Function to display the facade dashboard
+def display_facade_dashboard():
+    with dashboard_placeholder.container():
+        selected_team = "Facade Team"  # Set the selected team
+        facade_dashboard.run(selected_team)  # Only pass selected_team
+
+#--------------------------
+#CONTAINERS
+header = st.container()
+input_container = st.container()  # Renamed from 'input' to 'input_container'
+viewer = st.container()
+report = st.container()
+graphs = st.container()
+#--------------------------
+
+
+# Only show main interface if "Main" is selected
+if selected_dashboard == "Main":
+    #HEADER
+    #Page Header
+    with header:
+        # Center title and image using HTML/CSS
+        st.markdown("""
+            <div style="text-align: center;">
+                <h1>Welcome to Hyper Building A!</h1>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        # Add slideshow
+        st.markdown("### Project Gallery")
+        
+        # List of images for slideshow
+        images = [
+            {"path": "assets/facade.png", "caption": "Facade"},
+            {"path": "assets/residential.png", "caption": "Residential"},
+            {"path": "assets/service.png", "caption": "Service"},
+            {"path": "assets/structure.png", "caption": "Structure"},
+            {"path": "assets/industrial.png", "caption": "Industrial"}
+        ]
+        
+        # Create columns for slideshow navigation
+        prev_col, img_col, next_col = st.columns([1, 10, 1])
+        
+        # Initialize slideshow index in session state if not exists
+        if 'slideshow_idx' not in st.session_state:
+            st.session_state.slideshow_idx = 0
+        
+        # Navigation buttons
+        with prev_col:
+            if st.button("←", key="prev_main"):
+                st.session_state.slideshow_idx = (st.session_state.slideshow_idx - 1) % len(images)
+        with next_col:
+            if st.button("→", key="next_main"):
+                st.session_state.slideshow_idx = (st.session_state.slideshow_idx + 1) % len(images)
+        
+        # Display current image
+        with img_col:
+            current_image = images[st.session_state.slideshow_idx]
+            try:
+                st.image(current_image["path"], 
+                        caption=current_image["caption"], 
+                        use_container_width=True)
+            except FileNotFoundError:
+                st.warning(f"Please add the image {current_image['path']} to your assets folder")
+        
+        st.markdown("---")  # Add a separator
+
+    with input_container:  # Use the new name here
+        st.subheader("Inputs")
+        viewer_toggle, statistics_toggle, team_metrics_toggle, attribute_selection_toggle = st.columns(4)
+        
+        show_viewer = viewer_toggle.checkbox("Show Viewer", value=True)
+        show_statistics = statistics_toggle.checkbox("Show Statistics", value=True)
+        show_team_specific_metrics = team_metrics_toggle.checkbox("Show Team Metrics", value=True)
+        show_attribute_extraction = attribute_selection_toggle.checkbox("Show Attribute Extraction", value=True)
+
+        # #-------
+        # #Speckle Server and Token
+        speckleServer = "macad.speckle.xyz"
+        speckleToken = "61c9dd1efb887a27eb3d52d0144f1e7a4a23f962d7"
+        #CLIENT
+        client = SpeckleClient(host=speckleServer)
+        #Get account from Token
+        account = get_account_from_token(speckleToken, speckleServer)
+        #Authenticate
+        client.authenticate_with_account(account)
+        # #-------
+
+        # # Get the team project
+        project_id = '31f8cca4e0'
+        selected_project = client.project.get(project_id=project_id)
+
+        # Get the project with models
+        project = client.project.get_with_models(project_id=selected_project.id, models_limit=100)
+        # print(f'Project: {project.name}')
+
+        # Get the models
+        models = project.models.items
+
+        # Add model selection
+        selected_model_name = st.selectbox(
+            label="Select model to analyze",
+            options=[m.name for m in models],
+            help="Select a specific model to analyze its data"
+        )
+
+        # Get the selected model object
+        selected_model = [m for m in models if m.name == selected_model_name][0]
+
+        # Get the versions for the selected model
+        versions = client.version.get_versions(model_id=selected_model.id, project_id=project.id, limit=100).items
+
+        def versionName(version):
+            timestamp = version.createdAt.strftime("%Y-%m-%d %H:%M:%S")
+            return ' - '.join([version.authorUser.name, timestamp, version.message])
+
+        keys = [versionName(version) for version in versions]
+
+        # Add version selection
+        selected_version_key = st.selectbox(
+            label="Select version to analyze",
+            options=keys,
+            help="Select a specific version to analyze"
+        )
+
+        selected_version = versions[keys.index(selected_version_key)]
+
+        # Create a iframe to display the selected version
+        def version2viewer(project, model, version, height=400) -> str:
+            embed_src = f"https://macad.speckle.xyz/projects/{project.id}/models/{model.id}@{version.id}#embed=%7B%22isEnabled%22%3Atrue%2C%7D"
+            # print(f'embed_src {embed_src}')  # Print the URL to verify correctness
+            # print()
+            return st.components.v1.iframe(src=embed_src, height=height)
+
+        if show_viewer:
+            with viewer:
+                st.subheader("Selected Version👇")
+                version2viewer(project, selected_model, selected_version)
+
+        if show_statistics:
+            statistics.show(report, client, project, models, versions)
+
+
+else:
+    # Display only the selected dashboard
+    if selected_dashboard == "Residential":
+        display_residential_dashboard()
+    elif selected_dashboard == "Service":
+        display_service_dashboard()
+    elif selected_dashboard == "Structure":
+        display_structure_dashboard()
+    elif selected_dashboard == "Industrial":
+        display_industrial_dashboard()
+    elif selected_dashboard == "Facade":
+        display_facade_dashboard()
+
+#--------------------------
+#PAGE CONFIG AND CUSTOM CSS
 st.markdown("""
     <style>
     /* Import Google Font */
@@ -126,177 +284,46 @@ st.markdown("""
         padding: 1rem;
         box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
+
+    /* Sidebar styling */
+    [data-testid="stSidebar"] {
+        background-color: #F5F5DC;  /* Beige color */
+        padding: 1rem;
+        border-right: 1px solid #E8E8D0;
+    }
+
+    /* Sidebar radio buttons */
+    .st-cc, .st-dk, .st-dl, .st-dm {
+        font-family: 'Roboto Mono', sans-serif !important;
+    }
+
+    /* Sidebar title */
+    [data-testid="stSidebar"] [data-testid="stMarkdown"] {
+        font-family: 'Roboto Mono', sans-serif !important;
+        padding: 0.5rem 0;
+    }
+
+    /* Radio button text */
+    .st-bq {
+        font-family: 'Roboto Mono', sans-serif !important;
+    }
+
+    /* Radio button container */
+    [data-testid="stSidebar"] .st-bw {
+        padding: 0.5rem 0;
+    }
+
+    /* Selected radio button */
+    [data-testid="stSidebar"] .st-cl {
+        background-color: #E8E8D0;  /* Slightly darker beige for selected item */
+        border-radius: 0.3rem;
+    }
+
+    /* Hover effect on radio buttons */
+    [data-testid="stSidebar"] .st-cl:hover {
+        background-color: #DFDFC5;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# --------------------------
-
-# --------------------------
-# CONTAINERS
-header = st.container()
-input = st.container()
-viewer_container = st.container()
-report = st.container()
-graphs = st.container()
-# --------------------------
-
-# --------------------------
-# HEADER
-# Page Header
-with header:
-    # Center title and image using HTML/CSS
-    st.markdown("""
-        <div style="text-align: center;">
-            <h1>Speckle Stream Activity App📈</h1>
-        </div>
-    """, unsafe_allow_html=True)
-
-
-# About info
-    with header.expander("Hyper Building A🔽", expanded=True):
-        st.markdown(
-            """We use this space to record collaborators, commits, and timelines, to collect project data in a cohesive, accessible format.
-"""
-        )
-# --------------------------
-
-with input:
-    st.subheader("Inputs")  # Add a subheader
-
-# -------
-    # Toggle buttons for showing/hiding viewer, statistics, and team-specific metrics
-    # Columns for toggle buttons
-    viewer_toggle, statistics_toggle, team_metrics_toggle, attribute_selection_toggle = st.columns(
-        4)
-# -------
-
-
-# -------
-
-# #-------
-# #Toggle buttons
-show_viewer = viewer_toggle.checkbox(
-    "Show Viewer", value=True, help="Toggle to show/hide the viewer")
-show_statistics = statistics_toggle.checkbox(
-    "Show Statistics", value=True, help="Toggle to show/hide the statistics")
-show_team_specific_metrics = team_metrics_toggle.checkbox(
-    "Show Team Metrics", value=True, help="Toggle to show/hide the team-specific metrics")
-show_attribute_extraction = attribute_selection_toggle.checkbox(
-    "Show Attribute Extraction", value=True, help="Toggle to show/hide the attribute extraction")
-
-# -------
-# #Speckle Server and Token
-speckleServer = "macad.speckle.xyz"
-speckleToken = "61c9dd1efb887a27eb3d52d0144f1e7a4a23f962d7"
-# CLIENT
-client = SpeckleClient(host=speckleServer)
-# Get account from Token
-account = get_account_from_token(speckleToken, speckleServer)
-# Authenticate
-client.authenticate_with_account(account)
-# -------
-
-# Get the team project
-project_id = '31f8cca4e0'
-selected_project = client.project.get(project_id=project_id)
-
-# Get the project with models
-project = client.project.get_with_models(
-    project_id=selected_project.id, models_limit=100)
-# print(f'Project: {project.name}')
-
-# Get the models
-models = project.models.items
-
-# Add model selection
-selected_model_name = st.selectbox(
-    label="Select model to analyze",
-    options=[m.name for m in models],
-    help="Select a specific model to analyze its data"
-)
-
-# Get the selected model object
-selected_model = [m for m in models if m.name == selected_model_name][0]
-
-# Get the versions for the selected model
-versions = client.version.get_versions(
-    model_id=selected_model.id, project_id=project.id, limit=100).items
-
-
-def versionName(version):
-    timestamp = version.createdAt.strftime("%Y-%m-%d %H:%M:%S")
-    return ' - '.join([version.authorUser.name, timestamp, version.message])
-
-
-keys = [versionName(version) for version in versions]
-
-# Add version selection
-selected_version_key = st.selectbox(
-    label="Select version to analyze",
-    options=keys,
-    help="Select a specific version to analyze"
-)
-
-selected_version = versions[keys.index(selected_version_key)]
-
-
-if show_viewer:
-    viewer.show_viewer(viewer_container, project,
-                       selected_model, selected_version)
-if show_statistics:
-    statistics.show(report, client, project, models, versions)
-# print(f'selected_model: {selected_model}\n')
-# print(f'selected_version: {selected_version}\n')
-
-if show_team_specific_metrics:
-    # TEAM SPECIFIC METRICS
-    st.subheader("Team Specific Metrics 👥 [TOTALLY FAKE DATA RIGHT NOW]")
-
-    # Team selection dropdown
-    selected_team = st.selectbox(
-        "Select Team",
-        ["Residential", "Service", "Structure", "Industrial", "Facade"],
-        key="team_selector"
-    )
-
-    # Create columns for team metrics
-    metric_col1, metric_col2, metric_col3 = st.columns(3)
-
-    # Display team-specific metrics based on selection
-    if selected_team == "Residential":
-        residential_data = residential_extractor.extract(
-            models, client, project_id)
-        # print(f'Residential data: {residential_data}\n')
-
-        # residential_dashboard.run(metric_col1, metric_col2, selected_team)
-
-    elif selected_team == "Service":
-        service_data = service_extractor.extract(models, client, project_id)
-        # print(f'Service data: {service_data}\n')
-
-        # service_dashboard.run(metric_col1, metric_col2, selected_team)
-
-    elif selected_team == "Structure":
-        structure_data = structure_extractor.extract(
-            models, client, project_id)
-        # print(f'Structure data: {structure_data}\n')
-
-        # structure_dashboard.run(metric_col1, metric_col2, selected_team)
-
-    elif selected_team == "Industrial":
-        industrial_data = industrial_extractor.extract(
-            models, client, project_id)
-        # print(f'Industrial data: {industrial_data}\n')
-
-        # industrial_dashboard.run(metric_col1, metric_col2, selected_team)
-
-    elif selected_team == "Facade":
-        facade_data = facade_extractor.extract(models, client, project_id)
-        # print(f'Facade data: {facade_data}\n')
-
-        # facade_dashboard.run(metric_col1, metric_col2, selected_team)
-
-# Get geometry data from the selected version
-
-if show_attribute_extraction:
-    attribute_extraction.run(selected_version, client, project)
+#--------------------------

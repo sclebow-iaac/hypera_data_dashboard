@@ -20,7 +20,7 @@ def show(container, client, project, models, versions, verbose=False):
         modelCol.metric(label = "Number of Models in Project", value= len(models))
         #branch names as markdown list
         modelNames = [m.name for m in models]
-        listToMarkdown(modelNames, modelCol)
+        # listToMarkdown(modelNames, modelCol)
 
         #Version Card 💳
         versionCol.metric(label = "Number of Versions in Selected Model", value= len(versions))
