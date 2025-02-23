@@ -1,171 +1,283 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from pythreejs import *
+from specklepy.api.client import SpeckleClient
+from specklepy.api.credentials import get_account_from_token
 
-def run(metric_col1: st.delta_generator.DeltaGenerator, metric_col2: st.delta_generator.DeltaGenerator, selected_team: str) -> None:
-    # Define the variables for daylight in different parts of the building
-    time_of_day = ['6 AM', '9 AM', '12 PM', '3 PM', '6 PM']  # Example time points
-    daylight_amounts = {
-        'North Side': [50, 70, 90, 60, 30],  # Example daylight amounts for the North side
-        'South Side': [30, 50, 80, 100, 70],  # Example daylight amounts for the South side
-        'East Side': [60, 80, 100, 90, 40],  # Example daylight amounts for the East side
-        'West Side': [40, 60, 70, 80, 50]    # Example daylight amounts for the West side
-    }
+def create_sphere_visualization(container_id, value, label, height=400):
+    """Helper function to create sphere visualization HTML"""
+    return f"""
+    <html>
+        <head>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+            <style>
+                .container {{ 
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 20px;
+                    height: {height}px;
+                    width: 100%;
+                    margin: 0 auto;
+                }}
+                #{container_id} {{ 
+                    width: 75%;
+                    height: 100%;
+                    position: relative;
+                    margin-left: auto;
+                    margin-right: auto;
+                }}
+                #legend-container {{
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    height: 100%;
+                    padding: 20px 0;
+                    width: 60px;
+                }}
+                #color-gradient {{
+                    width: 30px;
+                    height: 200px;
+                    background: linear-gradient(to top, #ff0000, #00ff00);
+                    border: 1px solid #333;
+                }}
+                .legend-label {{
+                    padding: 5px;
+                    font-family: Arial;
+                    font-size: 12px;
+                    text-align: center;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div id="{container_id}"></div>
+                <div id="legend-container">
+                    <div class="legend-label">1.0</div>
+                    <div id="color-gradient"></div>
+                    <div class="legend-label">0.0</div>
+                    <div class="legend-label">{label}</div>
+                </div>
+            </div>
+            <script>
+                const container = document.getElementById('{container_id}');
+                const scene = new THREE.Scene();
+                
+                const camera = new THREE.PerspectiveCamera(60, container.clientWidth/container.clientHeight, 0.1, 1000);
+                camera.position.z = 6;
+                
+                const renderer = new THREE.WebGLRenderer({{ 
+                    antialias: true,
+                    alpha: true
+                }});
+                
+                renderer.setSize(container.clientWidth, container.clientHeight);
+                renderer.setClearColor(0xeeeeee, 0.9);
+                container.appendChild(renderer.domElement);
 
-    # Total incoming daylight (example value)
-    total_incoming_daylight = 400  # Example total incoming daylight value
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+                scene.add(ambientLight);
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                directionalLight.position.set(3, 5, 1);
+                scene.add(directionalLight);
 
-    # Create a DataFrame for the line chart
-    daylight_data = pd.DataFrame(daylight_amounts, index=time_of_day)
+                const vertexShader = `
+                    varying vec3 vPosition;
+                    void main() {{
+                        vPosition = position;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }}
+                `;
 
-    # Calculate the total daylight amount used
-    total_daylight_used = daylight_data.sum().sum()  # Sum of all daylight amounts used
+                const fragmentShader = `
+                    varying vec3 vPosition;
+                    void main() {{
+                        float y = (vPosition.y + 2.0) / 4.0;
+                        vec3 bottomColor = vec3(1.0, 0.0, 0.0);
+                        vec3 topColor = vec3(0.0, 1.0, 0.0);
+                        vec3 color = mix(bottomColor, topColor, y * {value});
+                        gl_FragColor = vec4(color, 1.0);
+                    }}
+                `;
 
-    # Compute the ratio of daylight amount used to total incoming daylight
-    daylight_ratio = total_daylight_used / total_incoming_daylight if total_incoming_daylight != 0 else None
+                const geometry = new THREE.SphereGeometry(2, 32, 32);
+                const material = new THREE.ShaderMaterial({{
+                    vertexShader: vertexShader,
+                    fragmentShader: fragmentShader
+                }});
+                
+                const sphere = new THREE.Mesh(geometry, material);
+                sphere.rotation.x = Math.PI * 0.2;
+                scene.add(sphere);
 
-    # Create a line chart
-    daylight_chart = px.line(daylight_data, 
-                                title='Daylight Amount in Different Parts of the Building',
-                                labels={'value': 'Daylight Amount (lux)', 'variable': 'Building Side'},
-                                markers=True)
-    daylight_chart.update_layout(
-        title_x=0.35,  # Center the title
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        font_family="Roboto Mono",
-        font_color="#2c3e50"
-    )
+                function animate() {{
+                    requestAnimationFrame(animate);
+                    renderer.render(scene, camera);
+                }}
+                animate();
+            </script>
+        </body>
+    </html>
+    """
 
-    # Display the line chart
-    st.plotly_chart(daylight_chart, use_container_width=True)
-
-    # Display the daylight ratio metric
-    if daylight_ratio is not None:
-        st.markdown(f"<h3 style='text-align: center;'>Daylight Utilization Ratio: {daylight_ratio:.2f}</h3>", unsafe_allow_html=True)
-    else:
-        st.markdown("<h3 style='text-align: center;'>Error: Division by zero in calculation</h3>", unsafe_allow_html=True)
-
-    # Optionally, display a summary of the daylight amounts
-    st.markdown("<h3 style='text-align: center;'>Daylight Amounts Summary</h3>", unsafe_allow_html=True)
-    st.write(daylight_data)
-
-    st.markdown("")
-    st.markdown("")
-
-    st.markdown("<hr>", unsafe_allow_html=True)  # Add a line after the metric
+def run(selected_team: str) -> None:
+    # 1. Imports and Setup
+    import data_extraction.facade_extractor as facade_extractor  # Only import the extractor module
+    import pandas as pd
+    import plotly.express as px
     
-    # Add the new metric for Normalized Value: Combined Metric
-    st.markdown("<h2>Primary Daylight Factor and Solar Loads Control for Residential and Work Spaces</h2>", unsafe_allow_html=True)
+    # 2. Speckle Connection
+    speckleServer = "macad.speckle.xyz"
+    speckleToken = "61c9dd1efb887a27eb3d52d0144f1e7a4a23f962d7"
+    client = SpeckleClient(host=speckleServer)
+    account = get_account_from_token(speckleToken, speckleServer)
+    client.authenticate_with_account(account)
+    
+    project_id = '31f8cca4e0'
+    selected_project = client.project.get(project_id=project_id)
+    project = client.project.get_with_models(project_id=selected_project.id, models_limit=100)
+    models = project.models.items
+    
+    # 3. Dashboard Header
+    st.markdown("""
+        <div style="text-align: center;">
+            <h1>Facade Dashboard</h1>
+        </div>
+    """, unsafe_allow_html=True)
 
-    # Example values for the calculation
-    weight_residential = 0.5  
-    weight_work = 0.5  
-    residential_area_with_daylight = 100  
-    total_residential_area = 200  
-    work_area_with_daylight = 150  
-    total_work_area = 300  
+    # Energy calculations
+    energy_generation = 1500
+    energy_required_by_industrial_team = 1000
+    energy_ratio = energy_generation / energy_required_by_industrial_team
 
-    # Calculate the normalized value
-    normalized_value = (
-        weight_residential * (residential_area_with_daylight / total_residential_area) +
-        weight_work * (work_area_with_daylight / total_work_area) * (10 / 7)
-    )
+    # Display metrics in columns
+    metric_col1, metric_col2 = st.columns(2)
 
-    # Add the formula for the normalized value
-    st.markdown(r"""
-        The formula for calculating the Normalized Value can be expressed as:
-
-        $$ 
-        \text{Normalized Value} = 
-        weight_{\text{residential}} \cdot \frac{\text{ResidentialAreaWithDaylight}}{\text{TotalResidentialArea}} + 
-        weight_{\text{work}} \cdot \frac{\text{WorkAreaWithDaylight}}{\text{TotalWorkArea}} \cdot \frac{10}{7}
-        $$
-""", unsafe_allow_html=True)
-
-    # Display the normalized value
-    st.metric("Normalized Value: Combined Metric", f"{normalized_value:.2f}", help="Combined metric based on residential and work areas with daylight")
-
-    st.markdown("")
-    st.markdown("")
-
-    st.markdown("<hr>", unsafe_allow_html=True)  # Add a line after the metric
-
-    # Define the angles and their corresponding effectiveness for each panel
-    angles = [0, 15, 30, 45, 60, 75, 90]  # Example angles in degrees
-    effectiveness = [0.1, 0.5, 0.8, 1.0, 0.7, 0.4, 0.2]  # Example effectiveness values
-
-    # Create a DataFrame for the line chart
-    angle_data = pd.DataFrame({
-        'Angle (degrees)': angles,
-        'Effectiveness': effectiveness
-    })
-
-    # Compute the optimal angle (e.g., the angle with the highest effectiveness)
-    optimal_angle = angles[effectiveness.index(max(effectiveness))]
-
-    # Create a line chart
-    angle_chart = px.line(angle_data, 
-                            x='Angle (degrees)', 
-                            y='Effectiveness', 
-                            title='Effectiveness of Panel Angles',
-                            markers=True)
-    angle_chart.update_layout(
-        title_x=0.5,  # Center the title
-        paper_bgcolor='rgba(0,0,0,0)',  # Set paper background to transparent
-        plot_bgcolor='rgba(0,0,0,0)',   # Set plot background to transparent
-        font_family="Roboto Mono",
-        font_color="#2c3e50"
-    )
-
-    # Display the line chart
-    st.plotly_chart(angle_chart, use_container_width=True)
-
-    # Display the optimal angle metric
-    st.markdown(f"<h3 style='text-align: center;'>Optimal Angle for Panel Movement: {optimal_angle}°</h3>", unsafe_allow_html=True)
-
-    st.markdown("")
-    st.markdown("")
-
-    st.markdown("<hr>", unsafe_allow_html=True)  # Add a line after the metric
-
-    # Example values for energy generation and energy required
-    energy_generation = 1500  
-    energy_required_by_industrial_team = 1000  
-
-    # Calculate the ratio
-    ratio = energy_generation / energy_required_by_industrial_team
-
-    # Create a DataFrame for the bar chart
-    data = {
-        'Metric': ['Energy Generation', 'Energy Required by Industrial Team'],
-        'Value': [energy_generation, energy_required_by_industrial_team]
-    }
-
-    df = pd.DataFrame(data)
-
-    # Create the bar chart
-    fig = px.bar(df, x='Metric', y='Value',
-            labels={'Value': 'Energy (kWh)', 'Metric': 'Metrics'},
-            color='Metric')
-
-    # Add the ratio as a text annotation
-    fig.add_annotation(
-        x='Energy Generation',
-        y=ratio,
-        text=f'Ratio: {ratio:.2f}',
-        showarrow=True,
-        arrowhead=2,
-        ax=0,
-        ay=-40
+    # Metric 1: Daylight Factor
+    with metric_col1:
+        st.metric(
+            label="Primary Daylight Factor",
+            value=f"{0.75:.2f}",
+            help="Combined daylight factor for residential and work spaces"
         )
 
-    # Display the chart in Streamlit
-    st.plotly_chart(fig, use_container_width=True)
+        # Daylight calculations
+        weight_residential = 0.5
+        weight_work = 0.5
+        residential_area_with_daylight = 100
+        total_residential_area = 200
+        work_area_with_daylight = 150
+        total_work_area = 300
 
-    st.markdown(f"<h3 style='text-align: center;'>Energy Generation Ratio: {ratio:.2f}</h3>", unsafe_allow_html=True)
+        normalized_daylight = (
+            weight_residential * (residential_area_with_daylight / total_residential_area) +
+            weight_work * (work_area_with_daylight / total_work_area) * (10 / 7)
+        )
 
-    st.markdown("")
-    st.markdown("")
+    # Metric 2: Energy Generation Ratio
+    with metric_col2:
+        st.metric(
+            label="Energy Generation Ratio",
+            value=f"{energy_ratio:.2f}",
+            help="Ratio of energy generation to industrial team requirements"
+        )
 
-    st.markdown("<hr>", unsafe_allow_html=True)  # Add a line after the metric
+
+    # Create tabs for detailed analysis
+    tab1, tab2 = st.tabs([
+        "Daylight Factor Analysis",
+        "Energy Generation Analysis"
+    ])
+
+    with tab1:
+        st.markdown("<h3>Primary Daylight Factor and Solar Loads Control</h3>", unsafe_allow_html=True)
+        
+        # First show metrics in two columns
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("""
+            #### Residential Spaces
+            - Area with Daylight: {} m²
+            - Total Area: {} m²
+            - Weight: {}
+            """.format(residential_area_with_daylight, total_residential_area, weight_residential))
+            
+        with col2:
+            st.markdown("""
+            #### Work Spaces
+            - Area with Daylight: {} m²
+            - Total Area: {} m²
+            - Weight: {}
+            """.format(work_area_with_daylight, total_work_area, weight_work))
+        
+        # Show daylight sphere visualization
+        st.markdown("---")
+        st.components.v1.html(
+            create_sphere_visualization("daylight-sphere", normalized_daylight, "Daylight Factor"),
+            height=400
+        )
+
+    with tab2:
+        st.markdown("<h3>Energy Generation vs Industrial Requirements</h3>", unsafe_allow_html=True)
+        
+        # First show metrics in two columns
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("""
+            #### Energy Generation
+            - Total Generation: {} kWh
+            - Ratio: {:.2f}
+            """.format(energy_generation, energy_ratio))
+            
+        with col2:
+            st.markdown("""
+            #### Energy Requirements
+            - Industrial Team Needs: {} kWh
+            """.format(energy_required_by_industrial_team))
+        
+        # Show energy sphere visualization
+        st.markdown("---")
+        st.components.v1.html(
+            create_sphere_visualization("energy-sphere", energy_ratio, "Energy Generation Ratio"),
+            height=400
+        )
+
+    # Interactive Calculator Section
+    st.markdown("---")
+    st.markdown("""
+    <h3 style='text-align: center;'>Interactive Calculator</h3>
+    """, unsafe_allow_html=True)
+
+    calc_tab1, calc_tab2 = st.tabs(["Daylight Calculator", "Energy Calculator"])
+
+    with calc_tab1:
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("### Adjust Daylight Values")
+            numerator_val = st.slider("Daylit Floor Area (m²)", 0, 2000, residential_area_with_daylight)
+            denominator_val = st.slider("Total Floor Area (m²)", 1, 2000, total_residential_area)
+            new_daylight_value = numerator_val / denominator_val
+            st.markdown(f"### Resulting Ratio: {new_daylight_value:.2f}")
+        with col2:
+            st.components.v1.html(
+                create_sphere_visualization("dynamic-daylight", new_daylight_value, "Daylight Ratio", height=200),
+                height=250
+            )
+
+    with calc_tab2:
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("### Adjust Energy Values")
+            new_generation = st.slider("Energy Generation (kWh)", 0, 3000, energy_generation)
+            new_required = st.slider("Energy Required (kWh)", 1, 2000, energy_required_by_industrial_team)
+            new_energy_ratio = new_generation / new_required
+            st.markdown(f"### Resulting Ratio: {new_energy_ratio:.2f}")
+        with col2:
+            st.components.v1.html(
+                create_sphere_visualization("dynamic-energy", new_energy_ratio, "Energy Ratio", height=200),
+                height=250
+            )
+
+    # Extract and display facade data
+    facade_data = facade_extractor.extract(models, client, project_id)
