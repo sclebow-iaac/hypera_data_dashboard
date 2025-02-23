@@ -123,12 +123,10 @@ if selected_dashboard == "Main":
 
     with input_container:  # Use the new name here
         st.subheader("Inputs")
-        viewer_toggle, statistics_toggle, team_metrics_toggle, attribute_selection_toggle = st.columns(4)
+        viewer_toggle, statistics_toggle = st.columns(2)
         
         show_viewer = viewer_toggle.checkbox("Show Viewer", value=True)
         show_statistics = statistics_toggle.checkbox("Show Statistics", value=True)
-        show_team_specific_metrics = team_metrics_toggle.checkbox("Show Team Metrics", value=True)
-        show_attribute_extraction = attribute_selection_toggle.checkbox("Show Attribute Extraction", value=True)
 
         # #-------
         # #Speckle Server and Token

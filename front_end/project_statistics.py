@@ -59,9 +59,8 @@ def show(container, client, project, models, versions, verbose=False):
         #convert it to markdown list
         listToMarkdown(contributorNames,contributorCol)
 
-        st.subheader("Graphs for Entire Project 📊")
         #COLUMNS FOR CHARTS
-        model_graph_col, connector_graph_col, collaborator_graph_col = st.columns([2,1,1])
+        connector_graph_col, collaborator_graph_col = st.columns([1,1])
 
         #model GRAPH 📊
         #model count dataframe
@@ -75,70 +74,78 @@ def show(container, client, project, models, versions, verbose=False):
 
         model_counts = pd.DataFrame([[model_name, version_count] for model_name, version_count in zip(model_names, version_counts)])
 
-        #rename dataframe columns
-        model_counts.columns = ["modelName", "totalCommits"]
-        #create graph
-        model_count_graph = px.bar(model_counts, x=model_counts.modelName, y=model_counts.totalCommits, color=model_counts.modelName, labels={"modelName":"","totalCommits":""})
-        #update layout
-        model_count_graph.update_layout(
-            showlegend = False,
-            margin = dict(l=1,r=1,t=1,b=1),
-            height=220,
-            paper_bgcolor='rgb(255, 255, 255)',  # Transparent background
-            plot_bgcolor='rgb(255, 255, 255)',   # Transparent plot area
-            font_family="Arial",
-            font_color="black"
-        )
-        #show graph
-        model_graph_col.plotly_chart(model_count_graph, use_container_width=True)
+        # #rename dataframe columns
+        # model_counts.columns = ["modelName", "totalCommits"]
+        # #create graph
+        # model_count_graph = px.bar(model_counts, x=model_counts.modelName, y=model_counts.totalCommits, color=model_counts.modelName, labels={"modelName":"","totalCommits":""})
+        # #update layout
+        # model_count_graph.update_layout(
+        #     showlegend = False,
+        #     margin = dict(l=1,r=1,t=1,b=1),
+        #     height=220,
+        #     paper_bgcolor='rgba(0,0,0,0)',  # Transparent background
+        #     plot_bgcolor='rgba(0,0,0,0)',   # Transparent plot area
+        #     font_family="Arial",
+        #     font_color="black"
+        # )
+        # #show graph
+        # model_graph_col.plotly_chart(model_count_graph, use_container_width=True)
 
-        #CONNECTOR CHART 🍩
-        version_frame = pd.DataFrame.from_dict([c.dict() for c in all_versions_in_project])
-        #get apps from commits
-        apps = version_frame["sourceApplication"]
-        #reset index
-        apps = apps.value_counts().reset_index()
-        #rename columns
-        apps.columns=["app","count"]
-        #donut chart
-        fig = px.pie(apps, names=apps["app"],values=apps["count"], hole=0.5)
-        #set dimensions of the chart
-        fig.update_layout(
-            showlegend=False,
-            margin=dict(l=1, r=1, t=1, b=1),
-            height=200,
-            paper_bgcolor='rgba(0,0,0,0)',
-            font_family="Roboto Mono",
-            font_color="#2c3e50"
-        )
-        #set width of the chart so it uses column width
-        connector_graph_col.plotly_chart(fig, use_container_width=True)
+        # Create a new row for the pie charts
+        pie_col1, pie_col2 = st.columns(2)
 
-        #COLLABORATOR CHART 🍩
-        #get authors from commits
+        # CONNECTOR CHART 🍩
+        with pie_col1:
+            st.subheader("Connector Chart")
+            version_frame = pd.DataFrame.from_dict([c.dict() for c in all_versions_in_project])
+            #get apps from commits
+            apps = version_frame["sourceApplication"]
+            #reset index
+            apps = apps.value_counts().reset_index()
+            #rename columns
+            apps.columns=["app","count"]
+            #donut chart
+            fig = px.pie(apps, names=apps["app"],values=apps["count"], hole=0.5)
+            #set dimensions of the chart
+            fig.update_layout(
+                showlegend=False,
+                margin=dict(l=1, r=1, t=1, b=1),
+                height=200,
+                paper_bgcolor='rgba(0,0,0,0)',
+                font_family="Roboto Mono",
+                font_color="#2c3e50"
+            )
+            #set width of the chart so it uses column width
+            connector_graph_col.plotly_chart(fig, use_container_width=True)
 
-        version_user_names = []
-        for user in version_frame["authorUser"]:
-            # # print(f'type: {type(user)}')
-            # # print(f'user: {user.get('name')}\n')
-            version_user_names.append(user.get('name'))
+        # COLLABORATOR CHART 🍩
+        with pie_col2:
+            st.subheader("Collaborator Chart")
+            #get authors from commits
+            version_user_names = []
+            for user in version_frame["authorUser"]:
+                # # print(f'type: {type(user)}')
+                # # print(f'user: {user.get('name')}\n')
+                version_user_names.append(user.get('name'))
 
-        authors = pd.DataFrame(version_user_names).value_counts().reset_index()
-        #rename columns
-        authors.columns=["author","count"]
-        #create our chart
-        authorFig = px.pie(authors, names=authors["author"], values=authors["count"],hole=0.5)
-        authorFig.update_layout(
-            showlegend=False,
-            margin=dict(l=1,r=1,t=1,b=1),
-            height=200,
-            paper_bgcolor='rgba(0,0,0,0)',  # Add transparent background
-            plot_bgcolor='rgba(0,0,0,0)',   # Add transparent plot background
-            font_family="Roboto Mono",
-            font_color="#2c3e50",
-            yaxis_scaleanchor="x",
-        )
-        collaborator_graph_col.plotly_chart(authorFig, use_container_width=True)
+            authors = pd.DataFrame(version_user_names).value_counts().reset_index()
+            #rename columns
+            authors.columns=["author","count"]
+            #create our chart
+            authorFig = px.pie(authors, names=authors["author"], values=authors["count"],hole=0.5)
+            authorFig.update_layout(
+                showlegend=False,
+                margin=dict(l=1,r=1,t=1,b=1),
+                height=200,
+                paper_bgcolor='rgba(0,0,0,0)',  # Add transparent background
+                plot_bgcolor='rgba(0,0,0,0)',   # Add transparent plot background
+                font_family="Roboto Mono",
+                font_color="#2c3e50",
+                yaxis_scaleanchor="x",
+            )
+            collaborator_graph_col.plotly_chart(authorFig, use_container_width=True)
+
+        st.markdown("---")
 
         #COMMIT PANDAS TABLE 🔲
         st.subheader("Commit Activity Timeline 🕒")
