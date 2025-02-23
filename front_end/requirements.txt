@@ -2,3 +2,4 @@ plotly
 pandas
 specklepy
 colour
+pythreejs
