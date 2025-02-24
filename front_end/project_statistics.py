@@ -53,9 +53,9 @@ def show(container, client, project, models, versions, verbose=False):
 
         #Contributor Card 💳
         all_collaborators = get_all_coillaborators_in_project(project)
-        contributorCol.metric(label = "Number of Contributors to Project", value= len(all_collaborators))
         #unique contributor names
         contributorNames = list(dict.fromkeys([col.name for col in all_collaborators]))
+        contributorCol.metric(label = "Number of Contributors to Project", value= len(contributorNames))
         #convert it to markdown list
         listToMarkdown(contributorNames,contributorCol)
 
