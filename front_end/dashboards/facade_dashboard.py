@@ -5,6 +5,11 @@ from pythreejs import *
 from specklepy.api.client import SpeckleClient
 from specklepy.api.credentials import get_account_from_token
 
+# 1. Imports and Setup
+import data_extraction.facade_extractor as facade_extractor  # Only import the extractor module
+import pandas as pd
+import plotly.express as px
+
 def create_sphere_visualization(container_id, value, label, height=400):
     """Helper function to create sphere visualization HTML"""
     return f"""
@@ -122,10 +127,6 @@ def create_sphere_visualization(container_id, value, label, height=400):
     """
 
 def run(selected_team: str) -> None:
-    # 1. Imports and Setup
-    import data_extraction.facade_extractor as facade_extractor  # Only import the extractor module
-    import pandas as pd
-    import plotly.express as px
     
     # 2. Speckle Connection
     speckleServer = "macad.speckle.xyz"

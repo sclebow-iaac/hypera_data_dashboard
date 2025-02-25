@@ -12,6 +12,7 @@ import plotly.graph_objects as go
 
 import colour  # For color conversion
 
+import attribute_extraction
 
 def get_geometry_data(selected_version, client, project, verbose=True):
     objHash = selected_version.referencedObject
@@ -20,6 +21,8 @@ def get_geometry_data(selected_version, client, project, verbose=True):
         print(f'Starting to receive data...\n')
     transport = ServerTransport(client=client, stream_id=project.id)
     base = operations.receive(objHash, transport)
+    if verbose:
+        print(f'Data received.\n')
     return base
 
 
@@ -107,7 +110,7 @@ def search_for_attribute(base_data: Base, attribute: str, depth=0, single=True, 
     return found, output
 
 
-def extract(data, model_name, models, client, project_id, verbose=True):
+def extract(data, model_name, models, client, project_id, verbose=True, header=True, table=True, gauge=True, attribute_display=True):
 
     if verbose:
         print(f'Model name: {model_name}')  # Debugging
@@ -148,8 +151,9 @@ def extract(data, model_name, models, client, project_id, verbose=True):
             f'latest_version, createdAt: {latest_version.createdAt.strftime("%Y-%m-%d %H:%M:%S")}')
         print(f'latest_version, authorUser: {latest_version.authorUser.name}')
 
-        base_data = get_geometry_data(
-            latest_version, client, project, verbose=verbose)
+        with st.spinner(f'Receiving data from {model_name}'):
+            base_data = get_geometry_data(
+                latest_version, client, project, verbose=verbose)
 
         nested_index = 0
         while '@Data' in dir(base_data):
@@ -205,104 +209,160 @@ def extract(data, model_name, models, client, project_id, verbose=True):
                 #         print(f'Attribute {name} not found.')
                 #         extracted_data[data_name] = None
 
-    display_data(data, extracted_data, model_name, verbose=False)
+    display_data(data, extracted_data, model_name, verbose=False, header=header, show_table=table, gauge=gauge)
+    
+    if attribute_display:
+        # Add a separator
+        st.markdown("---")
+        # Add attribute extraction for debugging
+        attribute_extraction.run(latest_version, client, project)
 
     return extracted_data
 
 # Display a markdown table with the extracted data
 
 
-def display_data(data, extracted_data, model_name, verbose=True):
+def display_data(data, extracted_data, model_name, verbose=True, header=True, show_table=True, gauge=True):
+    if header:
+        # Display the model name
+        st.markdown('### Model Name')
+        if model_name is not None and model_name != "":
+            st.markdown(f'#### {model_name}')
+        else:
+            st.markdown(f'Model: {model_name} not found.')
 
-    # Display the model name
-    st.markdown('### Model Name')
-    if model_name is not None and model_name != "":
-        st.markdown(model_name)
-    else:
-        st.markdown(f'Model: {model_name} not found.')
-
-    st.markdown('---')
+        st.markdown('---')
 
     if verbose:
         print(f'Extracted data: {extracted_data}')
     header = ['Attribute Name', 'Found', 'Value', 'Type', 'Unit']
     table = [header]
 
+    print()
+
+    type_matched_bools = []
+
     for key in data:
         value = extracted_data[key]
         if value is None:
             value = "Not Found"
-        else:
-            value = str(value)
+
+        # If the value is a list with one element, get the first element
+        if type(value) == list and len(value) == 1:
+            value = value[0]
+
         type_expected = data[key][0]
         unit = data[key][1]
+
+        if type_expected == 'float':
+            try:
+                value = float(value)
+                print(f'{key} converted to float')
+            except:
+                print('Error converting value to float')
+        
+        if type_expected == 'int':
+            try:
+                value = int(value)
+                print(f'{key} converted to int')
+            except:
+                print('Error converting value to int')
+
         type_extracted = type(value).__name__
 
+        print(f'Key: {key} - Value: {value}')
+        print(f'Type: {type(value).__name__}')
+        print(f'Type expected: {type_expected}')
+        print()
+        
+        type_matched_bools.append(type_expected == type_extracted)
         if verbose:
             print(
                 f'Key: {key} - Value: {value} - Type Expected: {type_expected} - Type Extracted: {type_extracted}')
         if extracted_data[key] is not None:
             if type_expected == type_extracted:
-                table.append([key, 'Yes', value, type_extracted, unit])
+                table.append([key, 'Yes', str(value), f'{type_extracted} (As Expected)', unit])
             else:
                 table.append(
                     [key, 'Yes', value, f'{type_extracted} (Expected: {type_expected})', unit])
         else:
             table.append([key, 'No', value, type_expected, unit])
 
-    df = pd.DataFrame(table[1:], columns=table[0])
+    if show_table:
+        df = pd.DataFrame(table[1:], columns=table[0])
 
-    st.markdown('### Extracted Data')
-    st.table(df)
-    st.markdown('---')
+        st.markdown('### Extracted Data')
+        st.table(df)
+        st.markdown('---')
 
-    # Display a percentage of the data found compared to the total data expected
+    if gauge:
+        # Display a percentage of the data found compared to the total data expected
 
-    # Make two columns
-    column1, column2 = st.columns(2)
+        # Make two columns
+        column1, column2 = st.columns(2)
 
-    total_data = len(data)
-    data_found = len(
-        [key for key in extracted_data if extracted_data[key] is not None])
-    data_not_found = total_data - data_found
-    percentage_found = (data_found / total_data)
+        total_data = len(data)
+        data_found = len(
+            [key for key in extracted_data if extracted_data[key] is not None])
+        data_not_found = total_data - data_found
+        percentage_found = (data_found / total_data)
 
-    column1.markdown('### Data Found')
-    # Display the number of data found
-    column1.markdown(f'{data_found} / {total_data}')
-    column1.progress(percentage_found)  # Display the percentage of data found
+        percentage_type_matched = sum(type_matched_bools) / len(type_matched_bools)
 
-    column2.markdown('### Data Not Found')
-    # Display the number of data not found
-    column2.markdown(f'{data_not_found} / {total_data}')
-    # Display the percentage of data not found
-    column2.progress(1 - percentage_found)
+        column1.markdown('### Data Found')
+        # Display the number of data found
+        column1.markdown(f'{data_found} / {total_data}')
+        column1.progress(percentage_found)  # Display the percentage of data found
+        column1.markdown(f'### Data Type Verified')
+        # Display the percentage of data type matched
+        column1.markdown(f'{sum(type_matched_bools)} / {len(type_matched_bools)}')
+        column1.progress(percentage_type_matched)
 
-    # To debug make a slider to change the percentage found
-    # Make a toggle to show the debug slider
-    debug = st.checkbox("Debug")
-    if debug:
-        percentage_found = st.slider(
-            "Percentage Found", 0.0, 1.0, percentage_found)
-    # Create a gauge chart using Plotly
-    # Color should gradient from red to green based on the percentage found
-    color = colour.Color("red").range_to(colour.Color("green"), 101)
-    color = [c.hex for c in color]
+        column2.markdown('### Data Not Found')
+        # Display the number of data not found
+        column2.markdown(f'{data_not_found} / {total_data}')
+        # Display the percentage of data not found
+        column2.progress(1 - percentage_found)
+        column2.markdown(f'### Data Type Not Verified')
+        # Display the percentage of data type not matched
+        column2.markdown(f'{len(type_matched_bools) - sum(type_matched_bools)} / {len(type_matched_bools)}')
+        column2.progress(1 - percentage_type_matched)
 
-    color = list(color)[int(percentage_found * 100)]
+        # To debug make a slider to change the percentage found
+        # Make a toggle to show the debug slider
+        # debug = st.checkbox(f'Debug Slider {model_name}', key=f'Debug Slider {model_name}')
+        # if debug:
+        #     percentage_type_matched = st.slider(
+        #         "Percentage Found", 0.0, 1.0, percentage_type_matched)
 
-    fig = go.Figure(go.Indicator(
-        mode="gauge+number",
-        value=percentage_found * 100,
-        number={'suffix': "%"},
-        domain={'x': [0, 1], 'y': [0, 1]},
-        gauge={
-            'axis': {'range': [0, 100]},
-            'bar': {'color': color},
-        },
-        title={'text': "Data Found (%)"},
-    ))
+        # Create a gauge chart using Plotly
+        # Color should gradient from red to green based on the percentage found
+        color = colour.Color("red").range_to(colour.Color("green"), 101)
+        color = [c.hex for c in color]
 
-    st.plotly_chart(fig)
+        color = list(color)[int(percentage_type_matched * 100)]
+
+        fig = go.Figure(go.Indicator(
+            mode="gauge+number",
+            value=percentage_type_matched * 100,
+            number={'suffix': "%"},
+            domain={'x': [0, 1], 'y': [0, 1]},
+            gauge={
+                'axis': {'range': [0, 100]},
+                'bar': {'color': color},
+            },
+            title={'text': "Data Verified (%)"},
+        ))
+
+        fig.update_layout(
+            height=300
+        )
+
+        st.plotly_chart(fig, use_container_width=True, key=f'Gauge {model_name}')
+        # # Create Three Columns
+        # col1, col2, col3 = st.columns(3, vertical_alignment="top")
+        
+        # col2.plotly_chart(fig, use_container_width=True)
+
 
     return extracted_data

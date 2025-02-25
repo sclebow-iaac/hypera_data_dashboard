@@ -74,23 +74,6 @@ def show(container, client, project, models, versions, verbose=False):
 
         model_counts = pd.DataFrame([[model_name, version_count] for model_name, version_count in zip(model_names, version_counts)])
 
-        # #rename dataframe columns
-        # model_counts.columns = ["modelName", "totalCommits"]
-        # #create graph
-        # model_count_graph = px.bar(model_counts, x=model_counts.modelName, y=model_counts.totalCommits, color=model_counts.modelName, labels={"modelName":"","totalCommits":""})
-        # #update layout
-        # model_count_graph.update_layout(
-        #     showlegend = False,
-        #     margin = dict(l=1,r=1,t=1,b=1),
-        #     height=220,
-        #     paper_bgcolor='rgba(0,0,0,0)',  # Transparent background
-        #     plot_bgcolor='rgba(0,0,0,0)',   # Transparent plot area
-        #     font_family="Arial",
-        #     font_color="black"
-        # )
-        # #show graph
-        # model_graph_col.plotly_chart(model_count_graph, use_container_width=True)
-
         # Create a new row for the pie charts
         pie_col1, pie_col2 = st.columns(2)
 

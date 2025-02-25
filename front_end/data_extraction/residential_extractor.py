@@ -2,7 +2,7 @@
 
 import data_extraction.data_extractor as data_extractor
 
-model_name = "hypera/residential/building form/residential"
+model_name = "hypera/residential/programming/residential/data"
 
 data_names = [
     "ListOfUnitFunctions",
@@ -21,10 +21,5 @@ data_units = [
 
 data = dict(zip(data_names, zip(data_types, data_units)))
 
-metric_data = {data_names[0]: data_types[0], data_names[1]: data_types[1]}
-
-def get_data():
-    return data
-
-def extract(models, client, project_id):
-    return data_extractor.extract(data, model_name, models, client, project_id)
+def extract(models, client, project_id, header=True, table=True, gauge=True, attribute_display=True):
+    return data_extractor.extract(data, model_name, models, client, project_id, header=header, table=table, gauge=gauge, attribute_display=attribute_display)

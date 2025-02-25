@@ -12,6 +12,7 @@ import dashboards.service_dashboard as service_dashboard
 import dashboards.structure_dashboard as structure_dashboard
 import dashboards.industrial_dashboard as industrial_dashboard
 import dashboards.facade_dashboard as facade_dashboard
+import dashboards.data_dashboard as data_dashboard
 
 # import statistics
 import project_statistics as statistics
@@ -24,7 +25,7 @@ import attribute_extraction
 st.set_page_config(
     page_title="Hyperbuilding_A Dashboard",
     page_icon="📊",
-    layout="centered"  # Makes the dashboard use full screen width
+    layout="wide"  # Makes the dashboard use full screen width
 )
 
 st.markdown("""
@@ -142,7 +143,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Sidebar for selecting dashboards
-dashboard_options = ["Main", "Residential", "Service", "Structure", "Industrial", "Facade"]
+dashboard_options = ["Main", "Residential", "Service", "Structure", "Industrial", "Facade", "Data"]
 selected_dashboard = st.sidebar.radio("Select Dashboard", dashboard_options)
 
 # Create a placeholder for the dashboard content
@@ -314,6 +315,7 @@ if selected_dashboard == "Main":
 
     # Add a separator
     st.markdown("---")
+    # Add attribute extraction for debugging
     attribute_extraction.run(selected_version, client, project)
 
 
@@ -329,6 +331,7 @@ else:
         display_industrial_dashboard()
     elif selected_dashboard == "Facade":
         display_facade_dashboard()
-
+    elif selected_dashboard == "Data":
+        data_dashboard.run()
 
 #--------------------------
