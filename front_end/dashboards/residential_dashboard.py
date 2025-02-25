@@ -5,17 +5,15 @@ from pythreejs import *
 from specklepy.api.client import SpeckleClient
 from specklepy.api.credentials import get_account_from_token
 
+import data_extraction.residential_extractor as residential_extractor
+#import pandas
+import pandas as pd
+#import plotly express
+import plotly.express as px
 
 # Define the function to run the dashboard
 
 def run(selected_team: str) -> None:
-
-    from data_extraction.residential_extractor import get_data
-    import data_extraction.residential_extractor as residential_extractor
-    #import pandas
-    import pandas as pd
-    #import plotly express
-    import plotly.express as px
 
     # Get data from residential extractor
     speckleServer = "macad.speckle.xyz"

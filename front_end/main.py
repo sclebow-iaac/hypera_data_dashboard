@@ -35,20 +35,16 @@ st.markdown("""
     
     /* Main background */
     .stApp {
-        background-color: #ffffff;
         font-family: 'Roboto Mono', sans-serif;  /* Apply font family to entire app */
     }
     
     /* Main container */
     .main {
-        background-color: #ffffff;
-        color: white;
         font-family: 'Roboto Mono', sans-serif;
     }
     
     /* Headers */
     .css-10trblm, .css-qrbaxs {
-        color: #000000;
         font-weight: 600;
         font-family: 'Roboto Mono', sans-serif !important;  /* Added !important */
     }
@@ -60,8 +56,6 @@ st.markdown("""
     
     /* Metrics styling */
     div[data-testid="stMetricValue"] {
-        background-color: #ffffff;
-        color: black;
         padding: 1rem;
         border-radius: 0.5rem;
         box-shadow: 0 2px 4px rgba(0,0,0,0.2);
@@ -69,33 +63,18 @@ st.markdown("""
     
     /* Cards and containers */
     div.css-12w0qpk.e1tzin5v2 {
-        background-color: #ffffff;
-        color: black;
         padding: 1rem;
         border-radius: 0.5rem;
         box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
     
-    /* Text color */
-    .css-1dp5vir {
-        color: black;
-    }
-    
     /* Buttons and selectbox */
     .stButton>button, .stSelectbox {
-        background-color: #ffffff;
-        color: black;
         border-radius: 0.3rem;
-    }
-    
-    /* Markdown text */
-    .css-183lzff {
-        color: black;
     }
     
     /* Chart containers */
     div[data-testid="stPlotlyChart"] {
-        background-color: #2d2d2d;
         border-radius: 0.5rem;
         padding: 1rem;
         box-shadow: 0 2px 4px rgba(0,0,0,0.2);

@@ -211,12 +211,15 @@ def extract(data, model_name, models, client, project_id, verbose=True, header=T
 
     display_data(data, extracted_data, model_name, verbose=False, header=header, show_table=table, gauge=gauge)
     
-    if attribute_display:
-        # Add a separator
-        st.markdown("---")
-        # Add attribute extraction for debugging
-        attribute_extraction.run(latest_version, client, project)
-
+    try:
+        if attribute_display:
+            # Add a separator
+            st.markdown("---")
+            # Add attribute extraction for debugging
+            attribute_extraction.run(latest_version, client, project)
+    except:
+        print('Error displaying attributes')
+        
     return extracted_data
 
 # Display a markdown table with the extracted data
