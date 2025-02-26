@@ -348,9 +348,11 @@ def display_data(data, extracted_data, model_name, verbose=True, header=True, sh
 
     if show_table:
         df = pd.DataFrame(table[1:], columns=table[0])
+        # Display the table
 
         st.markdown('#### Extracted Data')
-        st.table(df)
+        st.dataframe(df.style.set_properties(
+            **{'font-family': 'Roboto Mono', 'font-size': '18px'}), hide_index=True, use_container_width=True)
         st.markdown('---')
 
     if gauge:
