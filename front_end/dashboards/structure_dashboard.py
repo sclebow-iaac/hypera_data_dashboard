@@ -4,12 +4,11 @@ import plotly.express as px
 from specklepy.api.client import SpeckleClient
 from specklepy.api.credentials import get_account_from_token
 
+import data_extraction.structure_extractor as structure_extractor
+import pandas as pd
+import plotly.express as px
+
 def run(selected_team: str) -> None:
-    # 1. Imports and Setup
-    import data_extraction.structure_extractor as structure_extractor
-    import pandas as pd
-    import plotly.express as px
-    
     # 2. Speckle Connection
     speckleServer = "macad.speckle.xyz"
     speckleToken = "61c9dd1efb887a27eb3d52d0144f1e7a4a23f962d7"

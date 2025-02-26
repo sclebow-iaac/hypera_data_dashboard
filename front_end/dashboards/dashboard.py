@@ -1,116 +1,68 @@
+# This script holds general functions for all Team dashboards
+
 import streamlit as st
-import data_extraction.service_extractor as service_extractor
 import pandas as pd
 import plotly.express as px
 from specklepy.api.client import SpeckleClient
 from specklepy.api.credentials import get_account_from_token
 
-import data_extraction.service_extractor as service_extractor
 import pandas as pd
 import plotly.express as px
 
-def run(selected_team: str) -> None:
-    
-    # 2. Speckle Connection
-    speckleServer = "macad.speckle.xyz"
-    speckleToken = "61c9dd1efb887a27eb3d52d0144f1e7a4a23f962d7"
-    client = SpeckleClient(host=speckleServer)
-    account = get_account_from_token(speckleToken, speckleServer)
+def setup_speckle_connection():
+    speckle_server = "macad.speckle.xyz"
+    speckle_token = "61c9dd1efb887a27eb3d52d0144f1e7a4a23f962d7"
+    client = SpeckleClient(host=speckle_server)
+    account = get_account_from_token(speckle_token, speckle_server)
     client.authenticate_with_account(account)
     
     project_id = '31f8cca4e0'
-    selected_project = client.project.get(project_id=project_id)
-    project = client.project.get_with_models(project_id=selected_project.id, models_limit=100)
+    project = client.project.get_with_models(project_id=project_id, models_limit=100)
     models = project.models.items
 
-    # Initial values
-    occupancy_efficiency = 80
-    utilization_rate = 34
-    n = 5
-    active_hours = 12
-    function_exchange_factor = 4
-    total_available_hours_per_day = 13
-    total_spaces_available = 50
+    return models, client, project_id
 
-    # Header
-    st.markdown("""
+def display_page_title(team_name: str) -> None:
+    st.markdown(f'''
         <div style="text-align: center;">
-            <h1>Service Dashboard</h1>
+            <h1>{team_name} Dashboard</h1>
         </div>
-    """, unsafe_allow_html=True)
+    ''', unsafe_allow_html=True)
 
-    # Metrics Display
-    metric_col1, metric_col2 = st.columns(2)
-    metric_col1.metric("Number of Spaces", n)
-    metric_col2.metric("Primary Metric", "Occupancy Efficiency")
+def display_formula_section_header(team_name: str) -> None:
+    st.markdown(f'''
+        <div style="text-align: center;">
+            <h2>{team_name} Metrics</h2>
+        </div>
+    ''', unsafe_allow_html=True)
 
-    # Calculate Primary Index
-    numerator = utilization_rate * active_hours * function_exchange_factor
-    denominator = total_available_hours_per_day * total_spaces_available
-    calculated_value = numerator / denominator if denominator != 0 else 0
+def display_metric(container, title: str, formula_markdown: str, description: str, value: float, add_text=True, add_sphere: bool = True):
+    def metric_text_display(title, formula_markdown, description, value):
+        st.markdown(f"### {title}")
+        st.latex(formula_markdown)
+        st.markdown(description)
+        if value is not None:
+            st.markdown(f"<h4 style='text-align: center;'>Current Value: {value:.2f}</h4>", unsafe_allow_html=True)
 
-    # Display Formula and Explanation
-    st.markdown("""
-    <h2 style='text-align: center;'>Occupancy Efficiency</h2>
-    """, unsafe_allow_html=True)
-
-    st.markdown(r"""
-        The formula for calculating the metric can be expressed as:
-        
-        $$ 
-        \frac{\sum_{i=1}^{n} (UtilizationRateOfFunction_i \cdot ActiveHoursOfFunctionPerDay_i \cdot FunctionExchangeFactor)}{TotalAvailableHoursPerDay \cdot TotalSpacesAvailable}
-        $$
-    """, unsafe_allow_html=True)
-
-    if calculated_value is not None:
-        st.markdown(f"<h3 style='text-align: center;'>Calculated Occupancy Efficiency: {calculated_value:.2f}</h3>", unsafe_allow_html=True)
-
-    # 3D Visualization
-    st.markdown("""
-    <h2 style='text-align: center;'>3D Visualization</h2>
-    """, unsafe_allow_html=True)
-
-    # Create sphere visualization
-    html = create_sphere_visualization(
-        "main-sphere",
-        calculated_value,
-        "Occupancy Efficiency"
-    )
-    st.components.v1.html(html, height=600)
-
-    # Interactive Calculator
-    st.markdown("""
-    <h3 style='text-align: center;'>Interactive Occupancy Calculator</h3>
-    """, unsafe_allow_html=True)
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown("### Adjust Values")
-        new_utilization_rate = st.slider("Utilization Rate (%)", 0, 100, utilization_rate, help="Percentage of space utilization")
-        new_active_hours = st.slider("Active Hours", 0, 24, active_hours, help="Hours of active use per day")
-        new_function_exchange_factor = st.slider("Function Exchange Factor", 1, 10, function_exchange_factor, help="Multiplier for function flexibility")
-        new_total_hours = st.slider("Total Available Hours per Day", 1, 24, total_available_hours_per_day, help="Total hours available per day")
-        new_total_spaces = st.slider("Total Spaces Available", 1, 100, total_spaces_available, help="Total number of spaces")
-        
-        # Calculate new value
-        new_numerator = new_utilization_rate * new_active_hours * new_function_exchange_factor
-        new_denominator = new_total_hours * new_total_spaces
-        new_calculated_value = new_numerator / new_denominator if new_denominator != 0 else 0
-        st.markdown(f"### Resulting Occupancy Efficiency: {new_calculated_value:.2f}")
-
-    with col2:
-        # Create dynamic sphere
-        dynamic_sphere = create_sphere_visualization(
-            "dynamic-sphere",
-            new_calculated_value,
-            "Occupancy Efficiency",
-            height=200
+    def metric_sphere_display(title, value):
+        sphere_html = create_sphere_visualization(
+            f"{title.lower().replace(' ', '-')}-sphere", 
+            value, 
+            title
         )
-        st.components.v1.html(dynamic_sphere, height=250)
-
-    # Extract and display service data
-    service_data = service_extractor.extract(models, client, project_id)
+        st.components.v1.html(sphere_html, height=300)
+    if add_text and add_sphere:
+        col1, col2 = container.columns(2)
+        with col1:
+            metric_text_display(title, formula_markdown, description, value)
+        with col2:
+            metric_sphere_display(title, value)
+    elif add_text:
+        metric_text_display(title, formula_markdown, description, value)
+    elif add_sphere:
+        metric_sphere_display(title, value)
+    else:
+        pass
 
 def create_sphere_visualization(container_id, value, label, height=400):
     """Helper function to create sphere visualization HTML"""
@@ -184,13 +136,13 @@ def create_sphere_visualization(container_id, value, label, height=400):
                 renderer.setClearColor(0xeeeeee, 0.9);  // Slightly transparent background
                 container.appendChild(renderer.domElement);
 
-                const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-                scene.add(ambientLight);
-                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-                directionalLight.position.set(3, 5, 1);
-                scene.add(directionalLight);
+                const ambient_light = new THREE.AmbientLight(0xffffff, 0.5);
+                scene.add(ambient_light);
+                const directional_light = new THREE.DirectionalLight(0xffffff, 0.8);
+                directional_light.position.set(3, 5, 1);
+                scene.add(directional_light);
 
-                const vertexShader = `
+                const vertex_shader = `
                     varying vec3 vPosition;
                     void main() {{
                         vPosition = position;
@@ -198,7 +150,7 @@ def create_sphere_visualization(container_id, value, label, height=400):
                     }}
                 `;
 
-                const fragmentShader = `
+                const fragment_shader = `
                     uniform float value;
                     varying vec3 vPosition;
                     void main() {{
@@ -215,8 +167,8 @@ def create_sphere_visualization(container_id, value, label, height=400):
                     uniforms: {{
                         value: {{ value: {value} }}
                     }},
-                    vertexShader: vertexShader,
-                    fragmentShader: fragmentShader
+                    vertexShader: vertex_shader,
+                    fragmentShader: fragment_shader
                 }});
                 
                 const sphere = new THREE.Mesh(geometry, material);
@@ -243,3 +195,4 @@ def create_sphere_visualization(container_id, value, label, height=400):
         </body>
     </html>
     """
+

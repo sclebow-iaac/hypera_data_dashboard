@@ -126,6 +126,17 @@ def create_sphere_visualization(container_id, value, label, height=400):
     </html>
     """
 
+def calculate_energy_ratio(energy_generation, energy_required_by_industrial_team):
+    return energy_generation / energy_required_by_industrial_team
+
+def calculate_metrics(energy_generation, energy_required_by_industrial_team, ):
+    # Energy calculations
+    # Inputs
+    energy_generation = 1500
+    energy_required_by_industrial_team = 1000
+    # Output
+    energy_ratio = calculate_energy_ratio(energy_generation, energy_required_by_industrial_team)
+
 def run(selected_team: str) -> None:
     
     # 2. Speckle Connection
@@ -147,10 +158,10 @@ def run(selected_team: str) -> None:
         </div>
     """, unsafe_allow_html=True)
 
-    # Energy calculations
     energy_generation = 1500
     energy_required_by_industrial_team = 1000
-    energy_ratio = energy_generation / energy_required_by_industrial_team
+
+    energy_ratio = calculate_energy_ratio(energy_generation, energy_required_by_industrial_team)
 
     # Display metrics in columns
     metric_col1, metric_col2 = st.columns(2)
