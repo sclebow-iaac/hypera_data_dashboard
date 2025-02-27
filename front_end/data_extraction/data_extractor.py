@@ -14,6 +14,7 @@ import colour  # For color conversion
 
 import attribute_extraction
 
+
 def get_geometry_data(selected_version, client, project, verbose=True):
     objHash = selected_version.referencedObject
     if verbose:
@@ -110,7 +111,7 @@ def search_for_attribute(base_data: Base, attribute: str, depth=0, single=True, 
     return found, output
 
 
-def extract(data, model_name, models, client, project_id, verbose=True, header=True, table=True, gauge=True, attribute_display=True):
+def extract(data, model_name, models, client, project_id, verbose=True, header=True, table=True, gauge=True, attribute_display=True, container=None):
 
     if verbose:
         print(f'Model name: {model_name}')  # Debugging
@@ -148,7 +149,7 @@ def extract(data, model_name, models, client, project_id, verbose=True, header=T
             model_id=selected_model.id, project_id=project.id, limit=100).items
         latest_version = versions[0]
         # print(
-            # f'latest_version, createdAt: {latest_version.createdAt.strftime("%Y-%m-%d %H:%M:%S")}')
+        # f'latest_version, createdAt: {latest_version.createdAt.strftime("%Y-%m-%d %H:%M:%S")}')
         # print(f'latest_version, authorUser: {latest_version.authorUser.name}')
 
         with st.spinner(f'Receiving data from {model_name}'):
@@ -209,8 +210,9 @@ def extract(data, model_name, models, client, project_id, verbose=True, header=T
                 #         print(f'Attribute {name} not found.')
                 #         extracted_data[data_name] = None
 
-    display_data(data, extracted_data, model_name, verbose=False, header=header, show_table=table, gauge=gauge)
-    
+    display_data(data, extracted_data, model_name, verbose=False,
+                 header=header, show_table=table, gauge=gauge, container=container)
+
     try:
         if attribute_display:
             # Add a separator
@@ -225,6 +227,7 @@ def extract(data, model_name, models, client, project_id, verbose=True, header=T
     print(f'Fully verified: {fully_verified}')
 
     return fully_verified, extracted_data
+
 
 def verify_data(data, extracted_data):
     type_matched_bools = []
@@ -247,7 +250,7 @@ def verify_data(data, extracted_data):
                 print(f'{key} converted to float')
             except:
                 print('Error converting value to float')
-        
+
         if type_expected == 'int':
             try:
                 value = int(value)
@@ -261,24 +264,30 @@ def verify_data(data, extracted_data):
         print(f'Type: {type(value).__name__}')
         print(f'Type expected: {type_expected}')
         print()
-        
+
         type_matched_bools.append(type_expected == type_extracted)
 
     if False in type_matched_bools:
         return False
     else:
         return True
-    
+
     return False
 
 # Display the extracted data
-def display_data(data, extracted_data, model_name, verbose=True, header=True, show_table=True, gauge=True, simple_table=False):
+
+
+def display_data(data, extracted_data, model_name, verbose=True, header=True, show_table=True, gauge=True, simple_table=False, container=None):
     if header:
+        if not container:
+            header_container = st.container()
+        else:
+            header_container = container
         # Display the model name
         if model_name is not None and model_name != "":
-            st.markdown(f'### Speckle Model Name: {model_name}')
+            header_container.markdown(f'### Speckle Model Name: {model_name}')
         else:
-            st.markdown(f'### Speckle Model: {model_name} not found.')
+            header_container.markdown(f'### Speckle Model: {model_name} not found.')
 
         # st.markdown('---')
 
@@ -312,7 +321,7 @@ def display_data(data, extracted_data, model_name, verbose=True, header=True, sh
                 print(f'{key} converted to float')
             except:
                 print('Error converting value to float')
-        
+
         if type_expected == 'int':
             try:
                 value = int(value)
@@ -326,7 +335,7 @@ def display_data(data, extracted_data, model_name, verbose=True, header=True, sh
         print(f'Type: {type(value).__name__}')
         print(f'Type expected: {type_expected}')
         print()
-        
+
         type_matched_bools.append(type_expected == type_extracted)
         if verbose:
             print(
@@ -336,7 +345,8 @@ def display_data(data, extracted_data, model_name, verbose=True, header=True, sh
                 if simple_table:
                     table.append([key, value, unit])
                 else:
-                    table.append([key, 'Yes', str(value), f'{type_extracted} (As Expected)', unit])
+                    table.append(
+                        [key, 'Yes', str(value), f'{type_extracted} (As Expected)', unit])
             else:
                 if simple_table:
                     table.append([key, value, unit])
@@ -353,17 +363,25 @@ def display_data(data, extracted_data, model_name, verbose=True, header=True, sh
         # Convert the table to a pandas dataframe
         df = pd.DataFrame(table[1:], columns=table[0])
         # Display the table
-
-        st.markdown('#### Extracted Data')
-        st.dataframe(df.style.set_properties(
-            **{'font-family': 'Roboto Mono', 'font-size': '18px'}), hide_index=True, use_container_width=True)
-        st.markdown('---')
+        if container:
+            with container:
+                st.markdown('#### Extracted Data')
+                st.dataframe(df.style.set_properties(
+                    **{'font-family': 'Roboto Mono', 'font-size': '18px'}), hide_index=True, use_container_width=True)
+                st.markdown('---')
+        else:
+            st.markdown('#### Extracted Data')
+            st.dataframe(df.style.set_properties(
+                **{'font-family': 'Roboto Mono', 'font-size': '18px'}), hide_index=True, use_container_width=True)
+            st.markdown('---')
 
     if gauge:
         # Display a percentage of the data found compared to the total data expected
-
         # Make two columns
-        column1, column2 = st.columns(2)
+        if container:
+            column1, column2 = container.columns(2)
+        else:
+            column1, column2 = st.columns(2)
 
         total_data = len(data)
         data_found = len(
@@ -371,15 +389,18 @@ def display_data(data, extracted_data, model_name, verbose=True, header=True, sh
         data_not_found = total_data - data_found
         percentage_found = (data_found / total_data)
 
-        percentage_type_matched = sum(type_matched_bools) / len(type_matched_bools)
+        percentage_type_matched = sum(
+            type_matched_bools) / len(type_matched_bools)
 
         column1.markdown('### Data Found')
         # Display the number of data found
         column1.markdown(f'{data_found} / {total_data}')
-        column1.progress(percentage_found)  # Display the percentage of data found
+        # Display the percentage of data found
+        column1.progress(percentage_found)
         column1.markdown(f'### Data Type Verified')
         # Display the percentage of data type matched
-        column1.markdown(f'{sum(type_matched_bools)} / {len(type_matched_bools)}')
+        column1.markdown(
+            f'{sum(type_matched_bools)} / {len(type_matched_bools)}')
         column1.progress(percentage_type_matched)
 
         column2.markdown('### Data Not Found')
@@ -389,7 +410,8 @@ def display_data(data, extracted_data, model_name, verbose=True, header=True, sh
         column2.progress(1 - percentage_found)
         column2.markdown(f'### Data Type Not Verified')
         # Display the percentage of data type not matched
-        column2.markdown(f'{len(type_matched_bools) - sum(type_matched_bools)} / {len(type_matched_bools)}')
+        column2.markdown(
+            f'{len(type_matched_bools) - sum(type_matched_bools)} / {len(type_matched_bools)}')
         column2.progress(1 - percentage_type_matched)
 
         # To debug make a slider to change the percentage found
@@ -422,7 +444,8 @@ def display_data(data, extracted_data, model_name, verbose=True, header=True, sh
             height=300
         )
 
-        st.plotly_chart(fig, use_container_width=True, key=f'Gauge {model_name}')
+        st.plotly_chart(fig, use_container_width=True,
+                        key=f'Gauge {model_name}')
         st.markdown('---')
 
     return extracted_data
