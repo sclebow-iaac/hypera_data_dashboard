@@ -344,9 +344,13 @@ def display_data(data, extracted_data, model_name, verbose=True, header=True, sh
                     table.append(
                         [key, 'Yes', value, f'{type_extracted} (Expected: {type_expected})', unit])
         else:
-            table.append([key, 'No', value, type_expected, unit])
+            if simple_table:
+                table.append([key, value, unit])
+            else:
+                table.append([key, 'No', value, type_expected, unit])
 
     if show_table:
+        # Convert the table to a pandas dataframe
         df = pd.DataFrame(table[1:], columns=table[0])
         # Display the table
 
@@ -419,10 +423,6 @@ def display_data(data, extracted_data, model_name, verbose=True, header=True, sh
         )
 
         st.plotly_chart(fig, use_container_width=True, key=f'Gauge {model_name}')
-        # # Create Three Columns
-        # col1, col2, col3 = st.columns(3, vertical_alignment="top")
-        
-        # col2.plotly_chart(fig, use_container_width=True)
-
+        st.markdown('---')
 
     return extracted_data
