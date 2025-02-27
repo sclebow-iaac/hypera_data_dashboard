@@ -210,4 +210,4 @@ def run(selected_team: str) -> None:
     # Interactive Calculators
     metric_interactive_calculator_container = st.container()
     display_interactive_calculators(
-        metric_interactive_calculator_container, metrics, grid=False)
+        metric_interactive_calculator_container, metrics, grid=True)
