@@ -345,7 +345,7 @@ def display_data(data, extracted_data, model_name, verbose=True, header=True, sh
         if extracted_data[key] is not None:
             if type_expected == type_extracted:
                 if simple_table:
-                    table.append([key, value, unit])
+                    table.append([key, str(value), unit])
                 else:
                     table.append(
                         [key, 'Yes', str(value), f'{type_extracted} (As Expected)', unit])
@@ -357,9 +357,9 @@ def display_data(data, extracted_data, model_name, verbose=True, header=True, sh
                         [key, 'Yes', value, f'{type_extracted} (Expected: {type_expected})', unit])
         else:
             if simple_table:
-                table.append([key, value, unit])
+                table.append([key, str(value), unit])
             else:
-                table.append([key, 'No', value, type_expected, unit])
+                table.append([key, 'No', str(value), type_expected, unit])
 
     if show_table:
         # Convert the table to a pandas dataframe

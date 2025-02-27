@@ -2,7 +2,7 @@
 
 import data_extraction.data_extractor as data_extractor
 
-model_name = "hypera/services/neighborhoods/massing"
+model_name = "hypera/services/neighborhoods/data"
 
 data_names = [
     "ListOfFunctionNames",
@@ -10,7 +10,8 @@ data_names = [
     "ActiveHoursOfFunctionPerDay",
     "FunctionExchangeFactor",
     "TotalAvailableHoursPerDay",
-    "TotalSpacesAvailable"
+    "TotalArea",
+    "AreaOfFunctions"
 ]
 
 data_types = [
@@ -19,7 +20,8 @@ data_types = [
     "list",
     "list",
     "float",
-    "int"
+    "float",
+    "list"
 ]
 
 data_units = [
@@ -28,7 +30,8 @@ data_units = [
     "Hours",
     "None",
     "Hours",
-    "Count"
+    "Square Meters",
+    "Square Meters"
 ]
 
 data = dict(zip(data_names, zip(data_types, data_units)))
