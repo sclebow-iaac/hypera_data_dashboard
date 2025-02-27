@@ -9,6 +9,7 @@ from specklepy.api.credentials import get_account_from_token
 import pandas as pd
 import plotly.express as px
 
+
 class Metric:
     def __init__(self, title: str, formula_markdown: str, description: str, interactive_calculator_func, calculation_func, *args):
         self.title = title
@@ -21,25 +22,29 @@ class Metric:
 
     def calculate(self):
         return self.calculation_func(*self.args)
-    
+
     def display(self, container, add_text=True, add_sphere=True):
-        display_metric(container, self.title, self.formula_markdown, self.description, self.value, add_text, add_sphere)
+        display_metric(container, self.title, self.formula_markdown,
+                       self.description, self.value, add_text, add_sphere)
 
     def display_interactive_calculator(self, container):
         self.interactive_calculator_func(container, *self.args)
-            
+
+
 def setup_speckle_connection():
     speckle_server = "macad.speckle.xyz"
     speckle_token = "61c9dd1efb887a27eb3d52d0144f1e7a4a23f962d7"
     client = SpeckleClient(host=speckle_server)
     account = get_account_from_token(speckle_token, speckle_server)
     client.authenticate_with_account(account)
-    
+
     project_id = '31f8cca4e0'
-    project = client.project.get_with_models(project_id=project_id, models_limit=100)
+    project = client.project.get_with_models(
+        project_id=project_id, models_limit=100)
     models = project.models.items
 
     return models, client, project_id
+
 
 def display_page_title(team_name: str) -> None:
     st.markdown(f'''
@@ -48,6 +53,7 @@ def display_page_title(team_name: str) -> None:
         </div>
     ''', unsafe_allow_html=True)
 
+
 def display_formula_section_header(team_name: str) -> None:
     st.markdown(f'''
         <div style="text-align: center;">
@@ -55,18 +61,20 @@ def display_formula_section_header(team_name: str) -> None:
         </div>
     ''', unsafe_allow_html=True)
 
+
 def display_metric(container, title: str, formula_markdown: str, description: str, value: float, add_text=True, add_sphere: bool = True):
     def metric_text_display(title, formula_markdown, description, value):
         st.markdown(f"### {title}")
         st.latex(formula_markdown)
         st.markdown(description)
         if value is not None:
-            st.markdown(f"<h4 style='text-align: center;'>Current Value: {value:.2f}</h4>", unsafe_allow_html=True)
+            st.markdown(
+                f"<h4 style='text-align: center;'>Current Value: {value:.2f}</h4>", unsafe_allow_html=True)
 
     def metric_sphere_display(title, value):
         sphere_html = create_sphere_visualization(
-            f"{title.lower().replace(' ', '-')}-sphere", 
-            value, 
+            f"{title.lower().replace(' ', '-')}-sphere",
+            value,
             title
         )
         st.components.v1.html(sphere_html, height=300)
@@ -87,17 +95,20 @@ def display_metric(container, title: str, formula_markdown: str, description: st
     else:
         pass
 
+
 def display_st_metric_values(container, metrics):
     column_containers = container.columns(4)
     for column_container, metric in zip(column_containers, metrics):
         with column_container:
-            column_container.metric(metric.title, f'{metric.value:.2f}')        
+            column_container.metric(metric.title, f'{metric.value:.2f}')
+
 
 def display_metric_visualizations(container, metrics, add_text=True, add_sphere=True):
     vis_cotainers = [container.container() for _ in range(len(metrics))]
     for vis_container, metric in zip(vis_cotainers, metrics):
         metric.display(container, add_text=add_text, add_sphere=add_sphere)
     st.markdown("---")
+
 
 def display_interactive_calculators(container, metrics: list[Metric], grid: bool = True):
     container.markdown("""
@@ -110,17 +121,19 @@ def display_interactive_calculators(container, metrics: list[Metric], grid: bool
         cell_count = len(metrics)
         cols = 2
         rows = (cell_count + cols - 1) // cols
-        
+
         interactive_containers = []
         for i in range(rows):
-            col_1, col_2 = container.columns(cols)
+            col_1, col_2 = container.columns(cols, border=True)
             interactive_containers.append(col_1.container())
             interactive_containers.append(col_2.container())
-            
+
     else:
-        interactive_containers = [container.container() for _ in range(len(metrics))]
+        interactive_containers = [container.container()
+                                  for _ in range(len(metrics))]
     for interactive_container, metric in zip(interactive_containers, metrics):
         metric.display_interactive_calculator(interactive_container)
+
 
 def create_sphere_visualization(container_id, value, label, height=400):
     """Helper function to create sphere visualization HTML"""
@@ -253,4 +266,3 @@ def create_sphere_visualization(container_id, value, label, height=400):
         </body>
     </html>
     """
-

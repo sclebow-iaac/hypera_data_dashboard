@@ -285,9 +285,11 @@ def display_data(data, extracted_data, model_name, verbose=True, header=True, sh
             header_container = container
         # Display the model name
         if model_name is not None and model_name != "":
-            header_container.markdown(f'### Speckle Model Name: {model_name}')
+            header_container.markdown(f'### Speckle Model Name:')
+            header_container.markdown(f'#### {model_name}')
         else:
-            header_container.markdown(f'### Speckle Model: {model_name} not found.')
+            header_container.markdown(f'### Speckle Model: ')
+            header_container.markdown(f'#### {model_name} not found.')
 
         # st.markdown('---')
 
@@ -443,9 +445,13 @@ def display_data(data, extracted_data, model_name, verbose=True, header=True, sh
         fig.update_layout(
             height=300
         )
-
-        st.plotly_chart(fig, use_container_width=True,
-                        key=f'Gauge {model_name}')
-        st.markdown('---')
+        if container:
+            gauge_container = container
+        else:
+            gauge_container = st.container()
+        gauge_container.plotly_chart(fig, use_container_width=True,
+                                     key=f'Gauge {model_name}')
+        if not container:
+            gauge_container.markdown('---')
 
     return extracted_data
