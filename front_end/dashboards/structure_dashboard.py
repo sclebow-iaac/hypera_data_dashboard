@@ -98,20 +98,20 @@ def run(selected_team: str) -> None:
         total_floor_area = 1000
         load_capacity = 800
         self_weight_of_structure = 500
-        theoretical_minimum_material_usage = 800
-        actual_material_usage = 500
-        total_embodied_carbon_emissions = 800
-        usable_floor_area = 1000
+        # theoretical_minimum_material_usage = 800
+        # actual_material_usage = 500
+        # total_embodied_carbon_emissions = 800
+        # usable_floor_area = 1000
     else:
         # Extracted data
         total_column_free_floor_area = team_data['TotalColumnFreeFloorArea']
         total_floor_area = team_data['TotalFloorArea']
-        total_embodied_carbon_emissions = team_data['TotalEmbodiedCarbonEmissions']
-        usable_floor_area = team_data['UsableFloorArea']
+        # total_embodied_carbon_emissions = team_data['TotalEmbodiedCarbonEmissions']
+        # usable_floor_area = team_data['UsableFloorArea']
         load_capacity = team_data['LoadCapacity']
         self_weight_of_structure = team_data['SelfWeightOfStructure']
-        theoretical_minimum_material_usage = team_data['TheoreticalMinimumMaterialUsage']
-        actual_material_usage = team_data['ActualMaterialUsage']
+        # theoretical_minimum_material_usage = team_data['TheoreticalMinimumMaterialUsage']
+        # actual_material_usage = team_data['ActualMaterialUsage']
     
     metrics = []
 
@@ -136,7 +136,7 @@ def run(selected_team: str) -> None:
         self_weight_of_structure
     )
     metrics.append(load_capacity_metric)
-    material_efficiency_metric = Metric(
+    # material_efficiency_metric = Metric(
         "Material Efficiency Ratio",
         r'\frac{Theoretical Minimum Material Usage (kg)}{Actual Material Usage (kg)}',
         "Ratio of theoretical minimum material usage to actual material usage",
@@ -145,8 +145,8 @@ def run(selected_team: str) -> None:
         theoretical_minimum_material_usage,
         actual_material_usage
     )
-    metrics.append(material_efficiency_metric)
-    embodied_carbon_metric = Metric(
+    # metrics.append(material_efficiency_metric)
+    # embodied_carbon_metric = Metric(
         "Embodied Carbon Emissions per Square Meter",
         r'\frac{Total Embodied Carbon Emissions (kg)}{Usable Floor Area (m²)}',
         "Ratio of total embodied carbon emissions to usable floor area",
@@ -155,7 +155,7 @@ def run(selected_team: str) -> None:
         total_embodied_carbon_emissions,
         usable_floor_area
     )
-    metrics.append(embodied_carbon_metric)
+    # metrics.append(embodied_carbon_metric)
     
     # Display Formulas and Explanations
     display_formula_section_header(selected_team)
