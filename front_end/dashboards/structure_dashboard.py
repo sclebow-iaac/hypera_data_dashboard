@@ -16,7 +16,7 @@ def metric_calc_column_free_floor_area_ratio(total_column_free_floor_area, total
 
 
 def metric_calc_load_capacity_per_square_meter(load_capacity, self_weight_of_structure):
-    return load_capacity / self_weight_of_structure
+    return float(load_capacity) / float(self_weight_of_structure)
 
 
 def metric_calc_material_efficiency_ratio(theoretical_minimum_material_usage, actual_material_usage):
