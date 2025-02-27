@@ -19,12 +19,12 @@ def metric_calc_load_capacity_per_square_meter(load_capacity, self_weight_of_str
     return float(load_capacity) / float(self_weight_of_structure)
 
 
-def metric_calc_material_efficiency_ratio(theoretical_minimum_material_usage, actual_material_usage):
-    return theoretical_minimum_material_usage / actual_material_usage
+# def metric_calc_material_efficiency_ratio(theoretical_minimum_material_usage, actual_material_usage):
+#     return theoretical_minimum_material_usage / actual_material_usage
 
 
-def metric_calc_embodied_carbon_emissions_per_square_meter(total_embodied_carbon_emissions, usable_floor_area):
-    return total_embodied_carbon_emissions / usable_floor_area
+# def metric_calc_embodied_carbon_emissions_per_square_meter(total_embodied_carbon_emissions, usable_floor_area):
+#     return total_embodied_carbon_emissions / usable_floor_area
 
 
 def metric_interactive_calculator_column_free_floor_area_ratio(container, total_column_free_floor_area, total_floor_area):
@@ -65,42 +65,42 @@ def metric_interactive_calculator_load_capacity(container, load_capacity, self_w
         st.components.v1.html(dynamic_load_capacity_sphere, height=250)
 
 
-def metric_interactive_calculator_material_efficiency(container, theoretical_minimum_material_usage, actual_material_usage):
-    with container:
-        st.markdown("### Material Efficiency Calculator")
-        new_theoretical = st.slider("Theoretical Minimum Material Usage (kg)", 0, 2000, int(
-            theoretical_minimum_material_usage), help="Theoretical minimum material usage")
-        new_actual = st.slider("Actual Material Usage (kg)", 1, 1000, int(
-            actual_material_usage), help="Actual material usage")
-        new_material_ratio = new_theoretical / new_actual
-        st.markdown(f"### Resulting Ratio: {new_material_ratio:.2f}")
-        # Create dynamic sphere for material efficiency
-        dynamic_material_efficiency_sphere = create_sphere_visualization(
-            "dynamic-material-efficiency-sphere",
-            new_material_ratio,
-            "Material Efficiency",
-            height=200
-        )
-        st.components.v1.html(dynamic_material_efficiency_sphere, height=250)
+# def metric_interactive_calculator_material_efficiency(container, theoretical_minimum_material_usage, actual_material_usage):
+#     with container:
+#         st.markdown("### Material Efficiency Calculator")
+#         new_theoretical = st.slider("Theoretical Minimum Material Usage (kg)", 0, 2000, int(
+#             theoretical_minimum_material_usage), help="Theoretical minimum material usage")
+#         new_actual = st.slider("Actual Material Usage (kg)", 1, 1000, int(
+#             actual_material_usage), help="Actual material usage")
+#         new_material_ratio = new_theoretical / new_actual
+#         st.markdown(f"### Resulting Ratio: {new_material_ratio:.2f}")
+#         # Create dynamic sphere for material efficiency
+#         dynamic_material_efficiency_sphere = create_sphere_visualization(
+#             "dynamic-material-efficiency-sphere",
+#             new_material_ratio,
+#             "Material Efficiency",
+#             height=200
+#         )
+#         st.components.v1.html(dynamic_material_efficiency_sphere, height=250)
 
 
-def metric_interactive_calculator_embodied_carbon(container, total_embodied_carbon_emissions, usable_floor_area):
-    with container:
-        st.markdown("### Embodied Carbon Calculator")
-        new_carbon = st.slider("Total Embodied Carbon Emissions (kg)", 0, 2000, int(
-            total_embodied_carbon_emissions), help="Total embodied carbon emissions")
-        new_floor_area = st.slider("Usable Floor Area (m²)", 1, 2000, int(
-            usable_floor_area), help="Usable floor area")
-        new_carbon_ratio = new_carbon / new_floor_area
-        st.markdown(f"### Resulting Ratio: {new_carbon_ratio:.2f}")
-        # Create dynamic sphere for embodied carbon
-        dynamic_embodied_carbon_sphere = create_sphere_visualization(
-            "dynamic-embodied-carbon-sphere",
-            new_carbon_ratio,
-            "Embodied Carbon",
-            height=200
-        )
-        st.components.v1.html(dynamic_embodied_carbon_sphere, height=250)
+# def metric_interactive_calculator_embodied_carbon(container, total_embodied_carbon_emissions, usable_floor_area):
+#     with container:
+#         st.markdown("### Embodied Carbon Calculator")
+#         new_carbon = st.slider("Total Embodied Carbon Emissions (kg)", 0, 2000, int(
+#             total_embodied_carbon_emissions), help="Total embodied carbon emissions")
+#         new_floor_area = st.slider("Usable Floor Area (m²)", 1, 2000, int(
+#             usable_floor_area), help="Usable floor area")
+#         new_carbon_ratio = new_carbon / new_floor_area
+#         st.markdown(f"### Resulting Ratio: {new_carbon_ratio:.2f}")
+#         # Create dynamic sphere for embodied carbon
+#         dynamic_embodied_carbon_sphere = create_sphere_visualization(
+#             "dynamic-embodied-carbon-sphere",
+#             new_carbon_ratio,
+#             "Embodied Carbon",
+#             height=200
+#         )
+#         st.components.v1.html(dynamic_embodied_carbon_sphere, height=250)
 
 
 def run(selected_team: str) -> None:
@@ -165,25 +165,25 @@ def run(selected_team: str) -> None:
         self_weight_of_structure
     )
     metrics.append(load_capacity_metric)
-    material_efficiency_metric = Metric(
-        "Material Efficiency Ratio",
-        r'\frac{Theoretical Minimum Material Usage (kg)}{Actual Material Usage (kg)}',
-        "Ratio of theoretical minimum material usage to actual material usage",
-        metric_interactive_calculator_material_efficiency,
-        metric_calc_material_efficiency_ratio,
-        theoretical_minimum_material_usage,
-        actual_material_usage
-    )
+    # material_efficiency_metric = Metric(
+    #     "Material Efficiency Ratio",
+    #     r'\frac{Theoretical Minimum Material Usage (kg)}{Actual Material Usage (kg)}',
+    #     "Ratio of theoretical minimum material usage to actual material usage",
+    #     metric_interactive_calculator_material_efficiency,
+    #     metric_calc_material_efficiency_ratio,
+    #     theoretical_minimum_material_usage,
+    #     actual_material_usage
+    # )
     # metrics.append(material_efficiency_metric)
-    embodied_carbon_metric = Metric(
-        "Embodied Carbon Emissions per Square Meter",
-        r'\frac{Total Embodied Carbon Emissions (kg)}{Usable Floor Area (m²)}',
-        "Ratio of total embodied carbon emissions to usable floor area",
-        metric_interactive_calculator_embodied_carbon,
-        metric_calc_embodied_carbon_emissions_per_square_meter,
-        total_embodied_carbon_emissions,
-        usable_floor_area
-    )
+    # embodied_carbon_metric = Metric(
+    #     "Embodied Carbon Emissions per Square Meter",
+    #     r'\frac{Total Embodied Carbon Emissions (kg)}{Usable Floor Area (m²)}',
+    #     "Ratio of total embodied carbon emissions to usable floor area",
+    #     metric_interactive_calculator_embodied_carbon,
+    #     metric_calc_embodied_carbon_emissions_per_square_meter,
+    #     total_embodied_carbon_emissions,
+    #     usable_floor_area
+    # )
     # metrics.append(embodied_carbon_metric)
 
     # Display Formulas and Explanations
