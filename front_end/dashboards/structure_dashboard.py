@@ -132,12 +132,13 @@ def run(selected_team: str) -> None:
         # usable_floor_area = 1000
     else:
         # Extracted data
-        total_column_free_floor_area = team_data['TotalColumnFreeFloorArea']
-        total_floor_area = team_data['TotalFloorArea']
+        total_column_free_floor_area = float(
+            team_data['TotalColumnFreeFloorArea'])
+        total_floor_area = float(team_data['TotalFloorArea'])
         # total_embodied_carbon_emissions = team_data['TotalEmbodiedCarbonEmissions']
         # usable_floor_area = team_data['UsableFloorArea']
-        load_capacity = team_data['LoadCapacity']
-        self_weight_of_structure = team_data['SelfWeightOfStructure']
+        load_capacity = float(team_data['LoadCapacity'])
+        self_weight_of_structure = float(team_data['SelfWeightOfStructure'])
         # theoretical_minimum_material_usage = team_data['TheoreticalMinimumMaterialUsage']
         # actual_material_usage = team_data['ActualMaterialUsage']
 
