@@ -142,14 +142,14 @@ def extract(data, model_name, models, client, project_id, verbose=True, header=T
         # Get the project with models
         project = client.project.get_with_models(
             project_id=selected_project.id, models_limit=100)
-        print(f'Project: {project.name}')
+        # print(f'Project: {project.name}')
 
         versions = client.version.get_versions(
             model_id=selected_model.id, project_id=project.id, limit=100).items
         latest_version = versions[0]
-        print(
-            f'latest_version, createdAt: {latest_version.createdAt.strftime("%Y-%m-%d %H:%M:%S")}')
-        print(f'latest_version, authorUser: {latest_version.authorUser.name}')
+        # print(
+            # f'latest_version, createdAt: {latest_version.createdAt.strftime("%Y-%m-%d %H:%M:%S")}')
+        # print(f'latest_version, authorUser: {latest_version.authorUser.name}')
 
         with st.spinner(f'Receiving data from {model_name}'):
             base_data = get_geometry_data(
@@ -159,7 +159,7 @@ def extract(data, model_name, models, client, project_id, verbose=True, header=T
         while '@Data' in dir(base_data):
             base_data = base_data.__getitem__('@Data')
             nested_index += 1
-            print(f'Nested index: {nested_index}')
+            # print(f'Nested index: {nested_index}')
 
         if verbose:
             print(f'Base data received.')
@@ -169,12 +169,12 @@ def extract(data, model_name, models, client, project_id, verbose=True, header=T
             print(f'All attributes: {all_attributes}')
 
         for data_name in data.keys():
-            print()  # Debugging
-            print(f'Data name: {data_name}')  # Debugging
+            # print()  # Debugging
+            # print(f'Data name: {data_name}')  # Debugging
             data_names = [data_name, '@' + data_name]
 
             for name in data_names:
-                print(f'Searching for attribute {name}...')  # Debugging
+                # print(f'Searching for attribute {name}...')  # Debugging
                 if name not in all_attributes:
                     if verbose:
                         print(f'Attribute {name} not in all_attributes.')
@@ -219,26 +219,75 @@ def extract(data, model_name, models, client, project_id, verbose=True, header=T
             attribute_extraction.run(latest_version, client, project)
     except:
         print('Error displaying attributes')
+
+    fully_verified = verify_data(data, extracted_data)
+
+    print(f'Fully verified: {fully_verified}')
+
+    return fully_verified, extracted_data
+
+def verify_data(data, extracted_data):
+    type_matched_bools = []
+
+    for key in data:
+        value = extracted_data[key]
+        if value is None:
+            value = "Not Found"
+
+        # If the value is a list with one element, get the first element
+        if type(value) == list and len(value) == 1:
+            value = value[0]
+
+        type_expected = data[key][0]
+        unit = data[key][1]
+
+        if type_expected == 'float':
+            try:
+                value = float(value)
+                print(f'{key} converted to float')
+            except:
+                print('Error converting value to float')
         
-    return extracted_data
+        if type_expected == 'int':
+            try:
+                value = int(value)
+                print(f'{key} converted to int')
+            except:
+                print('Error converting value to int')
 
-# Display a markdown table with the extracted data
+        type_extracted = type(value).__name__
 
+        print(f'Key: {key} - Value: {value}')
+        print(f'Type: {type(value).__name__}')
+        print(f'Type expected: {type_expected}')
+        print()
+        
+        type_matched_bools.append(type_expected == type_extracted)
 
-def display_data(data, extracted_data, model_name, verbose=True, header=True, show_table=True, gauge=True):
+    if False in type_matched_bools:
+        return False
+    else:
+        return True
+    
+    return False
+
+# Display the extracted data
+def display_data(data, extracted_data, model_name, verbose=True, header=True, show_table=True, gauge=True, simple_table=False):
     if header:
         # Display the model name
-        st.markdown('### Model Name')
         if model_name is not None and model_name != "":
-            st.markdown(f'#### {model_name}')
+            st.markdown(f'### Speckle Model Name: {model_name}')
         else:
-            st.markdown(f'Model: {model_name} not found.')
+            st.markdown(f'### Speckle Model: {model_name} not found.')
 
-        st.markdown('---')
+        # st.markdown('---')
 
     if verbose:
         print(f'Extracted data: {extracted_data}')
-    header = ['Attribute Name', 'Found', 'Value', 'Type', 'Unit']
+    if simple_table:
+        header = ['Attribute Name', 'Value', 'Unit']
+    else:
+        header = ['Attribute Name', 'Found', 'Value', 'Type', 'Unit']
     table = [header]
 
     print()
@@ -284,18 +333,30 @@ def display_data(data, extracted_data, model_name, verbose=True, header=True, sh
                 f'Key: {key} - Value: {value} - Type Expected: {type_expected} - Type Extracted: {type_extracted}')
         if extracted_data[key] is not None:
             if type_expected == type_extracted:
-                table.append([key, 'Yes', str(value), f'{type_extracted} (As Expected)', unit])
+                if simple_table:
+                    table.append([key, value, unit])
+                else:
+                    table.append([key, 'Yes', str(value), f'{type_extracted} (As Expected)', unit])
             else:
-                table.append(
-                    [key, 'Yes', value, f'{type_extracted} (Expected: {type_expected})', unit])
+                if simple_table:
+                    table.append([key, value, unit])
+                else:
+                    table.append(
+                        [key, 'Yes', value, f'{type_extracted} (Expected: {type_expected})', unit])
         else:
-            table.append([key, 'No', value, type_expected, unit])
+            if simple_table:
+                table.append([key, value, unit])
+            else:
+                table.append([key, 'No', value, type_expected, unit])
 
     if show_table:
+        # Convert the table to a pandas dataframe
         df = pd.DataFrame(table[1:], columns=table[0])
+        # Display the table
 
-        st.markdown('### Extracted Data')
-        st.table(df)
+        st.markdown('#### Extracted Data')
+        st.dataframe(df.style.set_properties(
+            **{'font-family': 'Roboto Mono', 'font-size': '18px'}), hide_index=True, use_container_width=True)
         st.markdown('---')
 
     if gauge:
@@ -362,10 +423,6 @@ def display_data(data, extracted_data, model_name, verbose=True, header=True, sh
         )
 
         st.plotly_chart(fig, use_container_width=True, key=f'Gauge {model_name}')
-        # # Create Three Columns
-        # col1, col2, col3 = st.columns(3, vertical_alignment="top")
-        
-        # col2.plotly_chart(fig, use_container_width=True)
-
+        st.markdown('---')
 
     return extracted_data
