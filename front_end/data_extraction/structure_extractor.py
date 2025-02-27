@@ -2,7 +2,7 @@
 
 import data_extraction.data_extractor as data_extractor
 
-model_name = ""
+model_name = "hypera/structure/dataexport"
 
 data_names = [
     "TotalColumnFreeFloorArea",
