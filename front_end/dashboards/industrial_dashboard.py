@@ -10,24 +10,31 @@ import plotly.express as px
 
 from dashboards.dashboard import *
 
+
 def metric_calc_energy_ratio(energy_generation, energy_demand):
     return energy_generation / energy_demand
+
 
 def metric_calc_food_ratio(food_production, food_demand):
     return food_production / food_demand
 
+
 def metric_calc_recycled_water_ratio(recycled_water, wastewater_production):
     return recycled_water / wastewater_production
+
 
 def metric_calc_waste_utilization_ratio(recycled_solid_waste, solid_waste_production):
     return 1 - (recycled_solid_waste / solid_waste_production)
 
+
 def metric_interactive_calculator_energy_ratio(container, energy_generation, energy_demand):
     with container:
         st.markdown("### Energy Self-Sufficiency Calculator")
-        energy_produced = st.slider("Energy Produced (kWh)", 0, 2000, int(energy_generation), help="Energy produced by building systems")
-        energy_needed = st.slider("Energy Needed (kWh)", 1, 2000, int(energy_demand), help="Total energy required")
-        
+        energy_produced = st.slider("Energy Produced (kWh)", 0, 2000, int(
+            energy_generation), help="Energy produced by building systems")
+        energy_needed = st.slider("Energy Needed (kWh)", 1, 2000, int(
+            energy_demand), help="Total energy required")
+
         new_energy_ratio = energy_produced / energy_needed
         st.markdown(f"### Energy Ratio: {new_energy_ratio:.2f}")
 
@@ -40,12 +47,15 @@ def metric_interactive_calculator_energy_ratio(container, energy_generation, ene
         )
         st.components.v1.html(dynamic_energy_sphere, height=250)
 
+
 def metric_interactive_calculator_food_ratio(container, food_production, food_demand):
     with container:
         st.markdown("### Food Self-Sufficiency Calculator")
-        food_produced_slider = st.slider("Food Produced (kg)", 0, 2000, int(food_production), help="Food produced within building")
-        food_needed_slider = st.slider("Food Needed (kg)", 1, 2000, int(food_demand), help="Total food requirements")
-        
+        food_produced_slider = st.slider("Food Produced (kg)", 0, 2000, int(
+            food_production), help="Food produced within building")
+        food_needed_slider = st.slider("Food Needed (kg)", 1, 2000, int(
+            food_demand), help="Total food requirements")
+
         new_food_ratio = food_produced_slider / food_needed_slider
         st.markdown(f"### Food Ratio: {new_food_ratio:.2f}")
 
@@ -58,12 +68,15 @@ def metric_interactive_calculator_food_ratio(container, food_production, food_de
         )
         st.components.v1.html(dynamic_food_sphere, height=250)
 
+
 def metric_interactive_calculator_recycled_water_ratio(container, recycled_water, wastewater_production):
     with container:
         st.markdown("### Water Recycling Calculator")
-        recycled_water = st.slider("Recycled Water (m³)", 0, 2000, int(recycled_water), help="Volume of water recycled")
-        total_water = st.slider("Total Water Used (m³)", 1, 2000, int(wastewater_production), help="Total water consumption")
-        
+        recycled_water = st.slider("Recycled Water (m³)", 0, 2000, int(
+            recycled_water), help="Volume of water recycled")
+        total_water = st.slider("Total Water Used (m³)", 1, 2000, int(
+            wastewater_production), help="Total water consumption")
+
         new_water_ratio = recycled_water / total_water
         st.markdown(f"### Water Recycling Rate: {new_water_ratio:.2f}")
 
@@ -76,12 +89,15 @@ def metric_interactive_calculator_recycled_water_ratio(container, recycled_water
         )
         st.components.v1.html(dynamic_water_sphere, height=250)
 
+
 def metric_interactive_calculator_waste_utilization_ratio(container, recycled_solid_waste, solid_waste_production):
     with container:
         st.markdown("### Waste Production Calculator")
-        waste_produced = st.slider("Waste Produced (kg/day)", 0, 400, int(recycled_solid_waste), help="Daily waste production")
-        waste_target = st.slider("Maximum Target (kg/day)", 1, 400, int(solid_waste_production), help="Maximum acceptable waste")
-        
+        waste_produced = st.slider("Waste Produced (kg/day)", 0, 400,
+                                   int(recycled_solid_waste), help="Daily waste production")
+        waste_target = st.slider("Maximum Target (kg/day)", 1, 400,
+                                 int(solid_waste_production), help="Maximum acceptable waste")
+
         new_waste_ratio = 1 - (waste_produced / waste_target)
         st.markdown(f"### Waste Efficiency: {new_waste_ratio:.2f}")
 
@@ -94,20 +110,25 @@ def metric_interactive_calculator_waste_utilization_ratio(container, recycled_so
         )
         st.components.v1.html(dynamic_waste_sphere, height=250)
 
+
 def run(selected_team: str) -> None:
     # Extract data
     models, client, project_id = setup_speckle_connection()
-    verified, team_data = team_extractor.extract(models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
+    verified, team_data = team_extractor.extract(
+        models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
 
     # Building Dashboard
     # Dashboard Header
     display_page_title(selected_team)
-    team_extractor.display_data(extracted_data=team_data, verbose=False, header=True, show_table=True, gauge=False, simple_table=True)
+    team_extractor.display_data(extracted_data=team_data, verbose=False,
+                                header=True, show_table=True, gauge=False, simple_table=True)
 
     if not verified:
-        st.error("Failed to extract data, proceding with Example Data.  Use Data Dashboard to Investigate.")
-        team_extractor.display_data(extracted_data=team_data, header=False, show_table=False, gauge=True, simple_table=False)
-    
+        st.error(
+            "Failed to extract data, proceding with Example Data.  Use Data Dashboard to Investigate.")
+        team_extractor.display_data(
+            extracted_data=team_data, header=False, show_table=False, gauge=True, simple_table=False)
+
         # Example data
         energy_generation = 750  # kWh
         energy_demand = 1000   # kWh
@@ -181,10 +202,12 @@ def run(selected_team: str) -> None:
     # Metrics Display - Updated with correct metrics
     metrics_display_container = st.container()
     display_st_metric_values(metrics_display_container, metrics)
-    
+
     metrics_visualization_container = st.container()
-    display_metric_visualizations(metrics_visualization_container, metrics, add_text=True, add_sphere=True)
+    display_metric_visualizations(
+        metrics_visualization_container, metrics, add_text=True, add_sphere=True)
 
     # Interactive Calculators
     metric_interactive_calculator_container = st.container()
-    display_interactive_calculators(metric_interactive_calculator_container, metrics, grid=True)
+    display_interactive_calculators(
+        metric_interactive_calculator_container, metrics, grid=False)
