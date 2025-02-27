@@ -7,34 +7,34 @@ model_name = "hypera/structure/dataexport"
 data_names = [
     "TotalColumnFreeFloorArea",
     "TotalFloorArea",
-    "TotalEmbodiedCarbonEmissions",
-    "UsableFloorArea",
+    # "TotalEmbodiedCarbonEmissions",
+    # "UsableFloorArea",
     "LoadCapacity",
     "SelfWeightOfStructure",
-    "TheoreticalMinimumMaterialUsage",
-    "ActualMaterialUsage"
+    # "TheoreticalMinimumMaterialUsage",
+    # "ActualMaterialUsage"
 ]
 
 data_types = [
     "float",
     "float",
+    # "float",
+    # "float",
     "float",
     "float",
-    "float",
-    "float",
-    "float",
-    "float"
+    # "float",
+    # "float"
 ]
 
 data_units = [
     "Square Meters",
     "Square Meters",
+    # "Kilograms",
+    # "Square Meters",
     "Kilograms",
-    "Square Meters",
     "Kilograms",
-    "Kilograms",
-    "Kilograms",
-    "Kilograms"
+    # "Kilograms",
+    # "Kilograms"
 ]
 
 data = dict(zip(data_names, zip(data_types, data_units)))
