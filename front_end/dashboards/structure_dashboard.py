@@ -10,19 +10,30 @@ import plotly.express as px
 
 from dashboards.dashboard import *
 
+
 def metric_calc_column_free_floor_area_ratio(total_column_free_floor_area, total_floor_area):
-    return total_column_free_floor_area / total_floor_area
+    return float(total_column_free_floor_area) / float(total_floor_area)
+
+
 def metric_calc_load_capacity_per_square_meter(load_capacity, self_weight_of_structure):
     return load_capacity / self_weight_of_structure
+
+
 def metric_calc_material_efficiency_ratio(theoretical_minimum_material_usage, actual_material_usage):
     return theoretical_minimum_material_usage / actual_material_usage
+
+
 def metric_calc_embodied_carbon_emissions_per_square_meter(total_embodied_carbon_emissions, usable_floor_area):
     return total_embodied_carbon_emissions / usable_floor_area
+
+
 def metric_interactive_calculator_column_free_floor_area_ratio(container, total_column_free_floor_area, total_floor_area):
     with container:
         st.markdown("### Column-Free FAR Calculator")
-        new_column_free_area = st.slider("Total Column-Free Floor Area (m²)", 0, 2000, int(total_column_free_floor_area), help="Total column-free floor area")
-        new_total_area = st.slider("Total Floor Area (m²)", 1, 2000, int(total_floor_area), help="Total floor area")
+        new_column_free_area = st.slider("Total Column-Free Floor Area (m²)", 0, 2000, int(
+            total_column_free_floor_area), help="Total column-free floor area")
+        new_total_area = st.slider("Total Floor Area (m²)", 1, 2000, int(
+            total_floor_area), help="Total floor area")
         new_ratio = new_column_free_area / new_total_area
         st.markdown(f"### Resulting Ratio: {new_ratio:.2f}")
         # Create dynamic sphere for column-free FAR
@@ -33,11 +44,15 @@ def metric_interactive_calculator_column_free_floor_area_ratio(container, total_
             height=200
         )
         st.components.v1.html(dynamic_column_free_far_sphere, height=250)
+
+
 def metric_interactive_calculator_load_capacity(container, load_capacity, self_weight_of_structure):
     with container:
         st.markdown("### Load Capacity Calculator")
-        new_load_capacity = st.slider("Load Capacity (kg)", 0, 2000, int(load_capacity), help="Load capacity of the structure")
-        new_self_weight = st.slider("Self Weight of Structure (kg)", 1, 1000, int(self_weight_of_structure), help="Self weight of the structure")
+        new_load_capacity = st.slider("Load Capacity (kg)", 0, 2000, int(
+            load_capacity), help="Load capacity of the structure")
+        new_self_weight = st.slider("Self Weight of Structure (kg)", 1, 1000, int(
+            self_weight_of_structure), help="Self weight of the structure")
         new_load_ratio = new_load_capacity / new_self_weight
         st.markdown(f"### Resulting Ratio: {new_load_ratio:.2f}")
         # Create dynamic sphere for load capacity
@@ -48,11 +63,15 @@ def metric_interactive_calculator_load_capacity(container, load_capacity, self_w
             height=200
         )
         st.components.v1.html(dynamic_load_capacity_sphere, height=250)
+
+
 def metric_interactive_calculator_material_efficiency(container, theoretical_minimum_material_usage, actual_material_usage):
     with container:
         st.markdown("### Material Efficiency Calculator")
-        new_theoretical = st.slider("Theoretical Minimum Material Usage (kg)", 0, 2000, int(theoretical_minimum_material_usage), help="Theoretical minimum material usage")
-        new_actual = st.slider("Actual Material Usage (kg)", 1, 1000, int(actual_material_usage), help="Actual material usage")
+        new_theoretical = st.slider("Theoretical Minimum Material Usage (kg)", 0, 2000, int(
+            theoretical_minimum_material_usage), help="Theoretical minimum material usage")
+        new_actual = st.slider("Actual Material Usage (kg)", 1, 1000, int(
+            actual_material_usage), help="Actual material usage")
         new_material_ratio = new_theoretical / new_actual
         st.markdown(f"### Resulting Ratio: {new_material_ratio:.2f}")
         # Create dynamic sphere for material efficiency
@@ -63,11 +82,15 @@ def metric_interactive_calculator_material_efficiency(container, theoretical_min
             height=200
         )
         st.components.v1.html(dynamic_material_efficiency_sphere, height=250)
+
+
 def metric_interactive_calculator_embodied_carbon(container, total_embodied_carbon_emissions, usable_floor_area):
     with container:
         st.markdown("### Embodied Carbon Calculator")
-        new_carbon = st.slider("Total Embodied Carbon Emissions (kg)", 0, 2000, int(total_embodied_carbon_emissions), help="Total embodied carbon emissions")
-        new_floor_area = st.slider("Usable Floor Area (m²)", 1, 2000, int(usable_floor_area), help="Usable floor area")
+        new_carbon = st.slider("Total Embodied Carbon Emissions (kg)", 0, 2000, int(
+            total_embodied_carbon_emissions), help="Total embodied carbon emissions")
+        new_floor_area = st.slider("Usable Floor Area (m²)", 1, 2000, int(
+            usable_floor_area), help="Usable floor area")
         new_carbon_ratio = new_carbon / new_floor_area
         st.markdown(f"### Resulting Ratio: {new_carbon_ratio:.2f}")
         # Create dynamic sphere for embodied carbon
@@ -79,20 +102,25 @@ def metric_interactive_calculator_embodied_carbon(container, total_embodied_carb
         )
         st.components.v1.html(dynamic_embodied_carbon_sphere, height=250)
 
+
 def run(selected_team: str) -> None:
     # Extract data
     models, client, project_id = setup_speckle_connection()
-    verified, team_data = team_extractor.extract(models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
+    verified, team_data = team_extractor.extract(
+        models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
 
     # Building Dashboard
     # Dashboard Header
     display_page_title(selected_team)
-    team_extractor.display_data(extracted_data=team_data, verbose=False, header=True, show_table=True, gauge=False, simple_table=True)
+    team_extractor.display_data(extracted_data=team_data, verbose=False,
+                                header=True, show_table=True, gauge=False, simple_table=True)
 
     if not verified:
-        st.error("Failed to extract data, proceding with Example Data.  Use Data Dashboard to Investigate.")
-        team_extractor.display_data(extracted_data=team_data, header=False, show_table=False, gauge=True, simple_table=False)
-    
+        st.error(
+            "Failed to extract data, proceding with Example Data.  Use Data Dashboard to Investigate.")
+        team_extractor.display_data(
+            extracted_data=team_data, header=False, show_table=False, gauge=True, simple_table=False)
+
         # Example data
         total_column_free_floor_area = 800
         total_floor_area = 1000
@@ -112,7 +140,7 @@ def run(selected_team: str) -> None:
         self_weight_of_structure = team_data['SelfWeightOfStructure']
         # theoretical_minimum_material_usage = team_data['TheoreticalMinimumMaterialUsage']
         # actual_material_usage = team_data['ActualMaterialUsage']
-    
+
     metrics = []
 
     column_free_floor_area_metric = Metric(
@@ -156,27 +184,29 @@ def run(selected_team: str) -> None:
         usable_floor_area
     )
     # metrics.append(embodied_carbon_metric)
-    
+
     # Display Formulas and Explanations
     display_formula_section_header(selected_team)
 
     # Metrics Display - Updated with correct metrics
     metrics_display_container = st.container()
     display_st_metric_values(metrics_display_container, metrics)
-    
+
     metrics_visualization_container = st.container()
-    display_metric_visualizations(metrics_visualization_container, metrics, add_text=True, add_sphere=True)
+    display_metric_visualizations(
+        metrics_visualization_container, metrics, add_text=True, add_sphere=True)
 
     # Interactive Calculators
     metric_interactive_calculator_container = st.container()
-    display_interactive_calculators(metric_interactive_calculator_container, metrics, grid=True)
+    display_interactive_calculators(
+        metric_interactive_calculator_container, metrics, grid=True)
 
     # with viz_tab1:
     #     st.markdown("<h2 style='text-align: center;'>Floor Flexibility: Column-Free FAR</h2>", unsafe_allow_html=True)
     #     st.markdown(r"""
     #         The formula for calculating the Column-Free Floor Area Ratio can be expressed as:
-            
-    #         $$ 
+
+    #         $$
     #         \text{Column-Free Floor Area Ratio} = \frac{\text{Total Column-Free Floor Area (m²)}}{\text{Total Floor Area (m²)}}
     #         $$
     #     """, unsafe_allow_html=True)
@@ -188,8 +218,8 @@ def run(selected_team: str) -> None:
     #     st.markdown("<h2 style='text-align: center;'>Structural Efficiency: Load Capacity per Square Meter</h2>", unsafe_allow_html=True)
     #     st.markdown(r"""
     #         The formula for calculating the Load Capacity per Square Meter can be expressed as:
-            
-    #         $$ 
+
+    #         $$
     #         \text{Load Capacity per Square Meter (kg/m²)} = \frac{\text{Load Capacity (kg)}}{\text{Self Weight of Structure (kg)}}
     #         $$
     #     """, unsafe_allow_html=True)
@@ -201,8 +231,8 @@ def run(selected_team: str) -> None:
     #     st.markdown("<h2 style='text-align: center;'>Structural Efficiency: Material Efficiency Ratio</h2>", unsafe_allow_html=True)
     #     st.markdown(r"""
     #         The formula for calculating the Material Efficiency Ratio can be expressed as:
-            
-    #         $$ 
+
+    #         $$
     #         \text{Material Efficiency Ratio} = \frac{\text{Theoretical Minimum Material Usage (kg)}}{\text{Actual Material Usage (kg)}}
     #         $$
     #     """, unsafe_allow_html=True)
@@ -214,8 +244,8 @@ def run(selected_team: str) -> None:
     #     st.markdown("<h2 style='text-align: center;'>Structural Efficiency: Embodied Carbon Emissions per Square Meter</h2>", unsafe_allow_html=True)
     #     st.markdown(r"""
     #         The formula for calculating the Embodied Carbon Emissions per Square Meter can be expressed as:
-            
-    #         $$ 
+
+    #         $$
     #         \text{Embodied Carbon Emissions per Square Meter (kg/m²)} = \frac{\text{Total Embodied Carbon Emissions (kg)}}{\text{Usable Floor Area (m²)}}
     #         $$
     #     """, unsafe_allow_html=True)
