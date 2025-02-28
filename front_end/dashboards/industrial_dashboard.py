@@ -141,14 +141,14 @@ def run(selected_team: str) -> None:
 
     else:
         # Extracted data
-        energy_generation = team_data['EnergyGeneration']
-        energy_demand = team_data['EnergyDemand']
-        food_production = team_data['FoodProduction']
-        food_demand = team_data['FoodDemand']
-        recycled_water = team_data['RecycledWater']
-        wastewater_production = team_data['WasteWaterProduction']
-        recycled_solid_waste = team_data['RecycledSolidWaste']
-        solid_waste_production = team_data['SolidWasteProduction']
+        energy_generation = float(team_data['EnergyGeneration'])
+        energy_demand = float(team_data['EnergyDemand'])
+        food_production = float(team_data['FoodProduction'])
+        food_demand = float(team_data['FoodDemand'])
+        recycled_water = float(team_data['RecycledWater'])
+        wastewater_production = float(team_data['WasteWaterProduction'])
+        recycled_solid_waste = float(team_data['RecycledSolidWaste'])
+        solid_waste_production = float(team_data['SolidWasteProduction'])
 
     metrics = []
 
