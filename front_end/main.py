@@ -13,6 +13,7 @@ import dashboards.structure_dashboard as structure_dashboard
 import dashboards.industrial_dashboard as industrial_dashboard
 import dashboards.facade_dashboard as facade_dashboard
 import dashboards.data_dashboard as data_dashboard
+from dashboards.dashboard import create_top_menu
 
 # import statistics
 import project_statistics as statistics
@@ -121,9 +122,9 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Sidebar for selecting dashboards
+# top menu
 dashboard_options = ["Main", "Residential", "Service", "Structure", "Industrial", "Facade", "Data"]
-selected_dashboard = st.sidebar.radio("Select Dashboard", dashboard_options)
+selected_dashboard = create_top_menu(dashboard_options)
 
 # Create a placeholder for the dashboard content
 dashboard_placeholder = st.empty()

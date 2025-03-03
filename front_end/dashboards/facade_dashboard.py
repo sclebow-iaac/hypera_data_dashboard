@@ -4,6 +4,7 @@ import plotly.express as px
 from pythreejs import *
 from specklepy.api.client import SpeckleClient
 from specklepy.api.credentials import get_account_from_token
+import os
 
 # 1. Imports and Setup
 import data_extraction.facade_extractor as team_extractor  # Only import the extractor module
@@ -11,6 +12,8 @@ import pandas as pd
 import plotly.express as px
 
 from dashboards.dashboard import *
+
+
 
 def metric_calc_daylight_factor(weight_residential, weight_work, residential_area_with_daylight, total_residential_area, work_area_with_daylight, total_work_area):
     return (
@@ -85,9 +88,47 @@ def run(selected_team: str) -> None:
     # Building Dashboard
     # Dashboard Header
     display_page_title(selected_team)
-    team_extractor.display_data(extracted_data=team_data, verbose=False, header=True, show_table=True, gauge=False, simple_table=True)
+
+    # Create a container for the slideshow
+    slideshow_container = st.container()
+    
+    # Use the function with the path to your pictures folder
+    display_image_slideshow(
+        slideshow_container, 
+        folder_path="dashboards/pictures_facade" 
+    )
+    st.markdown("---")
+
+    # Add text section under the slideshow
+    text_container = st.container()
+    display_text_section(
+        text_container,
+        """
+        ## Facade Design Overview
+        Our facade design integrates sustainable features with aesthetic considerations.
+        """
+    )
+
+    # Add horizontal line
+    st.markdown("---")
+    
+    # Add custom bullet list with enso circle
+    bullet_items = [
+        "1. Solar panels optimized for maximum energy generation",
+        "2. Strategic window placement for natural daylight",
+        "3. Thermal insulation systems for energy efficiency"
+    ]
+    display_custom_bullet_list(
+        text_container,
+        bullet_items
+    )
+
+    
+
+    team_extractor.display_data(extracted_data=team_data, verbose=False, header=False, show_table=False, gauge=False, simple_table=True)
 
     if not verified:
+
         st.error("Failed to extract data, proceeding with Example Data. Use Data Dashboard to Investigate.")
         team_extractor.display_data(extracted_data=team_data, header=False, show_table=False, gauge=True, simple_table=False)
         # Example data
@@ -157,12 +198,54 @@ def run(selected_team: str) -> None:
     )
     metrics.append(energy_ratio_metric)
 
-    # Display Formulas and Explanations
-    display_formula_section_header(selected_team)
+    # Add KPI section
+    kpi_container = st.container()
+    kpi_data = [
+        {
+            'title': 'Primary Daylight Factor',
+            'image_path': 'dashboards/pictures_facade/daylight.png',
+            'name': 'Natural Light Optimization',
+            'metric_value': daylight_factor_metric.value,
+            'metric_description': 'Daylight coverage ratio',
+            'detailed_description': 'The Primary Daylight Factor measures how effectively our facade design maximizes natural light penetration. It considers both residential and work spaces, ensuring optimal daylight distribution while managing solar heat gain.'
+        },
+        {
+            'title': 'Panel Optimization',
+            'image_path': 'dashboards/pictures_facade/panel.png',
+            'name': 'Solar Panel Efficiency',
+            'metric_value': panel_optimization_metric.value,
+            'metric_description': 'Panel area optimization ratio',
+            'detailed_description': 'Panel Optimization quantifies how efficiently we utilize solar panel area. This metric compares the final panel configuration against the initial layout, showing improvements in energy generation capacity per square meter.'
+        },
+        {
+            'title': 'Energy Generation',
+            'image_path': 'dashboards/pictures_facade/energy.png',
+            'name': 'Energy Production',
+            'metric_value': energy_ratio_metric.value,
+            'metric_description': 'Energy generation ratio',
+            'detailed_description': 'The Energy Generation metric represents the ratio between energy produced and energy needed. This helps us understand how well our facade-integrated solar solutions meet the building\'s energy demands.'
+        }
+    ]
+
+    # Display KPI summary
+    display_kpi_columns(kpi_container, kpi_data)
     
-    # Metrics Display - Updated with correct metrics
-    metrics_display_container = st.container()
-    display_st_metric_values(metrics_display_container, metrics)
+    st.markdown("---")
+    
+    # Display detailed KPI explanations
+    kpi_details_container = st.container()
+    display_kpi_details(kpi_details_container, kpi_data)
+
+    # Create container for data table
+    data_container = st.container()
+    display_data_table(data_container, team_data)
+    
+    # # Display Formulas and Explanations
+    # display_formula_section_header(selected_team)
+    
+    # # Metrics Display - Updated with correct metrics
+    # metrics_display_container = st.container()
+    # display_st_metric_values(metrics_display_container, metrics)
     
     metrics_visualization_container = st.container()
     display_metric_visualizations(metrics_visualization_container, metrics, add_text=True, add_sphere=True)
@@ -170,3 +253,4 @@ def run(selected_team: str) -> None:
     # Interactive Calculators
     metric_interactive_calculator_container = st.container()
     display_interactive_calculators(metric_interactive_calculator_container, metrics, grid=True)
+
