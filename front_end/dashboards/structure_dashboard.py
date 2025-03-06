@@ -25,7 +25,7 @@ def run(selected_team: str) -> None:
 
     # Call the slideshow function
     slideshow_container = st.container()
-    display_image_slideshow(slideshow_container, folder_path='./dashboards/pictures')  # Update the path to your images
+    display_image_slideshow(slideshow_container, folder_path='./front_end/dashboards/pictures')  # Update the path to your images
 
     # Extract data
     models, client, project_id = setup_speckle_connection()
@@ -98,7 +98,7 @@ def run(selected_team: str) -> None:
     kpi_data = [
         {
             'title': 'Column-Free Floor Area Ratio',
-            'image_path': './dashboards/pictures/column.png',
+            'image_path': './front_end/dashboards/pictures/column.png',
             'name': 'Column-Free Ratio',
             'metric_value': column_free_floor_area_metric.calculate(),
             'metric_description': 'Ratio of column-free floor area to total floor area.',
@@ -106,7 +106,7 @@ def run(selected_team: str) -> None:
         },
         {
             'title': 'Load Capacity per Square Meter',
-            'image_path': './dashboards/pictures/load.png',
+            'image_path': './front_end/dashboards/pictures/load.png',
             'name': 'Load Capacity',
             'metric_value': load_capacity_metric.calculate(),
             'metric_description': 'Load capacity per square meter of the structure.',
@@ -132,7 +132,7 @@ def run(selected_team: str) -> None:
     # In the second column, display the STL model
     with col2:
         display_stl_model(
-            file_path='./dashboards/models/model_studio.stl',  # Use a single model path
+            file_path='./front_end/dashboards/models/model_studio.stl',  # Use a single model path
             color="#808080",  # Change color to grey
             key='structure_stl_model_display'
         )

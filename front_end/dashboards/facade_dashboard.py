@@ -30,7 +30,7 @@ def run(selected_team: str) -> None:
 
     # Call the slideshow function
     slideshow_container = st.container()
-    display_image_slideshow(slideshow_container, folder_path='./dashboards/pictures')  # Update the path to your images
+    display_image_slideshow(slideshow_container, folder_path='./front_end/dashboards/pictures')  # Update the path to your images
 
 
     # Extract data
@@ -133,7 +133,7 @@ def run(selected_team: str) -> None:
     kpi_data = [
         {
             'title': 'Primary Daylight Factor',
-            'image_path': './dashboards/pictures/daylight.png',
+            'image_path': './front_end/dashboards/pictures/daylight.png',
             'name': 'Natural Light Optimization',
             'metric_value': daylight_factor_metric.calculate(),
             'metric_description': 'Daylight coverage ratio',
@@ -141,7 +141,7 @@ def run(selected_team: str) -> None:
         },
         {
             'title': 'Panel Optimization',
-            'image_path': 'dashboards/pictures/panel.png',
+            'image_path': './front_end/dashboards/pictures/panel.png',
             'name': 'Solar Panel Efficiency',
             'metric_value': panel_optimization_metric.calculate(),
             'metric_description': 'Panel area optimization ratio',
@@ -149,7 +149,7 @@ def run(selected_team: str) -> None:
         },
         {
             'title': 'Energy Generation',
-            'image_path': 'dashboards/pictures/energy.png',
+            'image_path': './front_end/dashboards/pictures/energy.png',
             'name': 'Energy Production',
             'metric_value': energy_ratio_metric.calculate(),
             'metric_description': 'Energy generation ratio',
@@ -177,7 +177,7 @@ def run(selected_team: str) -> None:
     # In the second column, display the STL model
     with col2:
         display_stl_model(
-            file_path='./dashboards/models/model_studio.stl',  # Use a single model path
+            file_path='./front_end/dashboards/models/model_studio.stl',  # Use a single model path
             color="#808080",  # Change color to grey
             key='facade_stl_model_display'
         )

@@ -41,7 +41,7 @@ def run(selected_team: str) -> None:
 
     # Call the slideshow function
     slideshow_container = st.container()
-    display_image_slideshow(slideshow_container, folder_path='./dashboards/pictures')  # Update the path to your images
+    display_image_slideshow(slideshow_container, folder_path='./front_end/dashboards/pictures')  # Update the path to your images
 
     if not verified:
         st.error("Failed to extract data, proceeding with Example Data. Use Data Dashboard to Investigate.")
@@ -87,7 +87,7 @@ def run(selected_team: str) -> None:
     kpi_data = [
         {
             'title': 'Mixed Use Index',
-            'image_path': './dashboards/pictures/energy.png',
+            'image_path': './front_end/dashboards/pictures/energy.png',
             'name': 'Mixed Use Index',
             'metric_value': index_metric.calculate(),
             'metric_description': 'Ratio of column-free floor area to total floor area.',
@@ -113,7 +113,7 @@ def run(selected_team: str) -> None:
     # In the second column, display the STL model
     with col2:
         display_stl_model(
-            file_path='./dashboards/models/model_studio.stl',  # Use a single model path
+            file_path='./front_end/dashboards/models/model_studio.stl',  # Use a single model path
             color="#808080",  # Change color to grey
             key='structure_stl_model_display'
         )

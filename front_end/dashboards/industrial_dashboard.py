@@ -121,7 +121,7 @@ def run(selected_team: str) -> None:
     
     # Call the slideshow function
     slideshow_container = st.container()
-    display_image_slideshow(slideshow_container, folder_path='./dashboards/pictures')  # Update the path to your images
+    display_image_slideshow(slideshow_container, folder_path='./front_end/dashboards/pictures')  # Update the path to your images
 
     if not verified:
         st.error(
@@ -213,7 +213,7 @@ def run(selected_team: str) -> None:
     kpi_data = [
         {
             'title': 'Energy Self-Sufficiency Ratio',
-            'image_path': './dashboards/pictures/daylight.png',
+            'image_path': './front_end/dashboards/pictures/daylight.png',
             'name': 'Natural Light Optimization',
             'metric_value': energy_ratio_metric.calculate(),
             'metric_description': 'Daylight coverage ratio',
@@ -221,7 +221,7 @@ def run(selected_team: str) -> None:
         },
         {
             'title': 'Food Self-Sufficiency Ratio',
-            'image_path': 'dashboards/pictures/panel.png',
+            'image_path': './front_end/dashboards/pictures/panel.png',
             'name': 'Solar Panel Efficiency',
             'metric_value': food_ratio_metric.calculate(),
             'metric_description': 'Panel area optimization ratio',
@@ -237,7 +237,7 @@ def run(selected_team: str) -> None:
         },
         {
             'title': 'Waste Utilization Ratio',
-            'image_path': 'dashboards/pictures/energy.png',
+            'image_path': './front_end/dashboards/pictures/energy.png',
             'name': 'Energy Production',
             'metric_value': waste_utilization_ratio_metric.calculate(),
             'metric_description': 'Energy generation ratio',
@@ -265,7 +265,7 @@ def run(selected_team: str) -> None:
     # In the second column, display the STL model
     with col2:
         display_stl_model(
-            file_path='./dashboards/models/model_studio.stl',  # Use a single model path
+            file_path='./front_end/dashboards/models/model_studio.stl',  # Use a single model path
             color="#808080",  # Change color to grey
             key='facade_stl_model_display'
         )
