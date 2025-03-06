@@ -1,35 +1,30 @@
 # This script holds general functions for all Team dashboards
 
 import streamlit as st
-import pandas as pd
-import plotly.express as px
 from specklepy.api.client import SpeckleClient
 from specklepy.api.credentials import get_account_from_token
 import os
 
-import pandas as pd
-import plotly.express as px
+from streamlit_stl import stl_from_file
 
 
 class Metric:
-    def __init__(self, title: str, formula_markdown: str, description: str, interactive_calculator_func, calculation_func, *args):
+    def __init__(self, title: str, formula_markdown: str, description: str, calculation_func, *args):
         self.title = title
         self.formula_markdown = formula_markdown
         self.description = description
-        self.interactive_calculator_func = interactive_calculator_func
         self.calculation_func = calculation_func
         self.args = args
         self.value = self.calculate()
 
     def calculate(self):
+        print(self.args)
+        print(self.calculation_func)
         return self.calculation_func(*self.args)
 
     def display(self, container, add_text=True, add_sphere=True):
         display_metric(container, self.title, self.formula_markdown,
                        self.description, self.value, add_text, add_sphere)
-
-    def display_interactive_calculator(self, container):
-        self.interactive_calculator_func(container, *self.args)
 
 
 def setup_speckle_connection():
@@ -50,13 +45,13 @@ def setup_speckle_connection():
 def display_page_title(team_name: str) -> None:
     st.markdown(f'''
         <div style="
-            text-align: center;
-            background-color: black;
+            text-align: left;
+            background-color: white;
             padding: 20px;
             margin: -1rem -1rem 1rem -1rem;
             width: calc(100% + 2rem);
         ">
-            <h1 style="color: white; margin: 0;">{team_name} Dashboard</h1>
+            <h1 style="color: #2d2d2d; margin: 0;">{team_name} Dashboard</h1>
         </div>
     ''', unsafe_allow_html=True)
 
@@ -67,40 +62,6 @@ def display_formula_section_header(team_name: str) -> None:
             <h2>{team_name} Metrics</h2>
         </div>
     ''', unsafe_allow_html=True)
-
-
-def display_metric(container, title: str, formula_markdown: str, description: str, value: float, add_text=True, add_sphere: bool = True):
-    def metric_text_display(title, formula_markdown, description, value):
-        st.markdown(f"### {title}")
-        st.latex(formula_markdown)
-        st.markdown(description)
-        if value is not None:
-            st.markdown(
-                f"<h4 style='text-align: center;'>Current Value: {value:.2f}</h4>", unsafe_allow_html=True)
-
-    def metric_sphere_display(title, value):
-        sphere_html = create_sphere_visualization(
-            f"{title.lower().replace(' ', '-')}-sphere",
-            value,
-            title
-        )
-        st.components.v1.html(sphere_html, height=300)
-    if add_text and add_sphere:
-        if len(formula_markdown) < 100:
-            container_1, container_2 = container.columns(2)
-        else:
-            container_1 = container.container()
-            container_2 = container.container()
-        with container_1:
-            metric_text_display(title, formula_markdown, description, value)
-        with container_2:
-            metric_sphere_display(title, value)
-    elif add_text:
-        metric_text_display(title, formula_markdown, description, value)
-    elif add_sphere:
-        metric_sphere_display(title, value)
-    else:
-        pass
 
 
 def display_st_metric_values(container, metrics):
@@ -116,30 +77,6 @@ def display_metric_visualizations(container, metrics, add_text=True, add_sphere=
         metric.display(container, add_text=add_text, add_sphere=add_sphere)
     st.markdown("---")
 
-
-def display_interactive_calculators(container, metrics: list[Metric], grid: bool = True):
-    container.markdown("""
-    <h2 style='text-align: center;'>Interactive Sustainability Calculators</h3>
-    """, unsafe_allow_html=True)
-    if len(metrics) < 2:
-        grid = False
-    if grid:
-        metric_index = 0
-        cell_count = len(metrics)
-        cols = 2
-        rows = (cell_count + cols - 1) // cols
-
-        interactive_containers = []
-        for i in range(rows):
-            col_1, col_2 = container.columns(cols, border=True)
-            interactive_containers.append(col_1.container())
-            interactive_containers.append(col_2.container())
-
-    else:
-        interactive_containers = [container.container()
-                                  for _ in range(len(metrics))]
-    for interactive_container, metric in zip(interactive_containers, metrics):
-        metric.display_interactive_calculator(interactive_container)
 
 def display_image_slideshow(container, folder_path: str) -> None:
     """Display a slideshow of images from a specified folder in the given container."""
@@ -173,149 +110,20 @@ def display_text_section(container, text: str) -> None:
     """Display a text section in the given container."""
     container.markdown(f"""
         <div style="
-            background-color: #2d2d2d;
+            background-color: white; 
             padding: 20px;
             border-radius: 5px;
             width: 100%;
-            color: white;
+            color: black;
             margin: 10px 0;
+            font-size: 20px;  /* Change this value to adjust font size */
         ">
             {text}
         </div>
+        <hr style="border: 1px solid white;"/>  <!-- Add a horizontal line -->
     """, unsafe_allow_html=True)
 
     
-def create_sphere_visualization(container_id, value, label, height=400):
-    """Helper function to create sphere visualization HTML"""
-    return f"""
-    <html>
-        <head>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-            <style>
-                .container {{ 
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 20px;
-                    height: {height}px;
-                    width: 100%;
-                    margin: 0 auto;  /* Center the container */
-                }}
-                #{container_id} {{ 
-                    width: 75%;  /* Standardize width */
-                    height: 100%;
-                    position: relative;
-                    margin-left: auto;  /* Center the model container */
-                    margin-right: auto;
-                }}
-                #legend-container {{
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    height: 100%;
-                    padding: 20px 0;
-                    width: 60px;  /* Fixed width for legend */
-                }}
-                #color-gradient {{
-                    width: 30px;
-                    height: 200px;
-                    background: linear-gradient(to top, #ff0000, #00ff00);
-                    border: 1px solid #333;
-                }}
-                .legend-label {{
-                    padding: 5px;
-                    font-family: Arial;
-                    font-size: 12px;
-                    text-align: center;
-                }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div id="{container_id}"></div>
-                <div id="legend-container">
-                    <div class="legend-label">1.0</div>
-                    <div id="color-gradient"></div>
-                    <div class="legend-label">0.0</div>
-                    <div class="legend-label">{label}</div>
-                </div>
-            </div>
-            <script>
-                const container = document.getElementById('{container_id}');
-                const scene = new THREE.Scene();
-                
-                // Adjust camera FOV and position
-                const camera = new THREE.PerspectiveCamera(60, container.clientWidth/container.clientHeight, 0.1, 1000);
-                camera.position.z = 6;  // Move camera further back
-                
-                const renderer = new THREE.WebGLRenderer({{ 
-                    antialias: true,
-                    alpha: true  // Enable transparency
-                }});
-                
-                renderer.setSize(container.clientWidth, container.clientHeight);
-                renderer.setClearColor(0xeeeeee, 0.9);  // Slightly transparent background
-                container.appendChild(renderer.domElement);
-
-                const ambient_light = new THREE.AmbientLight(0xffffff, 0.5);
-                scene.add(ambient_light);
-                const directional_light = new THREE.DirectionalLight(0xffffff, 0.8);
-                directional_light.position.set(3, 5, 1);
-                scene.add(directional_light);
-
-                const vertex_shader = `
-                    varying vec3 vPosition;
-                    void main() {{
-                        vPosition = position;
-                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                    }}
-                `;
-
-                const fragment_shader = `
-                    uniform float value;
-                    varying vec3 vPosition;
-                    void main() {{
-                        float y = (vPosition.y + 2.0) / 4.0;
-                        vec3 bottomColor = vec3(1.0, 0.0, 0.0);
-                        vec3 topColor = vec3(0.0, 1.0, 0.0);
-                        vec3 color = mix(bottomColor, topColor, y * {value});
-                        gl_FragColor = vec4(color, 1.0);
-                    }}
-                `;
-
-                const geometry = new THREE.SphereGeometry(1.2, 32, 32);  // Even smaller sphere
-                const material = new THREE.ShaderMaterial({{
-                    uniforms: {{
-                        value: {{ value: {value} }}
-                    }},
-                    vertexShader: vertex_shader,
-                    fragmentShader: fragment_shader
-                }});
-                
-                const sphere = new THREE.Mesh(geometry, material);
-                sphere.rotation.x = Math.PI * 0.2;
-                scene.add(sphere);
-
-                // Update resize handler
-                function onWindowResize() {{
-                    const width = container.clientWidth;
-                    const height = container.clientHeight;
-                    camera.aspect = width / height;
-                    camera.updateProjectionMatrix();
-                    renderer.setSize(width, height, false);  // Add false to prevent pixelation
-                }}
-                
-                onWindowResize();  // Call once to set initial size
-
-                function animate() {{
-                    requestAnimationFrame(animate);
-                    renderer.render(scene, camera);
-                }}
-                animate();
-            </script>
-        </body>
-    </html>
-    """
 
 def display_custom_bullet_list(container, items: list[str], bullet_image_path: str = None) -> None:
     """Display a list with custom bullet points using an image."""
@@ -367,6 +175,15 @@ def display_custom_bullet_list(container, items: list[str], bullet_image_path: s
     
     container.markdown(bullet_style + bullet_list, unsafe_allow_html=True)
 
+def display_metric(container, title: str, formula_markdown: str, description: str, value: float, add_text=True, add_sphere: bool = True):
+    def metric_text_display(title, formula_markdown, description, value):
+        st.markdown(f"### {title}")
+        st.latex(formula_markdown)
+        st.markdown(description)
+        if value is not None:
+            st.markdown(
+                f"<h4 style='text-align: center;'>Current Value: {value:.2f}</h4>", unsafe_allow_html=True)
+
 def create_top_menu(teams: list[str]) -> str:
     """Create a horizontal menu at the top of the page."""
     st.markdown("""
@@ -383,7 +200,7 @@ def create_top_menu(teams: list[str]) -> str:
             background-color: transparent;
             border: none;
             padding: 10px 20px;
-            font-size: 16px;
+            font-size: 40px;  /* Change this value to adjust font size */
         }
         div.stButton > button:hover {
             background-color: #ffffff;
@@ -424,7 +241,7 @@ def create_top_menu(teams: list[str]) -> str:
             """
             if st.button(
                 item, 
-                key=f"menu_{item}", 
+                key=f"menu_{item}",  # Ensure unique key by prefixing with 'menu_'
                 use_container_width=True
             ):
                 selected = item
@@ -453,16 +270,19 @@ def display_kpi_columns(container, kpi_data: list[dict]) -> None:
     # Create header
     container.markdown("""
         <div style="
-            background-color: #2d2d2d;
+            background-color: white;
             padding: 20px;
             border-radius: 5px;
             width: 100%;
-            color: white;
+            color: #2d2d2d;
             margin: 10px 0;
         ">
             <h2 style="margin: 0;">Key Performance Indicators</h2>
         </div>
+                                      
     """, unsafe_allow_html=True)
+
+    st.markdown("---")
 
     # Create three columns
     cols = container.columns(3)
@@ -505,23 +325,6 @@ def display_kpi_columns(container, kpi_data: list[dict]) -> None:
                 </div>
             """, unsafe_allow_html=True)
 
-def display_data_table(container, data: dict) -> None:
-    """Display data table with consistent styling."""
-    container.markdown("""
-        <div style="
-            background-color: #2d2d2d;
-            padding: 20px;
-            border-radius: 5px;
-            width: 100%;
-            color: white;
-            margin: 10px 0;
-        ">
-            <h2 style="margin: 0;">Extracted Data</h2>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    # Convert dict to DataFrame and style it
-    df = pd.DataFrame(list(data.items()), columns=['Parameter', 'Value'])
     
     # Apply custom styling to the dataframe
     styled_df = df.style.set_properties(**{
@@ -537,67 +340,42 @@ def display_kpi_details(container, kpi_data: list[dict]) -> None:
     """Display detailed KPI explanations in alternating two-column layout with images."""
     container.markdown("""
         <div style="
-            background-color: #2d2d2d;
+            background-color: white;
             padding: 20px;
             border-radius: 5px;
             width: 100%;
-            color: white;
+            color: black;
             margin: 10px 0;
         ">
             <h2 style="margin: 0;">KPI Details</h2>
+            <hr style="border: 1px solid black;"/>  <!-- Add a horizontal line -->
         </div>
     """, unsafe_allow_html=True)
 
-    # For each KPI, create a two-column layout with alternating order
+    # For each KPI, create a two-column layout
     for idx, kpi in enumerate(kpi_data):
         # Create two columns with equal height
         col1, col2 = container.columns([1, 1])
         
-        # Common image style
-        image_style = """
-            <div style="
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                height: 100%;
-                padding: 20px;
-            ">
-                <img src="{}" style="max-width: 100%; max-height: 300px; object-fit: contain;">
-            </div>
-        """
-        
         # Common text style
         text_style = """
             <div style="
-                background-color: #f0f0f0;
                 padding: 20px;
-                border-radius: 10px;
                 height: 100%;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
                 min-height: 300px;
+                text-align: center;  /* Center align text */
             ">
-                <h3 style="margin-top: 0; text-align: center;">{title}</h3>
-                <p style="font-size: 18px; text-align: center;">{description}</p>
-                <p style="font-size: 16px; color: #666; text-align: center;">Current Value: {value:.2f}</p>
+                <h3 style="margin-top: 100px;">{title}</h3>  <!-- Adjusted margin-top -->
+                <p style="font-size: 18px;">{description}</p>
+                <p style="font-size: 20px; color: #000000;">Current Value: {value:.2f}</p>
             </div>
         """
         
         # Alternate the content between columns
-        if idx % 2 == 0:  # Even indices - Image left, Text right
-            with col1:
-                st.markdown(image_style.format(kpi['image_path']), unsafe_allow_html=True)
-            with col2:
-                st.markdown(
-                    text_style.format(
-                        title=kpi['title'],
-                        description=kpi.get('detailed_description', 'No detailed description available.'),
-                        value=kpi['metric_value']
-                    ),
-                    unsafe_allow_html=True
-                )
-        else:  # Odd indices - Text left, Image right
+        if idx % 2 == 0:  # Even indices - Text left, Image right
             with col1:
                 st.markdown(
                     text_style.format(
@@ -608,7 +386,155 @@ def display_kpi_details(container, kpi_data: list[dict]) -> None:
                     unsafe_allow_html=True
                 )
             with col2:
-                st.markdown(image_style.format(kpi['image_path']), unsafe_allow_html=True)
+                st.image(kpi['image_path'], use_container_width=True)  # Display the KPI image in the second column
+        else:  # Odd indices - Image left, Text right
+            with col1:
+                st.image(kpi['image_path'], use_container_width=True)  # Display the KPI image in the first column
+            with col2:
+                st.markdown(
+                    text_style.format(
+                        title=kpi['title'],
+                        description=kpi.get('detailed_description', 'No detailed description available.'),
+                        value=kpi['metric_value']
+                    ),
+                    unsafe_allow_html=True
+                )
         
         # Add some spacing between KPIs
         st.markdown("<br>", unsafe_allow_html=True)
+
+
+
+def display_stl_model(file_path: str, color: str, key: str):
+    """Display the STL model with customizable settings and a two-color division."""
+    # Define the fragment shader for two-color division
+    fragment_shader = """
+        varying vec3 vPosition;
+        void main() {
+            if (vPosition.y > 0.0) {
+                gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); // Red for the top half
+            } else {
+                gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0); // Green for the bottom half
+            }
+        }
+    """
+
+    stl_from_file(
+        file_path=file_path,
+        color=color,
+        material="material",
+        auto_rotate=True,
+        opacity=1.0,
+        height=500,
+        shininess=100,
+        cam_v_angle=60,
+        cam_h_angle=-90,
+        cam_distance=0,
+        max_view_distance=1000,
+        key=key,
+        shader=fragment_shader  # Use the custom shader for two-color division
+    )
+
+def display_metric_circles_and_tape(container, title, primary_metric_value, metric_values, metric_names, units="m²") -> None:
+    """Display input values for metrics in circles and a tape diagram showing progress."""
+    
+    # Display the title for the metric
+    container.markdown(f"<h3>{title}</h3>", unsafe_allow_html=True)
+    
+    # Create a gradient background for the tape diagram
+    tape_value = primary_metric_value
+    container.markdown(f"""
+        <div style='width: 100%; height: 30px; background: linear-gradient(to right, #f5f5dc, #8B4513); position: relative;'>
+            <div style='width: {tape_value * 100}%; height: 100%; background-color: rgba(255, 255, 255, 0.5);'></div>
+            <div style='position: absolute; width: 100%; height: 100%;'>
+                <div style='position: absolute; top: 0; left: 0; width: 100%;'>
+                    {''.join(f"<div style='position: absolute; left: {i * 10}%; height: 30px; border-left: 1px solid black; z-index: 1;'></div>" for i in range(1, 11))}
+                </div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Calculate the position for the value display
+    position_percentage = tape_value * 100  # Convert to percentage for positioning
+    container.markdown(f"""
+        <div style='position: relative; width: 100%;'>
+            <div style='position: absolute; left: {position_percentage}%; transform: translateX(-50%); font-size: 24px; color: black; top: 30px;'>
+                <strong>{tape_value:.2f}</strong>  <!-- Display the primary metric value -->
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Add space between the tape diagram and the metric values
+    container.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+    
+    # Find the maximum value to scale the circles
+    max_value = max(metric_values)
+    scaling_factor = 200  # Maximum diameter for the largest circle
+    min_circle_diameter = 30  # Minimum diameter for visibility
+
+    # Create columns for layout with 2 extra columns
+    total_columns = len(metric_values) + 2
+    cols = st.columns(total_columns)  # Create total_columns based on the number of values + 2
+
+    # Place empty circles in the first and last columns
+    for idx in range(total_columns):
+        if idx == 0 or idx == total_columns - 1:
+            with cols[idx]:
+                st.markdown("")  # Empty column for spacing
+        else:
+            # Create a circle representation for the metric values
+            metric_index = idx - 1  # Adjust index for metric values
+            value = metric_values[metric_index]
+            circle_diameter = max((value / max_value) * scaling_factor, min_circle_diameter)  # Scale for visibility with a minimum size
+            with cols[idx]:
+                st.markdown(f"""
+                    <div style="position: relative; display: inline-block;">
+                        <div style="
+                            width: {circle_diameter}px; 
+                            height: {circle_diameter}px; 
+                            border-radius: 50%; 
+                            background-color: #f5f5dc;  /* Light beige color */
+                            text-align: center; 
+                            line-height: {circle_diameter}px; 
+                            cursor: default;
+                        ">
+                            {value:.2f} {units}
+                        </div>
+                        <div style="
+                            position: absolute; 
+                            top: {circle_diameter}px; 
+                            left: 50%; 
+                            transform: translateX(-50%); 
+                            background-color: white; 
+                            padding: 5px; 
+                            border-radius: 5px; 
+                            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+                        ">
+                            {metric_names[metric_index]}  <!-- Restore metric names -->
+                        </div>
+                    </div>
+                """, unsafe_allow_html=True)
+
+    # Add space of 100px underneath the circles
+    container.markdown("<div style='height: 100px;'></div>", unsafe_allow_html=True)
+
+    # Add JavaScript to handle input changes (if needed)
+    container.markdown("""
+        <script>
+            const streamlit = window.parent.Streamlit;
+            function setValue(name, value) {
+                streamlit.setValue(name, value);
+            }
+        </script>
+    """, unsafe_allow_html=True)
+
+def metric_calc_daylight_factor(weight_residential, weight_work, residential_area_with_daylight, total_residential_area, work_area_with_daylight, total_work_area):
+    return (
+        weight_residential * (residential_area_with_daylight / total_residential_area) +
+        weight_work * (work_area_with_daylight / total_work_area)
+    )
+
+def run(selected_team: str) -> None:
+    st.title(f"{selected_team} Dashboard")
+
+
