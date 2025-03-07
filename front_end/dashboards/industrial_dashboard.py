@@ -258,17 +258,17 @@ def run(selected_team: str) -> None:
     </iframe>
     """
 
-    # Display the iframe in the first column
-    with col1:
-        st.markdown(iframe_code, unsafe_allow_html=True)
+    # # Display the iframe in the first column
+    # with col1:
+    #     st.markdown(iframe_code, unsafe_allow_html=True)
 
-    # In the second column, display the STL model
-    with col2:
-        display_stl_model(
-            file_path='./front_end/dashboards/models/model_studio.stl',  # Use a single model path
-            color="#808080",  # Change color to grey
-            key='facade_stl_model_display'
-        )
+    # # In the second column, display the STL model
+    # with col2:
+    #     display_stl_model(
+    #         file_path='./front_end/dashboards/models/model_studio.stl',  # Use a single model path
+    #         color="#808080",  # Change color to grey
+    #         key='facade_stl_model_display'
+    #     )
 
     st.markdown(" ")
     st.markdown(" ")

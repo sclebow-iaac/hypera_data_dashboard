@@ -6,6 +6,8 @@ import data_extraction.service_extractor as team_extractor
 
 from dashboards.dashboard import *
 
+viewer_model_id = 'e76ccf2e0f,3f178d9658,a4e3d78009,c710b396d3,5512057f5b,d68a58c12d,2b48d3f757,767672f412'
+
 def metric_calc_occupancy_efficiency(utilization_rate, active_hours, function_exchange_factor, total_available_hours_per_day, total_area, area_of_functions):
     numerator = 0
     for utilization, hours, factor, area in zip(utilization_rate, active_hours, function_exchange_factor, area_of_functions):
@@ -67,11 +69,26 @@ def run(selected_team: str) -> None:
     # Building Dashboard
     # Dashboard Header
     display_page_title(selected_team)
-    team_extractor.display_data(extracted_data=team_data, verbose=False, header=False, show_table=False, gauge=False, simple_table=True)
+
+    # Display the Speckle model
+    viewer_container = st.container()
+    speckle_model_url = display_speckle_viewer(
+        container=viewer_container,
+        project_id=project_id,
+        model_id=viewer_model_id,
+        is_transparent=True,
+        hide_controls=True,
+        hide_selection_info=True,
+        no_scroll=True,
+    )
+    print(f'Speckle Model URL: {speckle_model_url}')
+
+    table_container = st.container()
+    team_extractor.display_data(extracted_data=team_data, verbose=False, header=False, show_table=True, gauge=False, simple_table=True, container=table_container)
 
     # Call the slideshow function
-    slideshow_container = st.container()
-    display_image_slideshow(slideshow_container, folder_path='./front_end/dashboards/pictures')  # Update the path to your images
+    # slideshow_container = st.container()
+    # display_image_slideshow(slideshow_container, folder_path='./front_end/dashboards/pictures')  # Update the path to your images
 
     if not verified:
         st.error("Failed to extract data, proceding with Example Data.  Use Data Dashboard to Investigate.")
@@ -84,7 +101,6 @@ def run(selected_team: str) -> None:
         total_available_hours_per_day = 24
         total_area = 1000
         area_of_functions = [100, 200, 300]
-
     else:
         
         function_names = team_data["ListOfFunctionNames"]
@@ -96,7 +112,6 @@ def run(selected_team: str) -> None:
         area_of_functions = team_data["AreaOfFunctions"]
 
     metrics = []
-
     occupancy_efficiency_metric = Metric(
         "Occupancy Efficiency",
         r'\frac{\sum_{i=1}^{n} (UtilizationRateOfFunction_i \cdot ActiveHoursOfFunctionPerDay_i \cdot FunctionExchangeFactor \cdot AreaOfFunction_i)}{TotalAvailableHoursPerDay \cdot TotalArea}',
@@ -109,9 +124,7 @@ def run(selected_team: str) -> None:
         total_area,
         area_of_functions
     )
-
     metrics.append(occupancy_efficiency_metric)
-
 
     text_container = st.container()
     display_text_section(
@@ -122,58 +135,8 @@ def run(selected_team: str) -> None:
         """
     )
 
+    display_formula_section_header(selected_team)
 
-    st.markdown("---")
-
-    st.write(" ")
-
-    team_extractor.display_data(extracted_data=team_data, verbose=False, header=False, show_table=False, gauge=False, simple_table=True)
-
-    # Add KPI section
-    kpi_container = st.container()
-    kpi_data = [
-        {
-            'title': 'Occupancy Efficiency',
-            'image_path': './front_end/dashboards/pictures/daylight.png',
-            'name': 'Natural Light Optimization',
-            'metric_value': occupancy_efficiency_metric.calculate(),
-            'metric_description': 'Daylight coverage ratio',
-            'detailed_description': 'The Primary Daylight Factor measures how effectively our facade design maximizes natural light penetration. It considers both residential and work spaces, ensuring optimal daylight distribution while managing solar heat gain.'
-        },
-    ]
-
-
-
-    # Create two columns for the iframe and STL model
-    col1, col2 = st.columns(2)
-
-    # Create an iframe for the Speckle model in the first column
-    speckle_model_url = "https://macad.speckle.xyz/projects/31f8cca4e0/models/5adade2d5f"  # Replace with your actual Speckle model URL
-    iframe_code = f"""
-    <iframe src="{speckle_model_url}" 
-            style="width: 100%; height: 600px; border: none;">
-    </iframe>
-    """
-
-    # Display the iframe in the first column
-    with col1:
-        st.markdown(iframe_code, unsafe_allow_html=True)
-
-    # In the second column, display the STL model
-    with col2:
-        display_stl_model(
-            file_path='./front_end/dashboards/models/model_studio.stl',  # Use a single model path
-            color="#808080",  # Change color to grey
-            key='facade_stl_model_display'
-        )
-
-    st.markdown(" ")
-    st.markdown(" ")
-    st.markdown(" ")
-    st.markdown(" ")
-    st.markdown(" ")
-    st.markdown(" ")
-    st.markdown(" ")
 
     # Now, display the custom bullet list underneath the iframe and STL model
     bullet_items = [
@@ -182,58 +145,61 @@ def run(selected_team: str) -> None:
     ]
     display_custom_bullet_list(st.container(), bullet_items)  # Call the function to display the bullet list
 
-    
-    
-    # Display detailed KPI explanations
-    kpi_details_container = st.container()
-    display_kpi_details(kpi_details_container, kpi_data)
+    display_st_metric_values(container=st.container(), metrics=metrics)
+    display_metric_visualizations(container=st.container(), metrics=metrics, add_text=True)
 
+    # # Add KPI section
+    # kpi_container = st.container()
+    # kpi_data = [
+    #     {
+    #         'title': 'Occupancy Efficiency',
+    #         'image_path': './front_end/dashboards/pictures/daylight.png',
+    #         'name': 'Natural Light Optimization',
+    #         'metric_value': occupancy_efficiency_metric.calculate(),
+    #         'metric_description': 'Daylight coverage ratio',
+    #         'detailed_description': 'The Primary Daylight Factor measures how effectively our facade design maximizes natural light penetration. It considers both residential and work spaces, ensuring optimal daylight distribution while managing solar heat gain.'
+    #     },
+    # ]
 
-    st.markdown(" ")
-    st.markdown(" ")
-    st.markdown(" ")
-    st.markdown(" ")
-    st.markdown(" ")
-    st.markdown(" ")
-    st.markdown(" ")
+    # # In the second column, display the STL model
+    # with col2:
+    #     display_stl_model(
+    #         file_path='./front_end/dashboards/models/model_studio.stl',  # Use a single model path
+    #         color="#808080",  # Change color to grey
+    #         key='facade_stl_model_display'
+    #     )
 
-    team_extractor.display_data(extracted_data=team_data, verbose=False, header=False, show_table=True, gauge=False, simple_table=True)
+    # # Display detailed KPI explanations
+    # kpi_details_container = st.container()
+    # display_kpi_details(kpi_details_container, kpi_data)
 
-    text_container = st.container()
-    display_text_section(
-        text_container,
-        """
-        ## Detailed KPI Explanations
-        """
-    )
+    # text_container = st.container()
+    # display_text_section(
+    #     text_container,
+    #     """
+    #     ## Detailed KPI Explanations
+    #     """
+    # )
 
-    # Call the display function for the Primary Daylight Factor
-    display_metric_circles_and_tape(
-        st.container(),
-        title="Occupancy Efficiency",
-        primary_metric_value=occupancy_efficiency_metric.calculate(),
-        metric_values=[utilization_rate, active_hours, function_exchange_factor, total_available_hours_per_day, total_area, area_of_functions],
-        metric_names=["Utilization Rate", "Active Hours", "Function Exchange Factor", "Total Available Hours per Day", "Total Area", "Area of Functions"],
-        units="m²"  # All units are in meters
-    )
+    # # Call the display function for the Primary Daylight Factor
+    # display_metric_circles_and_tape(
+    #     st.container(),
+    #     title="Occupancy Efficiency",
+    #     primary_metric_value=occupancy_efficiency_metric.calculate(),
+    #     metric_values=[utilization_rate, active_hours, function_exchange_factor, total_available_hours_per_day, total_area, area_of_functions],
+    #     metric_names=["Utilization Rate", "Active Hours", "Function Exchange Factor", "Total Available Hours per Day", "Total Area", "Area of Functions"],
+    #     units="m²"  # All units are in meters
+    # )
 
-    st.markdown(" ")
-    st.markdown(" ")
-    st.markdown(" ")
-    st.markdown(" ")
-    st.markdown(" ")
-    st.markdown(" ")
-    st.markdown(" ")
-
-    # Call the panel optimization metric display
-    display_metric_circles_and_tape(
-        st.container(),
-        title="Occupancy Efficiency",
-        primary_metric_value=occupancy_efficiency_metric.calculate(),
-        metric_values=[utilization_rate, active_hours, function_exchange_factor, total_available_hours_per_day, total_area, area_of_functions],
-        metric_names=["Utilization Rate", "Active Hours", "Function Exchange Factor", "Total Available Hours per Day", "Total Area", "Area of Functions"],
-        units="m²"  # Units for panel area
-    )
+    # # Call the panel optimization metric display
+    # display_metric_circles_and_tape(
+    #     st.container(),
+    #     title="Occupancy Efficiency",
+    #     primary_metric_value=occupancy_efficiency_metric.calculate(),
+    #     metric_values=[utilization_rate, active_hours, function_exchange_factor, total_available_hours_per_day, total_area, area_of_functions],
+    #     metric_names=["Utilization Rate", "Active Hours", "Function Exchange Factor", "Total Available Hours per Day", "Total Area", "Area of Functions"],
+    #     units="m²"  # Units for panel area
+    # )
 
     # # Display Formulas and Explanations
     # display_formula_section_header(selected_team)
