@@ -13,6 +13,7 @@ import dashboards.structure_dashboard as structure_dashboard
 import dashboards.industrial_dashboard as industrial_dashboard
 import dashboards.facade_dashboard as facade_dashboard
 import dashboards.data_dashboard as data_dashboard
+from dashboards.dashboard import create_top_menu
 
 # import statistics
 import project_statistics as statistics
@@ -31,27 +32,27 @@ st.set_page_config(
 st.markdown("""
     <style>
     /* Import Google Font */
-    @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap');
+    @import url('Neuton');
     
     /* Main background */
     .stApp {
-        font-family: 'Roboto Mono', sans-serif;  /* Apply font family to entire app */
+        font-family: 'Neuton', sans-serif;  /* Apply font family to entire app */
     }
     
     /* Main container */
     .main {
-        font-family: 'Roboto Mono', sans-serif;
+        font-family: 'Neuton', sans-serif;
     }
     
     /* Headers */
     .css-10trblm, .css-qrbaxs {
         font-weight: 600;
-        font-family: 'Roboto Mono', sans-serif !important;  /* Added !important */
+        font-family: 'Neuton', sans-serif !important;  /* Added !important */
     }
     
     /* All text elements */
     .stMarkdown, .stText, div, span, p, h1, h2, h3 {
-        font-family: 'Roboto Mono', sans-serif !important;
+        font-family: 'Neuton', sans-serif !important;
     }
     
     /* Metrics styling */
@@ -89,18 +90,18 @@ st.markdown("""
 
     /* Sidebar radio buttons */
     .st-cc, .st-dk, .st-dl, .st-dm {
-        font-family: 'Roboto Mono', sans-serif !important;
+        font-family: 'Neuton', sans-serif !important;
     }
 
     /* Sidebar title */
     [data-testid="stSidebar"] [data-testid="stMarkdown"] {
-        font-family: 'Roboto Mono', sans-serif !important;
+        font-family: 'Neuton', sans-serif !important;
         padding: 0.5rem 0;
     }
 
     /* Radio button text */
     .st-bq {
-        font-family: 'Roboto Mono', sans-serif !important;
+        font-family: 'Neuton', sans-serif !important;
     }
 
     /* Radio button container */
@@ -121,9 +122,12 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Sidebar for selecting dashboards
+# top menu
 dashboard_options = ["Main", "Residential", "Service", "Structure", "Industrial", "Facade", "Data"]
-selected_dashboard = st.sidebar.radio("Select Dashboard", dashboard_options)
+selected_dashboard = create_top_menu(dashboard_options)
+
+
+st.markdown("---")
 
 # Create a placeholder for the dashboard content
 dashboard_placeholder = st.empty()
@@ -156,7 +160,7 @@ def display_industrial_dashboard():
 def display_facade_dashboard():
     with dashboard_placeholder.container():
         selected_team = "Facade Team"  # Set the selected team
-        facade_dashboard.run(selected_team)  # Only pass selected_team
+        facade_dashboard.run(selected_team)  # Pass only the selected_team
 
 #--------------------------
 #CONTAINERS
