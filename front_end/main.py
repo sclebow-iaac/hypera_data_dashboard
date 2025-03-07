@@ -26,7 +26,7 @@ import attribute_extraction
 st.set_page_config(
     page_title="Hyperbuilding_A Dashboard",
     page_icon="📊",
-    layout="centered"  # Makes the dashboard use full screen width
+    layout="wide"  # Makes the dashboard use full screen width
 )
 
 st.markdown("""

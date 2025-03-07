@@ -11,7 +11,6 @@ import plotly.express as px
 
 from dashboards.dashboard import *
 
-model_id = '000e6c757a'
 
 def metric_calc_index(number_of_units, unit_types, total_number_of_units):
     numerator = sum(units * (units - 1) for units in number_of_units)
@@ -47,24 +46,15 @@ def run(selected_team: str) -> None:
     verified, team_data = team_extractor.extract(
         models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
 
-    # Display the Speckle model in an iframe
-    viewer_container = st.container()
-    speckle_model_url = display_speckle_viewer(
-        container=viewer_container,
-        project_id=project_id,
-        model_id=model_id
-    )
-
     # Building Dashboard
     # Dashboard Header
     display_page_title(selected_team)
     team_extractor.display_data(extracted_data=team_data, verbose=False,
                                 header=True, show_table=True, gauge=False, simple_table=True)
 
-    print(f"Speckle Model URL: {speckle_model_url}")
-   # # Call the slideshow function
-    # slideshow_container = st.container()
-    # display_image_slideshow(slideshow_container, folder_path='./front_end/dashboards/pictures')  # Update the path to your images
+    # Call the slideshow function
+    slideshow_container = st.container()
+    display_image_slideshow(slideshow_container, folder_path='./front_end/dashboards/pictures')  # Update the path to your images
 
     if not verified:
         st.error(
@@ -108,15 +98,42 @@ def run(selected_team: str) -> None:
     )
 
     st.markdown("---")
-    
 
-    # # In the second column, display the STL model
-    # with col2:
-    #     display_stl_model(
-    #         file_path='./front_end/dashboards/models/model_studio.stl',  # Use a single model path
-    #         color="#808080",  # Change color to grey
-    #         key='structure_stl_model_display'
-    #     )
+    # Add KPI section
+    kpi_container = st.container()
+    kpi_data = [
+        {
+            'title': 'Mixed Use Index',
+            'image_path': './front_end/dashboards/pictures/energy.png',
+            'name': 'Mixed Use Index',
+            'metric_value': index_metric.calculate(),
+            'metric_description': 'Ratio of column-free floor area to total floor area.',
+            'detailed_description': 'This metric indicates the efficiency of the floor space in the structure.'
+        }
+    ]
+
+    # Create two columns for the iframe and STL model
+    col1, col2 = st.columns(2)
+
+    # Create an iframe for the Speckle model in the first column
+    speckle_model_url = "https://macad.speckle.xyz/projects/31f8cca4e0/models/c2df017258"  # Replace with your actual Speckle model URL
+    iframe_code = f"""
+    <iframe src="{speckle_model_url}" 
+            style="width: 100%; height: 600px; border: none;">
+    </iframe>
+    """
+
+    # Display the iframe in the first column
+    with col1:
+        st.markdown(iframe_code, unsafe_allow_html=True)
+
+    # In the second column, display the STL model
+    with col2:
+        display_stl_model(
+            file_path='./front_end/dashboards/models/model_studio.stl',  # Use a single model path
+            color="#808080",  # Change color to grey
+            key='structure_stl_model_display'
+        )
 
     st.markdown(" ")
     st.markdown(" ")
@@ -129,17 +146,6 @@ def run(selected_team: str) -> None:
     ]
     display_custom_bullet_list(st.container(), bullet_items)  # Call the function to display the bullet list
 
-    # Add KPI section
-    kpi_data = [
-        {
-            'title': 'Mixed Use Index',
-            'image_path': './front_end/dashboards/pictures/energy.png',
-            'name': 'Mixed Use Index',
-            'metric_value': index_metric.calculate(),
-            'metric_description': 'Ratio of column-free floor area to total floor area.',
-            'detailed_description': 'This metric indicates the efficiency of the floor space in the structure.'
-        }
-    ]    
     # Display detailed KPI explanations
     kpi_details_container = st.container()
     display_kpi_details(kpi_details_container, kpi_data)

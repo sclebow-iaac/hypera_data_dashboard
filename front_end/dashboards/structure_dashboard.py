@@ -114,28 +114,28 @@ def run(selected_team: str) -> None:
         }
     ]
 
-    # # Create two columns for the iframe and STL model
-    # col1, col2 = st.columns(2)
+    # Create two columns for the iframe and STL model
+    col1, col2 = st.columns(2)
 
-    # # Create an iframe for the Speckle model in the first column
-    # speckle_model_url = "https://macad.speckle.xyz/projects/31f8cca4e0/models/c2df017258"  # Replace with your actual Speckle model URL
-    # iframe_code = f"""
-    # <iframe src="{speckle_model_url}" 
-    #         style="width: 100%; height: 600px; border: none;">
-    # </iframe>
-    # """
+    # Create an iframe for the Speckle model in the first column
+    speckle_model_url = "https://macad.speckle.xyz/projects/31f8cca4e0/models/c2df017258"  # Replace with your actual Speckle model URL
+    iframe_code = f"""
+    <iframe src="{speckle_model_url}" 
+            style="width: 100%; height: 600px; border: none;">
+    </iframe>
+    """
 
-    # # Display the iframe in the first column
-    # with col1:
-    #     st.markdown(iframe_code, unsafe_allow_html=True)
+    # Display the iframe in the first column
+    with col1:
+        st.markdown(iframe_code, unsafe_allow_html=True)
 
-    # # In the second column, display the STL model
-    # with col2:
-    #     display_stl_model(
-    #         file_path='./front_end/dashboards/models/model_studio.stl',  # Use a single model path
-    #         color="#808080",  # Change color to grey
-    #         key='structure_stl_model_display'
-    #     )
+    # In the second column, display the STL model
+    with col2:
+        display_stl_model(
+            file_path='./front_end/dashboards/models/model_studio.stl',  # Use a single model path
+            color="#808080",  # Change color to grey
+            key='structure_stl_model_display'
+        )
 
     st.markdown(" ")
     st.markdown(" ")
