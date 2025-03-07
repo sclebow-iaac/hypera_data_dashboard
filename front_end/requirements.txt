@@ -3,4 +3,3 @@ pandas
 specklepy
 colour
 pythreejs
-streamlit_stl
