@@ -89,11 +89,15 @@ def run(selected_team: str) -> None:
         
         function_names = team_data["ListOfFunctionNames"]
         utilization_rate = team_data["UtilizationRateOfFunction"]
+        utilization_rate = [float(x) for x in utilization_rate]
         active_hours = team_data["ActiveHoursOfFunctionPerDay"]
+        active_hours = [float(x) for x in active_hours]
         function_exchange_factor = team_data["FunctionExchangeFactor"]
-        total_available_hours_per_day = team_data["TotalAvailableHoursPerDay"][0]
-        total_area = team_data["TotalArea"][0]
+        function_exchange_factor = [float(x) for x in function_exchange_factor]
+        total_available_hours_per_day = float(team_data["TotalAvailableHoursPerDay"][0])
+        total_area = float(team_data["TotalArea"][0])
         area_of_functions = team_data["AreaOfFunctions"]
+        area_of_functions = [float(x) for x in area_of_functions]
 
     metrics = []
 
