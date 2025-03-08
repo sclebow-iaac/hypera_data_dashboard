@@ -112,6 +112,27 @@ def metric_interactive_calculator_waste_utilization_ratio(container, recycled_so
 
 
 def run(selected_team: str) -> None:
+    # st.title(f"{selected_team} Dashboard")
+    
+    # Create a container for the slideshow and iframe
+    container = st.container()
+    
+    # Create two equal columns
+    col1, col2 = container.columns(2)  # Both columns will have equal width
+
+    # In the first column, display the image slideshow
+    with col1:
+        display_image_slideshow(col1, "./dashboards/pictures", "slideshow_1")  # Pass a unique key
+
+    # In the second column, display the iframe for the Speckle model
+    with col2:
+        iframe_code = f"""
+        <iframe src="https://macad.speckle.xyz/projects/31f8cca4e0/models/5adade2d5f" 
+                style="width: 100%; height: 600px; border: none;">
+        </iframe>
+        """
+        st.markdown(iframe_code, unsafe_allow_html=True)
+
     # Extract data
     models, client, project_id = setup_speckle_connection()
     verified, team_data = team_extractor.extract(
@@ -121,7 +142,8 @@ def run(selected_team: str) -> None:
     # Dashboard Header
     display_page_title(selected_team)
     team_extractor.display_data(extracted_data=team_data, verbose=False,
-                                header=True, show_table=True, gauge=False, simple_table=True)
+                                header=False, show_table=False, gauge=False, simple_table=True)
+    
 
     if not verified:
         st.error(
@@ -158,8 +180,19 @@ def run(selected_team: str) -> None:
         "Measures the building's ability to meet its own energy demands.",
         metric_interactive_calculator_energy_ratio,
         metric_calc_energy_ratio,
-        energy_generation,
-        energy_demand
+        './dashboards/pictures/energy_industrial.png',
+        [
+            {
+                "name": "Energy Generation",
+                "value": energy_generation,
+                "unit": "kWh"
+            },
+            {
+                "name": "Energy Demand",
+                "value": energy_demand,
+                "unit": "kWh"
+            }
+        ]
     )
     metrics.append(energy_ratio_metric)
 
@@ -169,8 +202,19 @@ def run(selected_team: str) -> None:
         "Indicates the proportion of food requirements met through internal production.",
         metric_interactive_calculator_food_ratio,
         metric_calc_food_ratio,
-        food_production,
-        food_demand
+        './dashboards/pictures/food.png',
+        [
+            {
+                "name": "Food Production",
+                "value": food_production,
+                "unit": "kg"
+            },
+            {
+                "name": "Food Demand",
+                "value": food_demand,
+                "unit": "kg"
+            }
+        ]
     )
     metrics.append(food_ratio_metric)
 
@@ -180,8 +224,19 @@ def run(selected_team: str) -> None:
         "Shows the efficiency of water recycling systems.",
         metric_interactive_calculator_recycled_water_ratio,
         metric_calc_recycled_water_ratio,
-        recycled_water,
-        wastewater_production
+        './dashboards/pictures/water.png',
+        [
+            {
+                "name": "Recycled Water",
+                "value": recycled_water,
+                "unit": "m³"
+            },
+            {
+                "name": "Wastewater Production",
+                "value": wastewater_production,
+                "unit": "m³"
+            }
+        ]
     )
     metrics.append(recycled_water_ratio_metric)
 
@@ -191,13 +246,30 @@ def run(selected_team: str) -> None:
         "Measures the efficiency of waste management relative to targets.",
         metric_interactive_calculator_waste_utilization_ratio,
         metric_calc_waste_utilization_ratio,
-        recycled_solid_waste,
-        solid_waste_production
+        './dashboards/pictures/waste.png',
+        [
+            {
+                "name": "Recycled Solid Waste",
+                "value": recycled_solid_waste,
+                "unit": "kg/day"
+            },
+            {
+                "name": "Solid Waste Production",
+                "value": solid_waste_production,
+                "unit": "kg/day"
+            }
+        ]
     )
     metrics.append(waste_utilization_ratio_metric)
 
-    # Display Formulas and Explanations
-    display_formula_section_header(selected_team)
+    text_container = st.container()
+    display_text_section(
+        text_container,
+        """
+        ## 
+        Our industrial design integrates sustainable features with aesthetic considerations.
+        """
+    )
 
     # Metrics Display - Updated with correct metrics
     metrics_display_container = st.container()
@@ -211,3 +283,40 @@ def run(selected_team: str) -> None:
     metric_interactive_calculator_container = st.container()
     display_interactive_calculators(
         metric_interactive_calculator_container, metrics, grid=True)
+    st.write(" ")
+
+    team_extractor.display_data(extracted_data=team_data, verbose=False, header=False, show_table=False, gauge=False, simple_table=True)
+
+
+    st.markdown(" ")
+    st.markdown(" ")
+
+    # Now, display the custom bullet list underneath the iframe and STL model
+    bullet_items = [
+        "1. Solar panels optimized for maximum energy generation",
+        "2. Strategic window placement for natural daylight",
+        "3. Thermal insulation systems for energy efficiency"
+    ]
+    display_custom_bullet_list(st.container(), bullet_items)  # Call the function to display the bullet list
+
+    team_extractor.display_data(extracted_data=team_data, verbose=False, header=False, show_table=True, gauge=False, simple_table=True)
+
+    # Metrics Display - Updated with correct metrics
+    metrics_display_container = st.container()
+    display_st_metric_values(metrics_display_container, metrics)
+
+    st.markdown(" ")
+    st.markdown(" ")
+    st.markdown(" ")
+    st.markdown(" ")
+    st.markdown(" ")
+    st.markdown(" ")
+    st.markdown(" ")
+
+
+    # Display Formulas and Explanations
+    display_formula_section_header(selected_team)
+
+    metrics_visualization_container = st.container()
+    display_metric_visualizations(metrics_visualization_container, metrics, add_text=True)
+

@@ -7,10 +7,8 @@ from specklepy.api.credentials import get_account_from_token
 
 # 1. Imports and Setup
 import data_extraction.facade_extractor as team_extractor  # Only import the extractor module
-import pandas as pd
-import plotly.express as px
-
 from dashboards.dashboard import *
+
 
 def metric_calc_daylight_factor(weight_residential, weight_work, residential_area_with_daylight, total_residential_area, work_area_with_daylight, total_work_area):
     return (
@@ -78,6 +76,25 @@ def metric_interactive_calculator_energy_ratio(container, energy_generation, ene
         st.components.v1.html(dynamic_energy_sphere, height=250)
 
 def run(selected_team: str) -> None:
+    st.title(f"{selected_team} Dashboard")
+
+    # Create two equal columns
+    col1, col2 = st.columns(2)  # Both columns will have equal width
+
+    # In the first column, display the image slideshow
+    with col1:
+        display_image_slideshow(col1, "./dashboards/pictures", "slideshow_1")  # Pass a unique key
+
+    # In the second column, display the iframe for the Speckle model
+    with col2:
+        iframe_code = f"""
+        <iframe src="https://macad.speckle.xyz/projects/31f8cca4e0/models/5adade2d5f" 
+                style="width: 100%; height: 600px; border: none;">
+        </iframe>
+        """
+        st.markdown(iframe_code, unsafe_allow_html=True)
+
+
     # Extract data
     models, client, project_id = setup_speckle_connection()
     verified, team_data = team_extractor.extract(models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
@@ -126,12 +143,39 @@ def run(selected_team: str) -> None:
         "Measures the proportion of floor area that receives daylight.",
         metric_interactive_calculator_daylight_factor,
         metric_calc_daylight_factor,
-        weight_residential, 
-        weight_work, 
-        residential_area_with_daylight, 
-        total_residential_area, 
-        work_area_with_daylight, 
-        total_work_area
+        './dashboards/pictures/daylight.png',
+        [
+            {
+                "name": "Weight Residential",
+                "value": weight_residential,
+                "unit": ""
+            },
+            {
+                "name": "Weight Work",
+                "value": weight_work,
+                "unit": ""
+            },
+            {
+                "name": "Residential Area with Daylight",
+                "value": residential_area_with_daylight,
+                "unit": "m²"
+            },
+            {
+                "name": "Total Residential Area",
+                "value": total_residential_area,
+                "unit": "m²"
+            },
+            {
+                "name": "Work Area with Daylight",
+                "value": work_area_with_daylight,
+                "unit": "m²"
+            },
+            {
+                "name": "Total Work Area",
+                "value": total_work_area,
+                "unit": "m²"
+            }
+        ]
     )
     metrics.append(daylight_factor_metric)
 
@@ -141,8 +185,19 @@ def run(selected_team: str) -> None:
         "Measures the efficiency of panel area usage.",
         metric_interactive_calculator_panel_optimization,
         metric_calc_panel_optimization,
-        total_final_panel_area,
-        total_initial_panel_area
+        './dashboards/pictures/panel.png',
+        [
+            {
+                "name": "Total Final Panel Area",
+                "value": total_final_panel_area,
+                "unit": "m²"
+            },
+            {
+                "name": "Total Initial Panel Area",
+                "value": total_initial_panel_area,
+                "unit": "m²"
+            }
+        ]
     )
     metrics.append(panel_optimization_metric)
     
@@ -152,20 +207,85 @@ def run(selected_team: str) -> None:
         "Measures the ratio of energy generation to energy requirements.",
         metric_interactive_calculator_energy_ratio,
         metric_calc_energy_ratio,
-        energy_generation,
-        energy_required_by_industrial_team
+        './dashboards/pictures/energy.png',
+        [
+            {
+                "name": "Energy Generation",
+                "value": energy_generation,
+                "unit": "kWh"
+            },
+            {
+                "name": "Energy Required by Industrial Team",
+                "value": energy_required_by_industrial_team,
+                "unit": "kWh"
+            }
+        ]
     )
     metrics.append(energy_ratio_metric)
 
-    # Display Formulas and Explanations
-    display_formula_section_header(selected_team)
-    
+    # Building Dashboard
+
+   
+    text_container = st.container()
+    display_text_section(
+        text_container,
+        """
+        ## Facade Design Overview
+        Our facade design integrates sustainable features with aesthetic considerations.
+        """
+    )
+
+
+    st.markdown("---")
+
+    st.write(" ")
+
+    team_extractor.display_data(extracted_data=team_data, verbose=False, header=False, show_table=False, gauge=False, simple_table=True)
+
+
+    # Now, display the custom bullet list underneath the iframe and STL model
+    bullet_items = [
+        "1. Solar panels optimized for maximum energy generation",
+        "2. Strategic window placement for natural daylight",
+        "3. Thermal insulation systems for energy efficiency"
+    ]
+    display_custom_bullet_list(st.container(), bullet_items)  # Call the function to display the bullet list
+
+    st.markdown(" ")
+    st.markdown(" ")
+
+    team_extractor.display_data(extracted_data=team_data, verbose=False, header=False, show_table=True, gauge=False, simple_table=True)
+
+    text_container = st.container()
+    display_text_section(
+        text_container,
+        """
+        ## Detailed KPI Explanations
+        """
+    )
+
+    st.markdown(" ")
+    st.markdown(" ")
+
     # Metrics Display - Updated with correct metrics
     metrics_display_container = st.container()
     display_st_metric_values(metrics_display_container, metrics)
-    
+
+    st.markdown(" ")
+    st.markdown(" ")
+    st.markdown(" ")
+    st.markdown(" ")
+    st.markdown(" ")
+    st.markdown(" ")
+    st.markdown(" ")
+
+
+    # Display Formulas and Explanations
+    display_formula_section_header(selected_team)
+
     metrics_visualization_container = st.container()
-    display_metric_visualizations(metrics_visualization_container, metrics, add_text=True, add_sphere=True)
+    display_metric_visualizations(metrics_visualization_container, metrics, add_text=True)
+
 
     # Interactive Calculators
     metric_interactive_calculator_container = st.container()

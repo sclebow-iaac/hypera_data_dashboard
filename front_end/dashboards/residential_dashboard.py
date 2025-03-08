@@ -39,7 +39,29 @@ def run(selected_team: str) -> None:
     # Building Dashboard
     # Dashboard Header
     display_page_title(selected_team)
-    team_extractor.display_data(extracted_data=team_data, verbose=False, header=True, show_table=True, gauge=False, simple_table=True)
+    team_extractor.display_data(extracted_data=team_data, verbose=False,
+                                header=True, show_table=True, gauge=False, simple_table=True)
+    
+    # Create a container for the slideshow and iframe
+    container = st.container()
+    
+    # Create two equal columns
+    col1, col2 = container.columns(2)  # Both columns will have equal width
+
+    # In the first column, display the image slideshow
+    with col1:
+        display_image_slideshow(col1, "./dashboards/pictures", "slideshow_2")
+
+    # In the second column, display the iframe for the Speckle model
+    with col2:
+        iframe_code = f"""
+        <iframe src="https://macad.speckle.xyz/projects/31f8cca4e0/models/000e6c757a" 
+                style="width: 100%; height: 600px; border: none;">
+        </iframe>
+        """
+        st.markdown(iframe_code, unsafe_allow_html=True)
+
+
 
     if not verified:
         st.error("Failed to extract data, proceeding with Example Data. Use Data Dashboard to Investigate.")
@@ -63,9 +85,27 @@ def run(selected_team: str) -> None:
         "Measures the diversity of unit types in the project.",
         metric_interactive_calculator_index,
         metric_calc_index,
-        number_of_units,
-        unit_types,
-        total_number_of_units
+        './dashboards/pictures/residential.png',
+        [
+            {
+                "name": "Number of Units",
+                "value": number_of_units,
+                "display_value": sum(number_of_units),
+                "unit": ""
+            },
+            {
+                "name": "Unit Types",
+                "value": unit_types,
+                "display_value": len(unit_types),
+                "unit": ""
+            },
+            {
+                "name": "Total Number of Units",
+                "value": total_number_of_units,
+                "display_value": sum(number_of_units),
+                "unit": ""
+            }
+        ]
     )
     metrics.append(index_metric)
 
@@ -76,9 +116,35 @@ def run(selected_team: str) -> None:
     metrics_display_container = st.container()
     display_st_metric_values(metrics_display_container, metrics)
 
+    st.markdown(" ")
+    st.markdown(" ")
+
+    # Now, display the custom bullet list underneath the iframe and STL model
+    bullet_items = [
+        "1. Mixed Use Index optimized for safety",
+        "2. Efficient use of materials",
+        "3. Compliance with building codes"
+    ]
+    display_custom_bullet_list(st.container(), bullet_items)  # Call the function to display the bullet list
+
+    st.markdown(" ")
+    st.markdown(" ")
+    st.markdown(" ")
+    st.markdown(" ")
+    st.markdown(" ")
+
+    team_extractor.display_data(extracted_data=team_data, verbose=False, header=False, show_table=True, gauge=False, simple_table=True)
+
+
+    # # Display Formulas and Explanations
+    # display_formula_section_header(selected_team)
+    
+    # Metrics Display - Updated with correct metrics
+    metrics_display_container = st.container()
+    display_st_metric_values(metrics_display_container, metrics)
+    
     metrics_visualization_container = st.container()
-    display_metric_visualizations(
-        metrics_visualization_container, metrics, add_text=True, add_sphere=True)
+    display_metric_visualizations(metrics_visualization_container, metrics, add_text=True)
 
     # Interactive Calculators
     metric_interactive_calculator_container = st.container()
