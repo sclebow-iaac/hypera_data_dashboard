@@ -30,25 +30,26 @@ def metric_interactive_calculator_occupancy_efficiency(container, utilization_ra
             total_area = float(total_area)
             area_of_functions = float(area_of_functions[0])
 
-            utilization_rate_slider = st.slider("Utilization Rate (%)", 0.5, utilization_rate * 1.5, 3.0, help="Percentage of space utilization")
-            active_hours_slider = st.slider("Active Hours", active_hours * 0.5, 24.0, active_hours, help="Hours of active use per day")
-            function_exchange_factor_slider = st.slider("Function Exchange Factor", function_exchange_factor * 0.5, function_exchange_factor * 1.5, function_exchange_factor, help="Multiplier for function flexibility")
-            total_available_hours_per_day_slider = st.slider("Total Available Hours per Day", total_available_hours_per_day * 0.5, 24.0, total_available_hours_per_day, help="Total hours available per day")
-            total_area_slider = st.slider("Total Area", total_area * 0.5, total_area * 1.5, total_area, help="Total area of the building")
-            area_of_functions_slider = st.slider("Area of Functions", area_of_functions * 0.5, area_of_functions * 1.5, area_of_functions, help="Area of the specific function")
+            def create_slider(label, value, help_text):
+                return st.slider(label, value * 0.5, value * 1.5, value, help=help_text)
+
+            utilization_rate_slider = create_slider("Utilization Rate (%)", utilization_rate, "Percentage of space utilization")
+            active_hours_slider = create_slider("Active Hours", active_hours, "Hours of active use per day")
+            function_exchange_factor_slider = create_slider("Function Exchange Factor", function_exchange_factor, "Multiplier for function flexibility")
+            total_area_slider = create_slider("Total Area", total_area, "Total area of the building")
+            area_of_functions_slider = create_slider("Area of Functions", area_of_functions, "Area of the specific function")
 
             utilization_rate_slider = [utilization_rate_slider for _ in range(n)]
             active_hours_slider = [active_hours_slider for _ in range(n)]
             function_exchange_factor_slider = [function_exchange_factor_slider for _ in range(n)]
             area_of_functions_slider = [area_of_functions_slider for _ in range(n)]
-            total_available_hours_per_day_slider = total_available_hours_per_day_slider
             total_area_slider = total_area_slider
 
             new_occupancy_efficiency = metric_calc_occupancy_efficiency(
                 utilization_rate_slider,
                 active_hours_slider,
                 function_exchange_factor_slider,
-                total_available_hours_per_day_slider,
+                total_available_hours_per_day,
                 total_area_slider,
                 area_of_functions_slider
             )
