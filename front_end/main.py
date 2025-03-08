@@ -13,6 +13,7 @@ import dashboards.structure_dashboard as structure_dashboard
 import dashboards.industrial_dashboard as industrial_dashboard
 import dashboards.facade_dashboard as facade_dashboard
 import dashboards.data_dashboard as data_dashboard
+import dashboards.slack_config as slack_config
 
 # import statistics
 import project_statistics as statistics
@@ -122,7 +123,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Sidebar for selecting dashboards
-dashboard_options = ["Main", "Residential", "Service", "Structure", "Industrial", "Facade", "Data"]
+dashboard_options = ["Main", "Residential", "Service", "Structure", "Industrial", "Facade", "Data", "Slack Configuration"]
 selected_dashboard = st.sidebar.radio("Select Dashboard", dashboard_options)
 
 # Create a placeholder for the dashboard content
@@ -312,5 +313,7 @@ else:
         display_facade_dashboard()
     elif selected_dashboard == "Data":
         data_dashboard.run()
+    elif selected_dashboard == "Slack Configuration":
+        slack_config.run()
 
 #--------------------------
