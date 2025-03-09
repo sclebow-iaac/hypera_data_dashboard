@@ -29,14 +29,6 @@ def metric_interactive_calculator_panel_optimization(container, total_final_pane
         total_initial_panel_area_slider = st.slider("Total Initial Panel Area (m²)", 1, int(total_initial_panel_area), int(total_initial_panel_area), help="Initial panel area")
         new_panel_optimization_value = metric_calc_panel_optimization(total_final_panel_area_slider, total_initial_panel_area_slider)
         st.markdown(f"### Resulting Ratio: {new_panel_optimization_value:.2f}")
-        # Create dynamic sphere for panel optimization
-        dynamic_panel_optimization_sphere = create_sphere_visualization(
-            "dynamic-panel-optimization-sphere",
-            new_panel_optimization_value,
-            "Panel Optimization",
-            height=200
-        )
-        st.components.v1.html(dynamic_panel_optimization_sphere, height=250)
 
 def metric_interactive_calculator_daylight_factor(container, weight_residential, weight_work, residential_area_with_daylight, total_residential_area, work_area_with_daylight, total_work_area):
     with container:
@@ -49,15 +41,6 @@ def metric_interactive_calculator_daylight_factor(container, weight_residential,
             weight_residential * (residential_area_with_daylight_slider / total_residential_area_slider) +
             weight_work * (work_area_with_daylight_slider / total_work_area_slider)
         )
-        st.markdown(f"### Resulting Ratio: {new_daylight_value:.2f}")
-        # Create dynamic sphere for daylight
-        dynamic_daylight_sphere = create_sphere_visualization(
-            "dynamic-daylight-sphere",
-            new_daylight_value,
-            "Daylight Factor",
-            height=200
-        )
-        st.components.v1.html(dynamic_daylight_sphere, height=250)
 
 def metric_interactive_calculator_energy_ratio(container, energy_generation, energy_required_by_industrial_team):
     with container:
@@ -66,14 +49,6 @@ def metric_interactive_calculator_energy_ratio(container, energy_generation, ene
         energy_required_slider = st.slider("Energy Required (kWh)", 1, 2000, int(energy_required_by_industrial_team), help="Total energy required")
         new_energy_ratio = energy_generation_slider / energy_required_slider
         st.markdown(f"### Resulting Ratio: {new_energy_ratio:.2f}")
-        # Create dynamic sphere for energy
-        dynamic_energy_sphere = create_sphere_visualization(
-            "dynamic-energy-sphere",
-            new_energy_ratio,
-            "Energy Ratio",
-            height=200
-        )
-        st.components.v1.html(dynamic_energy_sphere, height=250)
 
 def run(selected_team: str) -> None:
     st.title(f"{selected_team} Dashboard")

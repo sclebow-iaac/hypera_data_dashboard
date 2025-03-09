@@ -10,8 +10,8 @@ import data_extraction.residential_extractor as team_extractor
 from dashboards.dashboard import *
 
 def metric_calc_index(number_of_units, unit_types, total_number_of_units):
-    numerator = sum(units * (units - 1) for units in number_of_units)
-    denominator = total_number_of_units * (total_number_of_units - 1)
+    numerator = sum(float(units) * (float(units) - 1) for units in number_of_units)
+    denominator = float(total_number_of_units) * (float(total_number_of_units) - 1)
     return 1 - (numerator / denominator) if denominator != 0 else None
 
 def metric_interactive_calculator_index(container, number_of_units, unit_types, total_number_of_units):
@@ -21,14 +21,6 @@ def metric_interactive_calculator_index(container, number_of_units, unit_types, 
         total_number_of_units_slider = st.slider("Total Number of Units", 1, 100, 50, help="Adjust total number of units")
         new_index_value = metric_calc_index([number_of_units_slider] * len(unit_types), [], total_number_of_units_slider)
         st.markdown(f"### Resulting Index: {new_index_value:.2f}")
-        # Create dynamic sphere for index
-        dynamic_index_sphere = create_sphere_visualization(
-            "dynamic-index-sphere",
-            new_index_value,
-            "Mixed Use Index",
-            height=200
-        )
-        st.components.v1.html(dynamic_index_sphere, height=250)
 
 # Define the function to run the dashboard
 def run(selected_team: str) -> None:
@@ -75,7 +67,7 @@ def run(selected_team: str) -> None:
         # Extracted data
         number_of_units = team_data['NumberOfUnitsOfASingleFunction']
         unit_types = team_data['ListOfUnitFunctions']
-        total_number_of_units = sum(number_of_units)
+        total_number_of_units = sum(float(x) for x in number_of_units)
 
     metrics = []
 
@@ -90,7 +82,7 @@ def run(selected_team: str) -> None:
             {
                 "name": "Number of Units",
                 "value": number_of_units,
-                "display_value": sum(number_of_units),
+                "display_value": sum(float(x) for x in number_of_units),
                 "unit": ""
             },
             {
@@ -102,7 +94,7 @@ def run(selected_team: str) -> None:
             {
                 "name": "Total Number of Units",
                 "value": total_number_of_units,
-                "display_value": sum(number_of_units),
+                "display_value": sum(float(x) for x in number_of_units),
                 "unit": ""
             }
         ]

@@ -1,12 +1,8 @@
 import streamlit as st
-import pandas as pd
-import plotly.express as px
 from specklepy.api.client import SpeckleClient
 from specklepy.api.credentials import get_account_from_token
 
 import data_extraction.industrial_extractor as team_extractor
-import pandas as pd
-import plotly.express as px
 
 from dashboards.dashboard import *
 
@@ -38,15 +34,6 @@ def metric_interactive_calculator_energy_ratio(container, energy_generation, ene
         new_energy_ratio = energy_produced / energy_needed
         st.markdown(f"### Energy Ratio: {new_energy_ratio:.2f}")
 
-        # Create dynamic sphere for energy
-        dynamic_energy_sphere = create_sphere_visualization(
-            "dynamic-energy-sphere",
-            new_energy_ratio,
-            "Energy Self-Sufficiency",
-            height=200
-        )
-        st.components.v1.html(dynamic_energy_sphere, height=250)
-
 
 def metric_interactive_calculator_food_ratio(container, food_production, food_demand):
     with container:
@@ -58,15 +45,6 @@ def metric_interactive_calculator_food_ratio(container, food_production, food_de
 
         new_food_ratio = food_produced_slider / food_needed_slider
         st.markdown(f"### Food Ratio: {new_food_ratio:.2f}")
-
-        # Create dynamic sphere for food
-        dynamic_food_sphere = create_sphere_visualization(
-            "dynamic-food-sphere",
-            new_food_ratio,
-            "Food Self-Sufficiency",
-            height=200
-        )
-        st.components.v1.html(dynamic_food_sphere, height=250)
 
 
 def metric_interactive_calculator_recycled_water_ratio(container, recycled_water, wastewater_production):
@@ -80,15 +58,6 @@ def metric_interactive_calculator_recycled_water_ratio(container, recycled_water
         new_water_ratio = recycled_water / total_water
         st.markdown(f"### Water Recycling Rate: {new_water_ratio:.2f}")
 
-        # Create dynamic sphere for water
-        dynamic_water_sphere = create_sphere_visualization(
-            "dynamic-water-sphere",
-            new_water_ratio,
-            "Water Recycling Rate",
-            height=200
-        )
-        st.components.v1.html(dynamic_water_sphere, height=250)
-
 
 def metric_interactive_calculator_waste_utilization_ratio(container, recycled_solid_waste, solid_waste_production):
     with container:
@@ -100,16 +69,6 @@ def metric_interactive_calculator_waste_utilization_ratio(container, recycled_so
 
         new_waste_ratio = 1 - (waste_produced / waste_target)
         st.markdown(f"### Waste Efficiency: {new_waste_ratio:.2f}")
-
-        # Create dynamic sphere for waste
-        dynamic_waste_sphere = create_sphere_visualization(
-            "dynamic-waste-sphere",
-            new_waste_ratio,
-            "Waste Production Efficiency",
-            height=200
-        )
-        st.components.v1.html(dynamic_waste_sphere, height=250)
-
 
 def run(selected_team: str) -> None:
     # st.title(f"{selected_team} Dashboard")
@@ -246,19 +205,6 @@ def run(selected_team: str) -> None:
         """
     )
 
-    # Metrics Display - Updated with correct metrics
-    metrics_display_container = st.container()
-    display_st_metric_values(metrics_display_container, metrics)
-
-    metrics_visualization_container = st.container()
-    display_metric_visualizations(
-        metrics_visualization_container, metrics, add_text=True, add_sphere=True)
-
-    # Interactive Calculators
-    metric_interactive_calculator_container = st.container()
-    display_interactive_calculators(
-        metric_interactive_calculator_container, metrics, grid=True)
-    st.write(" ")
 
     team_extractor.display_data(extracted_data=team_data, verbose=False, header=False, show_table=False, gauge=False, simple_table=True)
 
@@ -294,4 +240,10 @@ def run(selected_team: str) -> None:
 
     metrics_visualization_container = st.container()
     display_metric_visualizations(metrics_visualization_container, metrics, add_text=True)
+
+        # Interactive Calculators
+    # metric_interactive_calculator_container = st.container()
+    # display_interactive_calculators(
+    #     metric_interactive_calculator_container, metrics, grid=True)
+    # st.write(" ")
 

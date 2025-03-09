@@ -19,7 +19,7 @@ def metric_calc_occupancy_efficiency(utilization_rate, active_hours, function_ex
 
 def metric_interactive_calculator_occupancy_efficiency(container, utilization_rate, active_hours, function_exchange_factor, total_available_hours_per_day, total_area, area_of_functions):
     with container:
-        col_1, col_2 = st.columns(2)
+        col_1 = st.columns(1)
         with col_1:
             n = len(utilization_rate)
 
@@ -54,15 +54,6 @@ def metric_interactive_calculator_occupancy_efficiency(container, utilization_ra
                 area_of_functions_slider
             )
             st.markdown(f"### Occupancy Efficiency: {new_occupancy_efficiency:.2f}")
-        with col_2:
-            # Create dynamic sphere for occupancy efficiency
-            dynamic_occupancy_efficiency_sphere = create_sphere_visualization(
-                "dynamic-occupancy-efficiency-sphere",
-                new_occupancy_efficiency,
-                "Occupancy Efficiency",
-                height=200
-            )
-            st.components.v1.html(dynamic_occupancy_efficiency_sphere, height=250)
 
 def run(selected_team: str) -> None:
     
