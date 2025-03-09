@@ -83,7 +83,7 @@ def run(selected_team: str) -> None:
 
     # In the first column, display the image slideshow
     with col1:
-        display_image_slideshow(col1, "./dashboards/pictures", "slideshow_1")  # Pass a unique key
+        display_image_slideshow(col1, "./front_end/dashboards/pictures", "slideshow_1")  # Pass a unique key
 
     # In the second column, display the iframe for the Speckle model
     with col2:
@@ -143,7 +143,7 @@ def run(selected_team: str) -> None:
         "Measures the proportion of floor area that receives daylight.",
         metric_interactive_calculator_daylight_factor,
         metric_calc_daylight_factor,
-        './dashboards/pictures/daylight.png',
+        './front_end/dashboards/pictures/daylight.png',
         [
             {
                 "name": "Weight Residential",
@@ -185,7 +185,7 @@ def run(selected_team: str) -> None:
         "Measures the efficiency of panel area usage.",
         metric_interactive_calculator_panel_optimization,
         metric_calc_panel_optimization,
-        './dashboards/pictures/panel.png',
+        './front_end/dashboards/pictures/panel.png',
         [
             {
                 "name": "Total Final Panel Area",
@@ -207,7 +207,7 @@ def run(selected_team: str) -> None:
         "Measures the ratio of energy generation to energy requirements.",
         metric_interactive_calculator_energy_ratio,
         metric_calc_energy_ratio,
-        './dashboards/pictures/energy.png',
+        './front_end/dashboards/pictures/energy.png',
         [
             {
                 "name": "Energy Generation",

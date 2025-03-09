@@ -335,6 +335,7 @@ def display_custom_bullet_list(container, items: list[str], bullet_image_path: s
 
 def display_metric(container, metric: Metric, add_text=True) -> None:
     """Display a metric in the specified container."""
+    print("DISPLAY METRIC: ", metric.title)
     
     # Create two columns with specified widths
     col1, col2 = container.columns([1, 2])  # First column is 1 part, second column is 2 parts
@@ -357,9 +358,10 @@ def display_metric(container, metric: Metric, add_text=True) -> None:
 
 
     # Call the function to display circles and tape
-    display_metric_circles_and_tape(container, metric)
-    for _ in range(5):
-        st.markdown(" ")
+    with container:
+        display_metric_circles_and_tape(container, metric)
+        for _ in range(5):
+            st.markdown("")
 
 def create_top_menu(teams: list[str]) -> str:
     """Create a horizontal menu at the top of the page."""
@@ -433,7 +435,7 @@ def create_top_menu(teams: list[str]) -> str:
 
 def display_metric_circles_and_tape(container, metric: Metric) -> None:
     """Display input values for metrics in circles and a tape diagram showing progress using the Metric class."""
-    
+    print("DISPLAY METRIC CIRCLES AND TAPE: ", metric.title)
     # Display the title for the metric
     container.markdown(f"<h3>Metric Distribution</h3>", unsafe_allow_html=True)
     
@@ -471,59 +473,64 @@ def display_metric_circles_and_tape(container, metric: Metric) -> None:
             input_values.append(float(input["value"]))
 
 
-        # Find the maximum value to scale the circles
-        max_value = max(input_values) if input_values else 1  # Avoid division by zero
-        scaling_factor = 200  # Maximum diameter for the largest circle
-        min_circle_diameter = 30  # Minimum diameter for visibility
+    # Find the maximum value to scale the circles
+    max_value = max(input_values) if input_values else 1  # Avoid division by zero
+    scaling_factor = 200  # Maximum diameter for the largest circle
+    min_circle_diameter = 30  # Minimum diameter for visibility
 
-        # Create columns for layout with 2 extra columns
-        total_columns = len(input_values) + 2
-        cols = st.columns(total_columns)  # Create total_columns based on the number of values + 2
+    print("Input Values for Metric: ", metric.title, input_values)
+    # Create columns for layout with 2 extra columns
+    total_columns = len(input_values) + 2
+    print("Total Columns for metric: ", metric.title, total_columns)  # Debugging: Print total columns      
+    cols = st.columns(total_columns)  # Create total_columns based on the number of values + 2
 
-        # Place empty circles in the first and last columns
-        for idx in range(total_columns):
-            if idx == 0 or idx == total_columns - 1:
-                with cols[idx]:
-                    st.markdown("")  # Empty column for spacing
-            else:
-                # Create a circle representation for the metric values
-                inputs_index = idx - 1  # Adjust index for metric values
-                value = input_values[inputs_index]  # Get the value from the Metric instance
-                circle_diameter = max((value / max_value) * scaling_factor, min_circle_diameter)  # Scale for visibility with a minimum size
-                name = metric.inputs[inputs_index]["name"]  # Change made here
-                unit = metric.inputs[inputs_index]["unit"]  # Change made here
-                with cols[idx]:
-                    st.markdown(f"""
-                        <div style="position: relative; display: inline-block;">
-                            <div style="
-                                width: {circle_diameter}px; 
-                                height: {circle_diameter}px; 
-                                border-radius: 50%; 
-                                background-color: #f5f5dc;  /* Light beige color */
-                                text-align: center; 
-                                line-height: {circle_diameter}px; 
-                                cursor: default;
-                            ">
-                                {value:.2f} {unit}
-                            </div>
-                            <div style="
-                                position: absolute; 
-                                top: {circle_diameter}px; 
-                                left: 50%; 
-                                transform: translateX(-50%); 
-                                background-color: white; 
-                                padding: 5px; 
-                                border-radius: 5px; 
-                                box-shadow: 0 0 5px rgba(0,0,0,0.3);
-                            ">
-                                {name}  <!-- Display the corresponding name -->
-                            </div>
+    # Place empty circles in the first and last columns
+    for idx in range(total_columns):
+        # print("FOR ", metric.title, "idx: ", idx)
+        # with cols[idx]:
+        #     st.markdown(f"idx: {idx}")
+        if idx == 0 or idx == total_columns - 1:
+            with cols[idx]:
+                st.markdown("")  # Empty column for spacing
+        else:
+            # Create a circle representation for the metric values
+            inputs_index = idx - 1  # Adjust index for metric values
+            value = input_values[inputs_index]  # Get the value from the Metric instance
+            circle_diameter = max((value / max_value) * scaling_factor, min_circle_diameter)  # Scale for visibility with a minimum size
+            name = metric.inputs[inputs_index]["name"]  # Change made here
+            unit = metric.inputs[inputs_index]["unit"]  # Change made here
+            with cols[idx]:
+                st.markdown(f"""
+                    <div style="position: relative; display: inline-block;">
+                        <div style="
+                            width: {circle_diameter}px; 
+                            height: {circle_diameter}px; 
+                            border-radius: 50%; 
+                            background-color: #f5f5dc;  /* Light beige color */
+                            text-align: center; 
+                            line-height: {circle_diameter}px; 
+                            cursor: default;
+                        ">
+                            {value:.2f} {unit}
                         </div>
-                    """, unsafe_allow_html=True)
+                        <div style="
+                            position: absolute; 
+                            top: {circle_diameter}px; 
+                            left: 50%; 
+                            transform: translateX(-50%); 
+                            background-color: white; 
+                            padding: 5px; 
+                            border-radius: 5px; 
+                            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+                        ">
+                            {name}  <!-- Display the corresponding name -->
+                        </div>
+                    </div>
+                """, unsafe_allow_html=True)
 
 
-        for _ in range(5):
-            st.markdown(" ")
+    for _ in range(5):
+        st.markdown(" ")
 
     # Add JavaScript to handle input changes (if needed)
     container.markdown("""

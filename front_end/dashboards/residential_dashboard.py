@@ -50,7 +50,7 @@ def run(selected_team: str) -> None:
 
     # In the first column, display the image slideshow
     with col1:
-        display_image_slideshow(col1, "./dashboards/pictures", "slideshow_2")
+        display_image_slideshow(col1, "./front_end/dashboards/pictures", "slideshow_2")
 
     # In the second column, display the iframe for the Speckle model
     with col2:
@@ -85,7 +85,7 @@ def run(selected_team: str) -> None:
         "Measures the diversity of unit types in the project.",
         metric_interactive_calculator_index,
         metric_calc_index,
-        './dashboards/pictures/residential.png',
+        './front_end/dashboards/pictures/residential.png',
         [
             {
                 "name": "Number of Units",

@@ -122,7 +122,7 @@ def run(selected_team: str) -> None:
 
     # In the first column, display the image slideshow
     with col1:
-        display_image_slideshow(col1, "./dashboards/pictures", "slideshow_1")  # Pass a unique key
+        display_image_slideshow(col1, "./front_end/dashboards/pictures", "slideshow_1")  # Pass a unique key
 
     # In the second column, display the iframe for the Speckle model
     with col2:
@@ -156,8 +156,6 @@ def run(selected_team: str) -> None:
         energy_demand = 1000   # kWh
         food_production = 600    # kg
         food_demand = 1000     # kg
-        recycled_water = 800   # m³
-        wastewater_production = 1000     # m³
         recycled_solid_waste = 120   # kg/day
         solid_waste_production = 200        # kg/day
 
@@ -167,8 +165,6 @@ def run(selected_team: str) -> None:
         energy_demand = float(team_data['EnergyDemand'])
         food_production = float(team_data['FoodProduction'])
         food_demand = float(team_data['FoodDemand'])
-        recycled_water = float(team_data['RecycledWater'])
-        wastewater_production = float(team_data['WasteWaterProduction'])
         recycled_solid_waste = float(team_data['RecycledSolidWaste'])
         solid_waste_production = float(team_data['SolidWasteProduction'])
 
@@ -180,7 +176,7 @@ def run(selected_team: str) -> None:
         "Measures the building's ability to meet its own energy demands.",
         metric_interactive_calculator_energy_ratio,
         metric_calc_energy_ratio,
-        './dashboards/pictures/energy_industrial.png',
+        './front_end/dashboards/pictures/energy_industrial.png',
         [
             {
                 "name": "Energy Generation",
@@ -194,6 +190,7 @@ def run(selected_team: str) -> None:
             }
         ]
     )
+    print("APPENDING METRIC", energy_ratio_metric.inputs)
     metrics.append(energy_ratio_metric)
 
     food_ratio_metric = Metric(
@@ -202,7 +199,7 @@ def run(selected_team: str) -> None:
         "Indicates the proportion of food requirements met through internal production.",
         metric_interactive_calculator_food_ratio,
         metric_calc_food_ratio,
-        './dashboards/pictures/food.png',
+        './front_end/dashboards/pictures/food.png',
         [
             {
                 "name": "Food Production",
@@ -218,35 +215,13 @@ def run(selected_team: str) -> None:
     )
     metrics.append(food_ratio_metric)
 
-    recycled_water_ratio_metric = Metric(
-        "Water Recycling Ratio",
-        r'\frac{Recycled Water}{Total Water Used}',
-        "Shows the efficiency of water recycling systems.",
-        metric_interactive_calculator_recycled_water_ratio,
-        metric_calc_recycled_water_ratio,
-        './dashboards/pictures/water.png',
-        [
-            {
-                "name": "Recycled Water",
-                "value": recycled_water,
-                "unit": "m³"
-            },
-            {
-                "name": "Wastewater Production",
-                "value": wastewater_production,
-                "unit": "m³"
-            }
-        ]
-    )
-    metrics.append(recycled_water_ratio_metric)
-
     waste_utilization_ratio_metric = Metric(
         "Waste Utilization Ratio",
         r'1 - \frac{Waste Produced}{Maximum Target}',
         "Measures the efficiency of waste management relative to targets.",
         metric_interactive_calculator_waste_utilization_ratio,
         metric_calc_waste_utilization_ratio,
-        './dashboards/pictures/waste.png',
+        './front_end/dashboards/pictures/waste.png',
         [
             {
                 "name": "Recycled Solid Waste",

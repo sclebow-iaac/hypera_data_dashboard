@@ -48,7 +48,7 @@ def run(selected_team: str) -> None:
 
     # In the first column, display the image slideshow
     with col1:
-        display_image_slideshow(col1, "./dashboards/pictures", "slideshow_1")  # Pass a unique key
+        display_image_slideshow(col1, "./front_end/dashboards/pictures", "slideshow_1")  # Pass a unique key
 
     # In the second column, display the iframe for the Speckle model
     with col2:
@@ -98,7 +98,7 @@ def run(selected_team: str) -> None:
         r'\frac{Total Column-Free Floor Area (m²)}{Total Floor Area (m²)}',
         "Ratio of column-free floor area to total floor area",
         metric_calc_column_free_floor_area_ratio,
-        './dashboards/pictures/column.png',
+        './front_end/dashboards/pictures/column.png',
         [
             {
                 "name": "Total Column-Free Floor Area",
@@ -119,7 +119,7 @@ def run(selected_team: str) -> None:
         r'\frac{Load Capacity (kg)}{Self Weight of Structure (kg)}',
         "Ratio of load capacity to self weight of structure",
         metric_calc_load_capacity_per_square_meter,
-        './dashboards/pictures/load.png',
+        './front_end/dashboards/pictures/load.png',
         [
             {
                 "name": "Load Capacity",

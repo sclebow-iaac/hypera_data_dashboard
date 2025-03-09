@@ -74,7 +74,7 @@ def run(selected_team: str) -> None:
 
     # In the first column, display the image slideshow
     with col1:
-        display_image_slideshow(col1, "./dashboards/pictures", "slideshow_1")  # Pass a unique key
+        display_image_slideshow(col1, "./front_end/dashboards/pictures", "slideshow_1")  # Pass a unique key
 
     # In the second column, display the iframe for the Speckle model
     with col2:
@@ -128,7 +128,7 @@ def run(selected_team: str) -> None:
         "Measures the efficiency of space utilization throughout the day.",
         metric_interactive_calculator_occupancy_efficiency,
         metric_calc_occupancy_efficiency,
-        './dashboards/pictures/service.png',
+        './front_end/dashboards/pictures/service.png',
         [
             {
                 "name": "Utilization Rate",
