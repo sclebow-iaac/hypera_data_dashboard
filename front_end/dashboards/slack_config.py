@@ -1,11 +1,168 @@
 import streamlit as st
+import datetime
 
 from dashboards.dashboard import *
+import specklepy.api
+import specklepy.api.models
+import specklepy.api.operations
+import specklepy.api.resource
+import specklepy.api.resources
+import specklepy.core
+import specklepy.core.api
+
+import pandas as pd
+
+def format_time(dt):
+    return dt.strftime("%d/%m %H:%M")
+
+def get_last_message_time(day_bools, time_of_day) -> datetime.datetime:
+    # Get the current time in GMT timezone
+    now = datetime.datetime.now(datetime.timezone.utc)
+
+    # Get the current day of the week (0=Monday, 6=Sunday)
+    current_day = now.weekday()
+
+    # print(f'current_day: {current_day}') # Debugging
+    # Get the current time in GMT timezone
+    current_time = now.time()
+
+    # Get the scheduled send day that is most near to the current day, but in the past
+    latest_scheduled_day = None
+    day_delta = None
+    for day, is_scheduled in day_bools.items():
+        if is_scheduled:
+            day_number = list(day_bools.keys()).index(day)
+            # print()
+            # print(f'day: {day}') # Debugging
+            # print(f'day_number: {day_number}') # Debugging
+            
+            delta = (day_number - current_day) % 7 # Calculate the difference in days, modulo 7
+            # print(f"Delta: {delta}") # Debugging
+
+            if delta == 0: # If it's the same day
+                # Check if the time has passed
+                scheduled_time = datetime.datetime.strptime(time_of_day, "%H:%M:%S").time()
+                # print(f"Scheduled time: {scheduled_time}") # Debugging
+                # print(f"Current time: {current_time}") # Debugging
+                if current_time < scheduled_time:
+                    # If the scheduled time is in the future, skip it
+                    # print("Scheduled time is in the future, skipping...") # Debugging
+                    continue
+                else:
+                    # If the scheduled time is in the past, set it as the latest scheduled time                    
+                    latest_scheduled_day = day_number
+                    day_delta = delta
+                    break
+            else:
+                if day_delta is None:
+                    # If this is the first scheduled time, set it as the latest scheduled time
+                    latest_scheduled_day = day_number
+                    day_delta = delta
+                    continue
+                elif delta < day_delta:
+                    # If the delta is smaller than the previous one, update the latest scheduled time
+                    latest_scheduled_day = day_number
+                    day_delta = delta
+                    # print(f"Updated latest scheduled day: {latest_scheduled_day}") # Debugging
+                else:
+                    # If the delta is larger, skip it
+                    # print(f"Skipping day {day} with delta {delta}")
+                    continue
+    # If no scheduled time is found, return None
+    if latest_scheduled_day is None:
+        # print("No scheduled time found")
+        return None
+    
+    # print() # Debugging
+    # print(f"current_day: {current_day}") # Debugging
+    # print(f"latest_scheduled_day: {latest_scheduled_day}") # Debugging
+
+    # Get the latest scheduled time on the latest scheduled day, in the past
+    latest_scheduled_time = now.replace(hour=int(time_of_day.split(":")[0]), minute=int(time_of_day.split(":")[1]), second=0, microsecond=0)
+    latest_scheduled_time = latest_scheduled_time - datetime.timedelta(days=(current_day - latest_scheduled_day) % 7)
+    # print(f"latest_scheduled_time (before timezone): {latest_scheduled_time}") # Debugging
+    # print(f"latest_scheduled_time: {latest_scheduled_time}") # Debugging    
+    # print(f'type(latest_scheduled_time): {type(latest_scheduled_time)}') # Debugging
+
+    return latest_scheduled_time
 
 # Generate Recent Project Activity Message (Markdown)
-def generate_recent_project_activity_message():
-    # Placeholder function to generate a message about recent project activity
-    return "Recent project activity: Placeholder message."
+def generate_recent_project_activity_message(day_bools, time_of_day_value) -> list[str]:
+    messages = []
+
+    models, client, project_id = setup_speckle_connection()
+
+    last_message_time = get_last_message_time(day_bools, time_of_day_value)
+    
+    # Get all versions in the project from the last message time to now
+    recent_versions_dataframe = pd.DataFrame(columns=["Model Name", "Version Count", "Last Version Time"])
+    # recent_versions = {} # Dictionary to store recent versions per model
+    if last_message_time is not None:
+        for model in models:
+            versions = client.version.get_versions(
+                model_id=model.id,
+                project_id=project_id,
+                limit=100
+            )
+            # Filter versions based on the last message time
+            # print(f'versions: {versions}') # Debugging
+            # print(f'versions.items(): {versions.items()}') # Debugging
+            for version in versions.items:
+                version_creation_time = version.createdAt
+                if version_creation_time > last_message_time:
+                    # Add the version to the recent versions list
+                    if model.name not in recent_versions_dataframe["Model Name"].values:
+                        new_row = {
+                            "Model Name": model.name,
+                            "Version Count": 1,
+                            "Last Version Time": format_time(version_creation_time)
+                        }
+                        recent_versions_dataframe = pd.concat([recent_versions_dataframe, pd.DataFrame([new_row])], ignore_index=True)
+                    else:
+                        recent_versions_dataframe.loc[recent_versions_dataframe["Model Name"] == model.name, "Version Count"] += 1
+                        recent_versions_dataframe.loc[recent_versions_dataframe["Model Name"] == model.name, "Last Version Time"] = format_time(version_creation_time)
+                    # print(f"Model: {model.name}, Version: {version}") # Debugging
+
+
+                    # print()
+                    # print(f'Found a new version: {version}') # Debugging
+                    # print(f'model.name: {model.name}') # Debugging
+                    # print(f'version_creation_time: {version_creation_time}') # Debugging
+                    # print(f'last_message_time: {last_message_time}') # Debugging
+                    # if model.name not in recent_versions:
+                    #     recent_versions[model.name] = []
+                    # recent_versions[model.name].append(version)
+
+    # print(f"recent_versions: {recent_versions}") # Debugging
+
+    # Generate the message of recent versions in each model
+    
+    # messages.append(f'## Recent Project Activity since {format_time(last_message_time)}')
+
+    # # Create a pandas DataFrame to store the recent versions
+    # df = pd.DataFrame(recent_versions)
+    
+    # for model_name, versions in recent_versions.items():
+    #     # Get the model name, number of versions, and last version creation time
+    #     num_versions = len(versions)
+    #     last_version = versions[-1]
+    #     last_version_time = last_version.createdAt
+
+    #     # Generate the message for each model
+    #     messages.append(f"##### Model: {model_name}")
+    #     messages.append(f"Number of new versions: {num_versions}")
+    #     messages.append(f"Last version created at: {format_time(last_version_time)}")
+
+    # return messages
+
+    # Convert the DataFrame to Markdown
+    markdown = recent_versions_dataframe.to_markdown(index=False)
+
+    # print(f'markdown: {markdown}') # Debugging
+    # Add the Markdown table to the messages list
+    messages.append(f"#### Recent Project Activity since {format_time(last_message_time)}")
+    messages.append(markdown)
+    return messages
 
 # Generate Data Availability Message (Markdown)
 def generate_data_availability_message():
@@ -18,23 +175,21 @@ def generate_data_analysis_message():
     return "Data analysis: Placeholder message."
 
 def run():
+    print() # Debugging
+
     st.title("Slack Automatic Message Generator")
 
+    config_file_path = "front_end/slack_config.txt"
     # Load the configuration from a file 
     try:
-        with open("slack_config.txt", "r") as f:
+        with open(config_file_path, "r") as f:
             config = f.read()
         # Parse the configuration
         lines = config.split("\n")
 
-        # Debugging: 
-        test_value = lines[0].split(": ")[1]
-        print(f"Test value: {test_value}")
-        print(f'type(test_value): {type(test_value)}')
-        print(f'bool(test_value): {bool(test_value)}')
-
         def process_bool(line):
             return bool(int(line.split(": ")[1]))
+        
         recent_project_activity_value = process_bool(lines[0])
         data_availability_value = process_bool(lines[1])
         data_analysis_value = process_bool(lines[2])
@@ -79,6 +234,14 @@ def run():
             thursday_bool = st.toggle("Thursday", value=thursday_value, key="thursday toggle")
             friday_bool = st.toggle("Friday", value=friday_value, key="friday toggle")
 
+            day_bools = {
+                "Monday": monday_bool,
+                "Tuesday": tuesday_bool,
+                "Wednesday": wednesday_bool,
+                "Thursday": thursday_bool,
+                "Friday": friday_bool
+            }
+
         # time_of_day_container = st.container()
         with time_of_day_container:
             st.header("Time of Day")
@@ -88,7 +251,7 @@ def run():
         if st.button("Save Configuration", use_container_width=True):
             # Save the configuration to a file or database
             # Write to a file
-            with open("slack_config.txt", "w") as f:
+            with open(config_file_path, "w") as f:
                 f.write(f"Recent Project Activity: {int(recent_project_activity_bool)}\n")
                 f.write(f"Data Availability: {int(data_availability_bool)}\n")
                 f.write(f"Data Analysis: {int(data_analysis_bool)}\n")
@@ -99,18 +262,21 @@ def run():
                 f.write(f"Friday: {int(friday_bool)}\n")
                 f.write(f"Time of Day: {time_of_day}\n")
                 
-            st.success("Configuration saved successfully!")
+            st.success("Configuration saved successfully! Reload Page to see changes.")
 
     st.subheader('Next Message')
 
     # Generate the message based on the selected options
-    message = ""
+    messages = []
     if recent_project_activity_bool:
-        message += generate_recent_project_activity_message() + "<br>"
-    if data_availability_bool:
-        message += generate_data_availability_message() + "<br>"
-    if data_analysis_bool:
-        message += generate_data_analysis_message() + "<br>"
-
+        with st.spinner('Getting recent project activity...'):
+            messages = messages + generate_recent_project_activity_message(day_bools, time_of_day_value)
+    # if data_availability_bool:
+    #     message += generate_data_availability_message() + "<br>"
+    # if data_analysis_bool:
+    #     message += generate_data_analysis_message() + "<br>"
+    
     # Display the generated message
-    st.markdown(message, unsafe_allow_html=True)
+    for message in messages:
+        print(message) # Debugging
+        st.markdown(message, unsafe_allow_html=True)

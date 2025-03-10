@@ -2,8 +2,8 @@ Recent Project Activity: 1
 Data Availability: 1
 Data Analysis: 1
 Monday: 1
-Tuesday: 0
-Wednesday: 0
+Tuesday: 1
+Wednesday: 1
 Thursday: 1
-Friday: 0
+Friday: 1
 Time of Day: 09:00:00
