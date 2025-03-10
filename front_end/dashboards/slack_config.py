@@ -2,6 +2,13 @@ import streamlit as st
 import datetime
 
 from dashboards.dashboard import *
+
+import data_extraction.service_extractor as service_extractor
+import data_extraction.residential_extractor as residential_extractor
+import data_extraction.facade_extractor as facade_extractor
+import data_extraction.structure_extractor as structure_extractor
+import data_extraction.industrial_extractor as industrial_extractor
+
 import specklepy.api
 import specklepy.api.models
 import specklepy.api.operations
@@ -96,7 +103,6 @@ def generate_recent_project_activity_message(day_bools, time_of_day_value) -> li
     
     # Get all versions in the project from the last message time to now
     recent_versions_dataframe = pd.DataFrame(columns=["Model Name", "Version Count", "Last Version Time"])
-    # recent_versions = {} # Dictionary to store recent versions per model
     if last_message_time is not None:
         for model in models:
             versions = client.version.get_versions(
@@ -105,8 +111,6 @@ def generate_recent_project_activity_message(day_bools, time_of_day_value) -> li
                 limit=100
             )
             # Filter versions based on the last message time
-            # print(f'versions: {versions}') # Debugging
-            # print(f'versions.items(): {versions.items()}') # Debugging
             for version in versions.items:
                 version_creation_time = version.createdAt
                 if version_creation_time > last_message_time:
@@ -121,39 +125,6 @@ def generate_recent_project_activity_message(day_bools, time_of_day_value) -> li
                     else:
                         recent_versions_dataframe.loc[recent_versions_dataframe["Model Name"] == model.name, "Version Count"] += 1
                         recent_versions_dataframe.loc[recent_versions_dataframe["Model Name"] == model.name, "Last Version Time"] = format_time(version_creation_time)
-                    # print(f"Model: {model.name}, Version: {version}") # Debugging
-
-
-                    # print()
-                    # print(f'Found a new version: {version}') # Debugging
-                    # print(f'model.name: {model.name}') # Debugging
-                    # print(f'version_creation_time: {version_creation_time}') # Debugging
-                    # print(f'last_message_time: {last_message_time}') # Debugging
-                    # if model.name not in recent_versions:
-                    #     recent_versions[model.name] = []
-                    # recent_versions[model.name].append(version)
-
-    # print(f"recent_versions: {recent_versions}") # Debugging
-
-    # Generate the message of recent versions in each model
-    
-    # messages.append(f'## Recent Project Activity since {format_time(last_message_time)}')
-
-    # # Create a pandas DataFrame to store the recent versions
-    # df = pd.DataFrame(recent_versions)
-    
-    # for model_name, versions in recent_versions.items():
-    #     # Get the model name, number of versions, and last version creation time
-    #     num_versions = len(versions)
-    #     last_version = versions[-1]
-    #     last_version_time = last_version.createdAt
-
-    #     # Generate the message for each model
-    #     messages.append(f"##### Model: {model_name}")
-    #     messages.append(f"Number of new versions: {num_versions}")
-    #     messages.append(f"Last version created at: {format_time(last_version_time)}")
-
-    # return messages
 
     # Convert the DataFrame to Markdown
     markdown = recent_versions_dataframe.to_markdown(index=False)
@@ -165,14 +136,46 @@ def generate_recent_project_activity_message(day_bools, time_of_day_value) -> li
     return messages
 
 # Generate Data Availability Message (Markdown)
-def generate_data_availability_message():
-    # Placeholder function to generate a message about data availability
-    return "Data availability: Placeholder message."
+def generate_data_availability_message() -> list[str]:
+    messages = []
+
+    all_extractors = [
+        service_extractor,
+        residential_extractor,
+        facade_extractor,
+        structure_extractor,
+        industrial_extractor
+    ]
+
+    # Setup Speckle connection
+    models, client, project_id = setup_speckle_connection()
+
+    for extractor in all_extractors:
+        # Extract data using the extractor
+        # Placeholder for actual data extraction
+        data = extractor.extract(
+            models=models,
+            client=client,
+            project_id=project_id,
+            header=False,
+            table=False,
+            gauge=False,
+            attribute_display=False
+        )
+
+        # Process the data and generate a message
+        # Placeholder for actual data processing
+        message = f"Data availability for {extractor.__name__}: {data}"
+        messages.append(message)
+
+    return messages
 
 # Generate Data Analysis Message (Markdown)
-def generate_data_analysis_message():
+def generate_data_analysis_message() -> list[str]:
     # Placeholder function to generate a message about data analysis
-    return "Data analysis: Placeholder message."
+    messages = []
+    messages.append("Data analysis: Placeholder message.")
+    return messages
 
 def run():
     print() # Debugging
@@ -271,11 +274,13 @@ def run():
     if recent_project_activity_bool:
         with st.spinner('Getting recent project activity...'):
             messages = messages + generate_recent_project_activity_message(day_bools, time_of_day_value)
-    # if data_availability_bool:
-    #     message += generate_data_availability_message() + "<br>"
-    # if data_analysis_bool:
-    #     message += generate_data_analysis_message() + "<br>"
-    
+    if data_availability_bool:
+        with st.spinner('Getting data availability...'):
+            messages = messages + generate_data_availability_message()
+    if data_analysis_bool:
+        with st.spinner('Getting data analysis...'):
+            messages = messages + generate_data_analysis_message()
+        
     # Display the generated message
     for message in messages:
         print(message) # Debugging
