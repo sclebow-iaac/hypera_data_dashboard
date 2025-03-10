@@ -1,9 +1,9 @@
-Recent Project Activity: True
-Data Availability: True
-Data Analysis: True
-Monday: True
-Tuesday: False
-Wednesday: False
-Thursday: False
-Friday: False
+Recent Project Activity: 1
+Data Availability: 1
+Data Analysis: 1
+Monday: 1
+Tuesday: 0
+Wednesday: 0
+Thursday: 1
+Friday: 0
 Time of Day: 09:00:00
