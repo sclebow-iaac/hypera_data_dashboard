@@ -28,12 +28,14 @@ def get_last_message_time(day_bools, time_of_day) -> datetime.datetime:
 
     # Get the current day of the week (0=Monday, 6=Sunday)
     current_day = now.weekday()
+    # current_day = 3 # Set to Thursday for testing
 
     # print(f'current_day: {current_day}') # Debugging
     # Get the current time in GMT timezone
     current_time = now.time()
 
     # Get the scheduled send day that is most near to the current day, but in the past
+    day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     latest_scheduled_day = None
     day_delta = None
     for day, is_scheduled in day_bools.items():
@@ -43,7 +45,15 @@ def get_last_message_time(day_bools, time_of_day) -> datetime.datetime:
             # print(f'day: {day}') # Debugging
             # print(f'day_number: {day_number}') # Debugging
             
-            delta = (day_number - current_day) % 7 # Calculate the difference in days, modulo 7
+            if day_number > current_day:
+                # If the scheduled day is in the future, look at the previous week
+                # Calculate the delta between the current day and the scheduled day
+                # print(f'The scheduled day is in the future, looking at the previous week...') # Debugging
+                delta = current_day - day_number + 7
+            else:
+                # If the scheduled day is in the past, look at the current week
+                # print(f'The scheduled day is in the past, looking at the current week...') # Debugging
+                delta = current_day - day_number
             # print(f"Delta: {delta}") # Debugging
 
             if delta == 0: # If it's the same day
@@ -80,9 +90,11 @@ def get_last_message_time(day_bools, time_of_day) -> datetime.datetime:
         # print("No scheduled time found")
         return None
     
-    # print() # Debugging
-    # print(f"current_day: {current_day}") # Debugging
-    # print(f"latest_scheduled_day: {latest_scheduled_day}") # Debugging
+    print() # Debugging
+    print(f"current_day: {current_day}") # Debugging
+    print(f'current_day_name: {day_names[current_day]}') # Debugging
+    print(f"latest_scheduled_day: {latest_scheduled_day}") # Debugging
+    print(f'latest_scheduled_day_name: {day_names[latest_scheduled_day]}') # Debugging
 
     # Get the latest scheduled time on the latest scheduled day, in the past
     latest_scheduled_time = now.replace(hour=int(time_of_day.split(":")[0]), minute=int(time_of_day.split(":")[1]), second=0, microsecond=0)
@@ -267,21 +279,28 @@ def run():
                 
             st.success("Configuration saved successfully! Reload Page to see changes.")
 
-    st.subheader('Next Message')
+    # Add a button that triggers the message generation
+    generate_message_trigger = False
+    if st.button("Generate Message", use_container_width=True):
+        generate_message_trigger = True
 
-    # Generate the message based on the selected options
-    messages = []
-    if recent_project_activity_bool:
-        with st.spinner('Getting recent project activity...'):
-            messages = messages + generate_recent_project_activity_message(day_bools, time_of_day_value)
-    if data_availability_bool:
-        with st.spinner('Getting data availability...'):
-            messages = messages + generate_data_availability_message()
-    if data_analysis_bool:
-        with st.spinner('Getting data analysis...'):
-            messages = messages + generate_data_analysis_message()
-        
-    # Display the generated message
-    for message in messages:
-        print(message) # Debugging
-        st.markdown(message, unsafe_allow_html=True)
+    # If the button is clicked, generate the message
+    if generate_message_trigger:
+        st.subheader('Next Message')
+
+        # Generate the message based on the selected options
+        messages = []
+        if recent_project_activity_bool:
+            with st.spinner('Getting recent project activity...'):
+                messages = messages + generate_recent_project_activity_message(day_bools, time_of_day_value)
+        if data_availability_bool:
+            with st.spinner('Getting data availability...'):
+                messages = messages + generate_data_availability_message()
+        if data_analysis_bool:
+            with st.spinner('Getting data analysis...'):
+                messages = messages + generate_data_analysis_message()
+            
+        # Display the generated message
+        for message in messages:
+            # print(message) # Debugging
+            st.markdown(message, unsafe_allow_html=True)

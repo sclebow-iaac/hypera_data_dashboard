@@ -1,6 +1,6 @@
 Recent Project Activity: 1
-Data Availability: 1
-Data Analysis: 1
+Data Availability: 0
+Data Analysis: 0
 Monday: 1
 Tuesday: 1
 Wednesday: 1

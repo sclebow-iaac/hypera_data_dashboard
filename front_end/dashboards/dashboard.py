@@ -40,7 +40,7 @@ def setup_speckle_connection():
 
     project_id = '31f8cca4e0'
     project = client.project.get_with_models(
-        project_id=project_id, models_limit=100)
+        project_id=project_id, models_limit=25)
     models = project.models.items
 
     return models, client, project_id
