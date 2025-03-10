@@ -90,11 +90,11 @@ def get_last_message_time(day_bools, time_of_day) -> datetime.datetime:
         # print("No scheduled time found")
         return None
     
-    print() # Debugging
-    print(f"current_day: {current_day}") # Debugging
-    print(f'current_day_name: {day_names[current_day]}') # Debugging
-    print(f"latest_scheduled_day: {latest_scheduled_day}") # Debugging
-    print(f'latest_scheduled_day_name: {day_names[latest_scheduled_day]}') # Debugging
+    # print() # Debugging
+    # print(f"current_day: {current_day}") # Debugging
+    # print(f'current_day_name: {day_names[current_day]}') # Debugging
+    # print(f"latest_scheduled_day: {latest_scheduled_day}") # Debugging
+    # print(f'latest_scheduled_day_name: {day_names[latest_scheduled_day]}') # Debugging
 
     # Get the latest scheduled time on the latest scheduled day, in the past
     latest_scheduled_time = now.replace(hour=int(time_of_day.split(":")[0]), minute=int(time_of_day.split(":")[1]), second=0, microsecond=0)
@@ -114,7 +114,7 @@ def generate_recent_project_activity_message(day_bools, time_of_day_value) -> li
     last_message_time = get_last_message_time(day_bools, time_of_day_value)
     
     # Get all versions in the project from the last message time to now
-    recent_versions_dataframe = pd.DataFrame(columns=["Model Name", "Version Count", "Last Version Time"])
+    recent_versions_dataframe = pd.DataFrame(columns=["Model Name", "Version Count", "Last Version Time", "Team", "Author"])
     if last_message_time is not None:
         for model in models:
             versions = client.version.get_versions(
@@ -131,7 +131,9 @@ def generate_recent_project_activity_message(day_bools, time_of_day_value) -> li
                         new_row = {
                             "Model Name": model.name,
                             "Version Count": 1,
-                            "Last Version Time": format_time(version_creation_time)
+                            "Last Version Time": format_time(version_creation_time),
+                            "Team": model.name.split("/")[1],  # Assuming the team is part of the model name
+                            "Author": version.authorUser.name
                         }
                         recent_versions_dataframe = pd.concat([recent_versions_dataframe, pd.DataFrame([new_row])], ignore_index=True)
                     else:
@@ -144,6 +146,17 @@ def generate_recent_project_activity_message(day_bools, time_of_day_value) -> li
     # print(f'markdown: {markdown}') # Debugging
     # Add the Markdown table to the messages list
     messages.append(f"#### Recent Project Activity since {format_time(last_message_time)}")
+    
+    # Calculate the number of versions added
+    total_versions = recent_versions_dataframe["Version Count"].sum()
+    if total_versions > 0:
+        messages.append(f"Total versions added: {total_versions}")
+    else:
+        messages.append("No new versions")
+
+    # determine the team responsible for each model
+    team_counts = {}
+    
     messages.append(markdown)
     return messages
 
