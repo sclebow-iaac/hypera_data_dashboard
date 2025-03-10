@@ -18,7 +18,7 @@ def generate_data_analysis_message():
     return "Data analysis: Placeholder message."
 
 def run():
-    st.title("Slack Configuration")
+    st.title("Slack Automatic Message Generator")
 
     # Load the configuration from a file 
     try:
@@ -57,50 +57,49 @@ def run():
         wednesday_value = False
         thursday_value = False
         friday_value = False
-        time_of_day_value = "09:00"    
+        time_of_day_value = "09:00"
 
-    message_options_container, day_of_week_container, time_of_day_container = st.columns(3)
-    with message_options_container:
-        st.header("Message Options")
-        # Add radio buttons for selecting the Slack configuration
-        recent_project_activity_bool = st.toggle("Include Recent Project Activity", value=recent_project_activity_value)
-        data_availability_bool = st.toggle("Include Data Availability", value=data_availability_value)
-        data_analysis_bool = st.toggle("Include Data Analysis", value=data_analysis_value)
+    with st.expander("## Configuration"):
+        message_options_container, day_of_week_container, time_of_day_container = st.columns(3)
+        with message_options_container:
+            st.header("Message Options")
+            # Add radio buttons for selecting the Slack configuration
+            recent_project_activity_bool = st.toggle("Include Recent Project Activity", value=recent_project_activity_value)
+            data_availability_bool = st.toggle("Include Data Availability", value=data_availability_value)
+            data_analysis_bool = st.toggle("Include Data Analysis", value=data_analysis_value)
 
-    # day_of_week_container = st.container()
-    with day_of_week_container:
-        st.header("Day of Week")
+        # day_of_week_container = st.container()
+        with day_of_week_container:
+            st.header("Day of Week")
 
-        # Add radio buttons for selecting the day of the week
-        monday_bool = st.toggle("Monday", value=monday_value, key="monday toggle")
-        tuesday_bool = st.toggle("Tuesday", value=tuesday_value, key="tuesday toggle")
-        wednesday_bool = st.toggle("Wednesday", value=wednesday_value, key="wednesday toggle")
-        thursday_bool = st.toggle("Thursday", value=thursday_value, key="thursday toggle")
-        friday_bool = st.toggle("Friday", value=friday_value, key="friday toggle")
+            # Add radio buttons for selecting the day of the week
+            monday_bool = st.toggle("Monday", value=monday_value, key="monday toggle")
+            tuesday_bool = st.toggle("Tuesday", value=tuesday_value, key="tuesday toggle")
+            wednesday_bool = st.toggle("Wednesday", value=wednesday_value, key="wednesday toggle")
+            thursday_bool = st.toggle("Thursday", value=thursday_value, key="thursday toggle")
+            friday_bool = st.toggle("Friday", value=friday_value, key="friday toggle")
 
-    # time_of_day_container = st.container()
-    with time_of_day_container:
-        st.header("Time of Day")
-        # Add a time picker for selecting the time of day
-        time_of_day = st.time_input("Select Time of Day (GMT)", value=time_of_day_value, key="time of day picker")
-    
-    if st.button("Save Configuration", use_container_width=True):
-        # Save the configuration to a file or database
-        # Write to a file
-        with open("slack_config.txt", "w") as f:
-            f.write(f"Recent Project Activity: {int(recent_project_activity_bool)}\n")
-            f.write(f"Data Availability: {int(data_availability_bool)}\n")
-            f.write(f"Data Analysis: {int(data_analysis_bool)}\n")
-            f.write(f"Monday: {int(monday_bool)}\n")
-            f.write(f"Tuesday: {int(tuesday_bool)}\n")
-            f.write(f"Wednesday: {int(wednesday_bool)}\n")
-            f.write(f"Thursday: {int(thursday_bool)}\n")
-            f.write(f"Friday: {int(friday_bool)}\n")
-            f.write(f"Time of Day: {time_of_day}\n")
-            
-        st.success("Configuration saved successfully!")
-
-    st.markdown('---')
+        # time_of_day_container = st.container()
+        with time_of_day_container:
+            st.header("Time of Day")
+            # Add a time picker for selecting the time of day
+            time_of_day = st.time_input("Select Time of Day (GMT)", value=time_of_day_value, key="time of day picker")
+        
+        if st.button("Save Configuration", use_container_width=True):
+            # Save the configuration to a file or database
+            # Write to a file
+            with open("slack_config.txt", "w") as f:
+                f.write(f"Recent Project Activity: {int(recent_project_activity_bool)}\n")
+                f.write(f"Data Availability: {int(data_availability_bool)}\n")
+                f.write(f"Data Analysis: {int(data_analysis_bool)}\n")
+                f.write(f"Monday: {int(monday_bool)}\n")
+                f.write(f"Tuesday: {int(tuesday_bool)}\n")
+                f.write(f"Wednesday: {int(wednesday_bool)}\n")
+                f.write(f"Thursday: {int(thursday_bool)}\n")
+                f.write(f"Friday: {int(friday_bool)}\n")
+                f.write(f"Time of Day: {time_of_day}\n")
+                
+            st.success("Configuration saved successfully!")
 
     st.subheader('Next Message')
 
