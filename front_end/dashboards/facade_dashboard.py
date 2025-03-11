@@ -86,7 +86,7 @@ def run(selected_team: str) -> None:
     # Building Dashboard
     # Dashboard Header
     display_page_title(selected_team)
-    team_extractor.display_data(extracted_data=team_data, verbose=False, header=True, show_table=True, gauge=False, simple_table=True)
+    team_extractor.display_data(extracted_data=team_data, verbose=False, header=True, show_table=False, gauge=False, simple_table=True)
 
     if not verified:
         st.error("Failed to extract data, proceeding with Example Data. Use Data Dashboard to Investigate.")
