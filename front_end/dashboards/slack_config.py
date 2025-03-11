@@ -1,27 +1,291 @@
 import streamlit as st
+import datetime
 
-# def generate
+from dashboards.dashboard import *
+from data_extraction.data_extractor import *
+
+import data_extraction.service_extractor as service_extractor
+import data_extraction.residential_extractor as residential_extractor
+import data_extraction.facade_extractor as facade_extractor
+import data_extraction.structure_extractor as structure_extractor
+import data_extraction.industrial_extractor as industrial_extractor
+
+import specklepy.api.models
+import specklepy.api.operations
+import specklepy.api.resource
+import specklepy.api.resources
+import specklepy.core
+import specklepy.core.api
+
+import requests
+
+import pandas as pd
+
+def format_time(dt):
+    return dt.strftime("%d/%m %H:%M") + " GMT"
+
+def get_last_message_time(day_bools, time_of_day) -> datetime.datetime:
+    # Get the current time in GMT timezone
+    now = datetime.datetime.now(datetime.timezone.utc)
+
+    # Get the current day of the week (0=Monday, 6=Sunday)
+    current_day = now.weekday()
+    # current_day = 3 # Set to Thursday for testing
+
+    # print(f'current_day: {current_day}') # Debugging
+    # Get the current time in GMT timezone
+    current_time = now.time()
+
+    # Get the scheduled send day that is most near to the current day, but in the past
+    day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    latest_scheduled_day = None
+    day_delta = None
+    for day, is_scheduled in day_bools.items():
+        if is_scheduled:
+            day_number = list(day_bools.keys()).index(day)
+            # print()
+            # print(f'day: {day}') # Debugging
+            # print(f'day_number: {day_number}') # Debugging
+            
+            if day_number > current_day:
+                # If the scheduled day is in the future, look at the previous week
+                # Calculate the delta between the current day and the scheduled day
+                # print(f'The scheduled day is in the future, looking at the previous week...') # Debugging
+                delta = current_day - day_number + 7
+            else:
+                # If the scheduled day is in the past, look at the current week
+                # print(f'The scheduled day is in the past, looking at the current week...') # Debugging
+                delta = current_day - day_number
+            # print(f"Delta: {delta}") # Debugging
+
+            if delta == 0: # If it's the same day
+                # Check if the time has passed
+                scheduled_time = datetime.datetime.strptime(time_of_day, "%H:%M:%S").time()
+                # print(f"Scheduled time: {scheduled_time}") # Debugging
+                # print(f"Current time: {current_time}") # Debugging
+                if current_time < scheduled_time:
+                    # If the scheduled time is in the future, skip it
+                    # print("Scheduled time is in the future, skipping...") # Debugging
+                    continue
+                else:
+                    # If the scheduled time is in the past, set it as the latest scheduled time                    
+                    latest_scheduled_day = day_number
+                    day_delta = delta
+                    break
+            else:
+                if day_delta is None:
+                    # If this is the first scheduled time, set it as the latest scheduled time
+                    latest_scheduled_day = day_number
+                    day_delta = delta
+                    continue
+                elif delta < day_delta:
+                    # If the delta is smaller than the previous one, update the latest scheduled time
+                    latest_scheduled_day = day_number
+                    day_delta = delta
+                    # print(f"Updated latest scheduled day: {latest_scheduled_day}") # Debugging
+                else:
+                    # If the delta is larger, skip it
+                    # print(f"Skipping day {day} with delta {delta}")
+                    continue
+    # If no scheduled time is found, return None
+    if latest_scheduled_day is None:
+        # print("No scheduled time found")
+        return None
+    
+    # print() # Debugging
+    # print(f"current_day: {current_day}") # Debugging
+    # print(f'current_day_name: {day_names[current_day]}') # Debugging
+    # print(f"latest_scheduled_day: {latest_scheduled_day}") # Debugging
+    # print(f'latest_scheduled_day_name: {day_names[latest_scheduled_day]}') # Debugging
+
+    # Get the latest scheduled time on the latest scheduled day, in the past
+    latest_scheduled_time = now.replace(hour=int(time_of_day.split(":")[0]), minute=int(time_of_day.split(":")[1]), second=0, microsecond=0)
+    latest_scheduled_time = latest_scheduled_time - datetime.timedelta(days=(current_day - latest_scheduled_day) % 7)
+    # print(f"latest_scheduled_time (before timezone): {latest_scheduled_time}") # Debugging
+    # print(f"latest_scheduled_time: {latest_scheduled_time}") # Debugging    
+    # print(f'type(latest_scheduled_time): {type(latest_scheduled_time)}') # Debugging
+
+    return latest_scheduled_time
+
+# Generate Recent Project Activity Message (Markdown)
+def generate_recent_project_activity_message(day_bools, time_of_day_value) -> list[str]:
+    messages = []
+
+    models, client, project_id = setup_speckle_connection(models_limit=50)
+
+    last_message_time = get_last_message_time(day_bools, time_of_day_value)
+    
+    # Get all versions in the project from the last message time to now
+    recent_versions_dataframe = pd.DataFrame(columns=["Model Name", "Version Count", "Last Version Time", "Team", "Author"])
+    if last_message_time is not None:
+        for model in models:
+            versions = client.version.get_versions(
+                model_id=model.id,
+                project_id=project_id,
+                limit=100
+            )
+            # Filter versions based on the last message time
+            for version in versions.items:
+                version_creation_time = version.createdAt
+                if version_creation_time > last_message_time:
+                    # Add the version to the recent versions list
+                    if model.name not in recent_versions_dataframe["Model Name"].values:
+                        new_row = {
+                            "Model Name": model.name,
+                            "Version Count": 1,
+                            "Last Version Time": format_time(version_creation_time),
+                            "Team": model.name.split("/")[1],  # Assuming the team is part of the model name
+                            "Author": version.authorUser.name
+                        }
+                        recent_versions_dataframe = pd.concat([recent_versions_dataframe, pd.DataFrame([new_row])], ignore_index=True)
+                    else:
+                        recent_versions_dataframe.loc[recent_versions_dataframe["Model Name"] == model.name, "Version Count"] += 1
+                        recent_versions_dataframe.loc[recent_versions_dataframe["Model Name"] == model.name, "Last Version Time"] = format_time(version_creation_time)
+
+
+    # print(f'markdown: {markdown}') # Debugging
+    # Add the Markdown table to the messages list
+    messages.append(f'*Recent Project Activity since {format_time(last_message_time)}*')
+    
+    # Calculate the number of versions added
+    total_versions = recent_versions_dataframe["Version Count"].sum()
+    if total_versions > 0:
+        messages.append(f"Total versions added: {total_versions}")
+    else:
+        messages.append("No new versions")
+
+    # determine the team responsible for each model
+    team_counts = {}
+    
+    # # Convert the DataFrame to Markdown
+    # table_message = recent_versions_dataframe.to_markdown(index=False)
+
+    # # Convert the DataFrame to String
+    # table_message = recent_versions_dataframe.to_string(index=False, justify="left")
+
+    # # Replace \n with <br> for HTML rendering
+    # table_message = table_message.replace("\n", "<br>")
+
+    # Convert each row of the DataFrame to a human-readable string
+    for index, row in recent_versions_dataframe.iterrows():
+        model_name = row["Model Name"]
+        version_count = row["Version Count"]
+        last_version_time = row["Last Version Time"]
+        team = row["Team"].capitalize()
+        author = row["Author"]
+        
+        message = f'{author} of the {team} team uploaded {version_count} new version(s) of {model_name} at {last_version_time}'
+        messages.append(message)
+
+    # messages.append(table_message)
+    return messages
+
+# Generate Data Availability Message (Markdown)
+def generate_data_availability_message() -> list[str]:
+    messages = []
+    
+    # Generate the header
+    messages.append(f'*Data Availability Report*')
+    
+    all_extractors = {
+        "Service": service_extractor,
+        "Residential": residential_extractor,
+        "Facade": facade_extractor,
+        "Structure": structure_extractor,
+        "Industrial": industrial_extractor
+    }
+
+    # Setup Speckle connection
+    models, client, project_id = setup_speckle_connection()
+
+    # for extractor in all_extractors:
+    for team_name, extractor in all_extractors.items():
+        # Extract data using the extractor
+        # Placeholder for actual data extraction
+        fully_verified, extracted_data = extractor.extract(
+            models=models,
+            client=client,
+            project_id=project_id,
+            header=False,
+            table=False,
+            gauge=False,
+            attribute_display=False
+        )
+        print(f"fully_verified: {fully_verified}") # Debugging
+        print(f"extracted_data: {extracted_data}") # Debugging
+        table, type_matched_bools = process_extracted_data(extractor.data, extracted_data, verbose=False)
+
+        # print(f"table: {table}") # Debugging
+        # print(f"type_matched_bools: {type_matched_bools}") # Debugging
+
+        percentage_verified = sum(type_matched_bools) / len(type_matched_bools) * 100
+        print(f"percentage_verified: {percentage_verified}") # Debugging
+
+        # Generate the message
+        messages.append(f'{team_name.capitalize()} team data is {percentage_verified:.2f}% in the correct format.')
+        if percentage_verified < 100:
+            for bool, data_name, data_type in zip(type_matched_bools, extractor.data_names, extractor.data_types):
+                if not bool:
+                    # print(f"data_item: {data_item}") # Debugging
+                    messages.append(f' - {data_name} is in the wrong format, we were expecting {data_type} but got {type(extracted_data[data_name]).__name__}')
+
+    return messages
+
+# Generate Data Analysis Message (Markdown)
+def generate_data_analysis_message() -> list[str]:
+    # Placeholder function to generate a message about data analysis
+    messages = []
+    messages.append("Data analysis: Placeholder message.")
+    return messages
+
+def generate_message(recent_project_activity_bool, data_availability_bool, data_analysis_bool, day_bools, time_of_day_value):
+    messages = []
+
+    # Generate message header
+    now = datetime.datetime.now(datetime.timezone.utc)
+    messages.append(f'*HyperA Project Update for {format_time(now)}:*')
+    messages.append('')
+
+    # Generate the message based on the selected options
+    if recent_project_activity_bool:
+        with st.spinner("Generating recent project activity message..."):
+            messages = messages + generate_recent_project_activity_message(day_bools, time_of_day_value)
+    if data_availability_bool:
+        with st.spinner("Generating data availability message..."):
+            messages = messages + generate_data_availability_message()
+    if data_analysis_bool:
+        with st.spinner("Generating data analysis message..."):
+            messages = messages + generate_data_analysis_message()
+    # Display the generated message
+    return messages
 
 def run():
-    st.title("Slack Configuration")
+    print() # Debugging
 
+    st.title("Slack Automatic Message Generator")
+
+    config_file_path = "front_end/slack_config.txt"
     # Load the configuration from a file 
     try:
-        with open("slack_config.txt", "r") as f:
+        with open(config_file_path, "r") as f:
             config = f.read()
         # Parse the configuration
         lines = config.split("\n")
-        recent_project_activity_value = bool(lines[0].split(": ")[1].lower())
-        data_availability_value = bool(lines[1].split(": ")[1].lower() == "True")
-        data_analysis_value = bool(lines[2].split(": ")[1].lower() == "True")
-        monday_value = bool(lines[3].split(": ")[1].lower() == "True")
-        tuesday_value = bool(lines[4].split(": ")[1].lower() == "True")
-        wednesday_value = bool(lines[5].split(": ")[1].lower() == "True")
-        thursday_value = bool(lines[6].split(": ")[1].lower() == "True")
-        friday_value = bool(lines[7].split(": ")[1].lower() == "True")
+
+        def process_bool(line):
+            return bool(int(line.split(": ")[1]))
+        
+        recent_project_activity_value = process_bool(lines[0])
+        data_availability_value = process_bool(lines[1])
+        data_analysis_value = process_bool(lines[2])
+        monday_value = process_bool(lines[3])
+        tuesday_value = process_bool(lines[4])
+        wednesday_value = process_bool(lines[5])
+        thursday_value = process_bool(lines[6])
+        friday_value = process_bool(lines[7])
         time_of_day_value = lines[8].split(": ")[1]
 
-        print(f"Loaded configuration: {recent_project_activity_value}, {data_availability_value}, {data_analysis_value}, {monday_value}, {tuesday_value}, {wednesday_value}, {thursday_value}, {friday_value}, {time_of_day_value}")
+        # print(f"Loaded configuration: {recent_project_activity_value}, {data_availability_value}, {data_analysis_value}, {monday_value}, {tuesday_value}, {wednesday_value}, {thursday_value}, {friday_value}, {time_of_day_value}")
 
     except FileNotFoundError:
         # If the file does not exist, use default values
@@ -29,49 +293,120 @@ def run():
         data_availability_value = True
         data_analysis_value = True
         monday_value = True
-        tuesday_value = False
+        tuesday_value = True
         wednesday_value = False
         thursday_value = False
         friday_value = False
-        time_of_day_value = "09:00"    
+        time_of_day_value = "09:00"
 
-    message_options_container = st.container()
-    with message_options_container:
-        st.header("Message Options")
-        # Add radio buttons for selecting the Slack configuration
-        recent_project_activity_bool = st.toggle("Include Recent Project Activity", value=recent_project_activity_value)
-        data_availability_bool = st.toggle("Include Data Availability", value=data_availability_value)
-        data_analysis_bool = st.toggle("Include Data Analysis", value=data_analysis_value)
+    with st.expander("## Configuration"):
+        message_options_container, day_of_week_container, time_of_day_container = st.columns(3)
+        with message_options_container:
+            st.header("Message Options")
+            # Add radio buttons for selecting the Slack configuration
+            recent_project_activity_bool = st.toggle("Include Recent Project Activity", value=recent_project_activity_value)
+            data_availability_bool = st.toggle("Include Data Availability", value=data_availability_value)
+            data_analysis_bool = st.toggle("Include Data Analysis", value=data_analysis_value)
 
-    day_of_week_container = st.container()
-    with day_of_week_container:
-        st.header("Day of Week")
+        # day_of_week_container = st.container()
+        with day_of_week_container:
+            st.header("Day of Week")
 
-        # Add radio buttons for selecting the day of the week
-        monday_bool = st.toggle("Monday", value=monday_value, key="monday toggle")
-        tuesday_bool = st.toggle("Tuesday", value=tuesday_value, key="tuesday toggle")
-        wednesday_bool = st.toggle("Wednesday", value=wednesday_value, key="wednesday toggle")
-        thursday_bool = st.toggle("Thursday", value=thursday_value, key="thursday toggle")
-        friday_bool = st.toggle("Friday", value=friday_value, key="friday toggle")
+            # Add radio buttons for selecting the day of the week
+            monday_bool = st.toggle("Monday", value=monday_value, key="monday toggle")
+            tuesday_bool = st.toggle("Tuesday", value=tuesday_value, key="tuesday toggle")
+            wednesday_bool = st.toggle("Wednesday", value=wednesday_value, key="wednesday toggle")
+            thursday_bool = st.toggle("Thursday", value=thursday_value, key="thursday toggle")
+            friday_bool = st.toggle("Friday", value=friday_value, key="friday toggle")
 
-    time_of_day_container = st.container()
-    with time_of_day_container:
-        st.header("Time of Day")
-        # Add a time picker for selecting the time of day
-        time_of_day = st.time_input("Select Time of Day (GMT)", value="09:00", key="time of day picker")
-    
-    if st.button("Save Configuration"):
-        # Save the configuration to a file or database
-        # Write to a file
-        print(f"Saving configuration: {recent_project_activity_bool}, {data_availability_bool}, {data_analysis_bool}, {monday_bool}, {tuesday_bool}, {wednesday_bool}, {thursday_bool}, {friday_bool}, {time_of_day}")
-        with open("slack_config.txt", "w") as f:
-            f.write(f"Recent Project Activity: {recent_project_activity_bool}\n")
-            f.write(f"Data Availability: {data_availability_bool}\n")
-            f.write(f"Data Analysis: {data_analysis_bool}\n")
-            f.write(f"Monday: {monday_bool}\n")
-            f.write(f"Tuesday: {tuesday_bool}\n")
-            f.write(f"Wednesday: {wednesday_bool}\n")
-            f.write(f"Thursday: {thursday_bool}\n")
-            f.write(f"Friday: {friday_bool}\n")
-            f.write(f"Time of Day: {time_of_day}\n")
-        st.success("Configuration saved successfully!")
+            day_bools = {
+                "Monday": monday_bool,
+                "Tuesday": tuesday_bool,
+                "Wednesday": wednesday_bool,
+                "Thursday": thursday_bool,
+                "Friday": friday_bool
+            }
+
+        # time_of_day_container = st.container()
+        with time_of_day_container:
+            st.header("Time of Day")
+            # Add a time picker for selecting the time of day
+            time_of_day = st.time_input("Select Time of Day (GMT)", value=time_of_day_value, key="time of day picker")
+        
+        if st.button("Save Configuration", use_container_width=True):
+            # Save the configuration to a file or database
+            # Write to a file
+            with open(config_file_path, "w") as f:
+                f.write(f"Recent Project Activity: {int(recent_project_activity_bool)}\n")
+                f.write(f"Data Availability: {int(data_availability_bool)}\n")
+                f.write(f"Data Analysis: {int(data_analysis_bool)}\n")
+                f.write(f"Monday: {int(monday_bool)}\n")
+                f.write(f"Tuesday: {int(tuesday_bool)}\n")
+                f.write(f"Wednesday: {int(wednesday_bool)}\n")
+                f.write(f"Thursday: {int(thursday_bool)}\n")
+                f.write(f"Friday: {int(friday_bool)}\n")
+                f.write(f"Time of Day: {time_of_day}\n")
+                
+            st.success("Configuration saved successfully! Reload Page to see changes.")
+
+    message_generated = False # A flag to check if the message has been generated at least once
+
+    # Add a button that triggers the message generation
+    generate_message_trigger = False # A flag to check if the button has been clicked
+    if st.button("Generate Message Preview", use_container_width=True):
+        generate_message_trigger = True
+
+    # Add a button that sends the message to Slack
+    send_message_trigger = False
+    if st.button("Send Message to Slack", use_container_width=True):
+        send_message_trigger = True
+
+    # If the button is clicked, generate the message
+    if generate_message_trigger:
+        st.subheader('Preview of the Next Message:')
+
+        # Generate the message
+        messages = generate_message(recent_project_activity_bool, data_availability_bool, data_analysis_bool, day_bools, time_of_day_value)            
+
+        # Display the generated message
+        for message in messages:
+            # print(message) # Debugging
+            # If message is between a single asterisk at the beginning and end, make it bold by adding another asterisk
+            if message.startswith("*") and message.endswith("*"):
+                message = message.replace("*", "**")
+            st.markdown(message, unsafe_allow_html=True)
+
+        message_generated = True # Set the flag to True if the message has been generated
+
+    if send_message_trigger:
+        # Check if the message has been generated
+        if message_generated:
+            message = '\n'.join(messages)
+        else:
+            with st.spinner("Generating message..."):
+                messages = generate_message(recent_project_activity_value, data_availability_value, data_analysis_value, day_bools, time_of_day_value)
+                message = '\n'.join(messages)
+
+        # Send the message to Slack
+        slack_webhook_url = "https://hooks.slack.com/services/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"
+        payload = {
+            "text": message,
+            "mrkdwn": True
+        }
+        headers = {
+            "Content-Type": "application/json"
+        }
+        response = requests.post(slack_webhook_url, json=payload, headers=headers)
+        # Check the response status
+        if response.status_code != 200:
+            st.error(f"Failed to send message to Slack: {response.status_code} - {response.text}")
+            return
+        else:
+            # If the message was sent successfully, display a success message
+            st.success("Message sent to Slack successfully!")
+            
+            print(f"Message sent to Slack: {message}") # Debugging
+            print(f"Response from Slack: {response.text}") # Debugging
+            
+
+        st.success("Message sent to Slack successfully!")

@@ -17,13 +17,13 @@ import attribute_extraction
 
 def get_geometry_data(selected_version, client, project, verbose=True):
     objHash = selected_version.referencedObject
-    if verbose:
-        print(f'objHash: {objHash}')
-        print(f'Starting to receive data...\n')
+    # if verbose:
+        # print(f'objHash: {objHash}')
+        # print(f'Starting to receive data...\n')
     transport = ServerTransport(client=client, stream_id=project.id)
     base = operations.receive(objHash, transport)
-    if verbose:
-        print(f'Data received.\n')
+    # if verbose:
+        # print(f'Data received.\n')
     return base
 
 
@@ -31,15 +31,15 @@ def get_all_attributes(base_data, flattened=True, depth=0, all_attributes=set(),
     if depth == 0:  # If depth is 0, we are starting the search
         all_attributes = set()
 
-    if verbose:
-        print()  # Debugging
-        print(f'{"-" * depth}Getting attributes of {base_data}...')
-        print(f'{"-" * depth}Attributes: {base_data.__dict__}')
+    # if verbose:
+        # print()  # Debugging
+        # print(f'{"-" * depth}Getting attributes of {base_data}...')
+        # print(f'{"-" * depth}Attributes: {base_data.__dict__}')
 
     for key in base_data.__dict__:
-        if verbose:
-            print(
-                f'{"-" * depth}Key: {key} - Value: {base_data.__dict__[key]} - Type: {type(base_data.__dict__[key])}')
+        # if verbose:
+            # print(
+                # f'{"-" * depth}Key: {key} - Value: {base_data.__dict__[key]} - Type: {type(base_data.__dict__[key])}')
 
         all_attributes.add(key)
 
@@ -53,12 +53,12 @@ def get_all_attributes(base_data, flattened=True, depth=0, all_attributes=set(),
 
             for item in value:
                 if item is not None:
-                    if verbose:
-                        print(f'{"-" * depth}Item: {item}')
+                    # if verbose:
+                        # print(f'{"-" * depth}Item: {item}')
 
                     if type(item) == Base:
-                        if verbose:
-                            print(f'{"-" * depth}Item is a Base object.')
+                        # if verbose:
+                            # print(f'{"-" * depth}Item is a Base object.')
 
                         all_attributes = get_all_attributes(
                             item, flattened=True, depth=depth+1, all_attributes=all_attributes, verbose=verbose)
@@ -72,9 +72,9 @@ def search_for_attribute(base_data: Base, attribute: str, depth=0, single=True, 
         output = []
         found = False
 
-    if verbose:
-        print(f'{"  " * depth}Searching for attribute {attribute} in {base_data}...')
-        print(f'{"  " * depth}Attributes: {base_data.__dict__}')
+    # if verbose:
+        # print(f'{"  " * depth}Searching for attribute {attribute} in {base_data}...')
+        # print(f'{"  " * depth}Attributes: {base_data.__dict__}')
 
     for key in base_data.__dict__:
         if key == attribute:  # If the key is the attribute we are looking for
@@ -84,9 +84,9 @@ def search_for_attribute(base_data: Base, attribute: str, depth=0, single=True, 
             if single:  # If we only want to find the first occurrence of the attribute, break the loop
                 break
 
-        if verbose:  # Debugging
-            print(
-                f'{"-" * depth}Key: {key} - Value: {base_data.__dict__[key]} - Type: {type(base_data.__dict__[key])}')
+        # if verbose:  # Debugging
+            # print(
+                # f'{"-" * depth}Key: {key} - Value: {base_data.__dict__[key]} - Type: {type(base_data.__dict__[key])}')
 
         value = base_data.__dict__[key]  # Get the value of the key
 
@@ -95,14 +95,14 @@ def search_for_attribute(base_data: Base, attribute: str, depth=0, single=True, 
 
         for item in value:  # Iterate over the value
             if item is not None:  # If the item is not None
-                if verbose:  # Debugging
-                    print(f'{"-" * depth}Item: {item}')  # Debugging
+                # if verbose:  # Debugging
+                    # print(f'{"-" * depth}Item: {item}')  # Debugging
 
                 # If the item is a Base object, we need to recursively search for the attribute
                 if type(item) == Base:
-                    if verbose:  # Debugging
+                    # if verbose:  # Debugging
                         # Debugging
-                        print(f'{"-" * depth}Item is a Base object.')
+                        # print(f'{"-" * depth}Item is a Base object.')
 
                     # Recursively search for the attribute in the item object
                     found, output = search_for_attribute(
@@ -113,11 +113,11 @@ def search_for_attribute(base_data: Base, attribute: str, depth=0, single=True, 
 
 def extract(data, model_name, models, client, project_id, verbose=True, header=True, table=True, gauge=True, attribute_display=True, container=None):
 
-    if verbose:
-        print(f'Model name: {model_name}')  # Debugging
-        print(f'data: {data}')  # Debugging
+    # if verbose:
+        # print(f'Model name: {model_name}')  # Debugging
+        # print(f'data: {data}')  # Debugging
 
-        print(f'data.keys(): {data.keys()}')  # Debugging
+        # print(f'data.keys(): {data.keys()}')  # Debugging
 
     extracted_data = {}
     selected_model = None
@@ -127,15 +127,15 @@ def extract(data, model_name, models, client, project_id, verbose=True, header=T
             break
 
     if selected_model is None:  # If model is not found
-        if verbose:
-            print(f'Model {model_name} not found.')
+        # if verbose:
+            # print(f'Model {model_name} not found.')
 
         # Return None for all data if model is not found
         extracted_data = {key: None for key in data.keys()}
 
     else:  # If model is found
-        if verbose:
-            print(f'Model {model_name} found.')
+        # if verbose:
+            # print(f'Model {model_name} found.')
 
         # Get projects
         selected_project = client.project.get(project_id=project_id)
@@ -143,14 +143,14 @@ def extract(data, model_name, models, client, project_id, verbose=True, header=T
         # Get the project with models
         project = client.project.get_with_models(
             project_id=selected_project.id, models_limit=100)
-        # print(f'Project: {project.name}')
+        # # print(f'Project: {project.name}')
 
         versions = client.version.get_versions(
             model_id=selected_model.id, project_id=project.id, limit=100).items
         latest_version = versions[0]
-        # print(
+        # # print(
         # f'latest_version, createdAt: {latest_version.createdAt.strftime("%Y-%m-%d %H:%M:%S")}')
-        # print(f'latest_version, authorUser: {latest_version.authorUser.name}')
+        # # print(f'latest_version, authorUser: {latest_version.authorUser.name}')
 
         with st.spinner(f'Receiving data from {model_name}'):
             base_data = get_geometry_data(
@@ -160,34 +160,34 @@ def extract(data, model_name, models, client, project_id, verbose=True, header=T
         while '@Data' in dir(base_data):
             base_data = base_data.__getitem__('@Data')
             nested_index += 1
-            # print(f'Nested index: {nested_index}')
+            # # print(f'Nested index: {nested_index}')
 
-        if verbose:
-            print(f'Base data received.')
+        # if verbose:
+            # print(f'Base data received.')
 
         all_attributes = get_all_attributes(base_data, flattened=True)
-        if verbose:
-            print(f'All attributes: {all_attributes}')
+        # if verbose:
+            # print(f'All attributes: {all_attributes}')
 
         for data_name in data.keys():
-            # print()  # Debugging
-            # print(f'Data name: {data_name}')  # Debugging
+            # # print()  # Debugging
+            # # print(f'Data name: {data_name}')  # Debugging
             data_names = [data_name, '@' + data_name]
 
             for name in data_names:
-                # print(f'Searching for attribute {name}...')  # Debugging
+                # # print(f'Searching for attribute {name}...')  # Debugging
                 if name not in all_attributes:
-                    if verbose:
-                        print(f'Attribute {name} not in all_attributes.')
+                    # if verbose:
+                        # print(f'Attribute {name} not in all_attributes.')
                     extracted_data[data_name] = None
                 else:
-                    if verbose:
-                        print(f'Attribute {name} is in all_attributes.')
+                    # if verbose:
+                        # print(f'Attribute {name} is in all_attributes.')
 
                     found, output = search_for_attribute(
                         base_data, name, single=False, verbose=False)
-                    if verbose:
-                        print(f'Found: {found} - Output: {output}')
+                    # if verbose:
+                        # print(f'Found: {found} - Output: {output}')
                     if found:  # If the attribute is found
                         # Set the extracted data to the output
                         extracted_data[data_name] = output[0]
@@ -200,14 +200,14 @@ def extract(data, model_name, models, client, project_id, verbose=True, header=T
                                 extracted_data[data_name] = item
                                 break
                         # extracted_data[data_name] = output[0] # Set the extracted data to the output
-                        # print(f'Attribute {name} found: {output[0]}') # Debugging
+                        # # print(f'Attribute {name} found: {output[0]}') # Debugging
                         break  # Break the loop if the attribute is found
                 #     else:
-                #         print(f'Attribute {name} not found.')
+                #         # print(f'Attribute {name} not found.')
 
                 # else:
-                #     if verbose:
-                #         print(f'Attribute {name} not found.')
+                #     # if verbose:
+                #         # print(f'Attribute {name} not found.')
                 #         extracted_data[data_name] = None
 
     display_data(data, extracted_data, model_name, verbose=False,
@@ -220,11 +220,12 @@ def extract(data, model_name, models, client, project_id, verbose=True, header=T
             # Add attribute extraction for debugging
             attribute_extraction.run(latest_version, client, project)
     except:
-        print('Error displaying attributes')
+        # print('Error displaying attributes')
+        pass
 
     fully_verified = verify_data(data, extracted_data)
 
-    print(f'Fully verified: {fully_verified}')
+    # print(f'Fully verified: {fully_verified}')
 
     return fully_verified, extracted_data
 
@@ -247,23 +248,25 @@ def verify_data(data, extracted_data):
         if type_expected == 'float':
             try:
                 value = float(value)
-                print(f'{key} converted to float')
+                # print(f'{key} converted to float')
             except:
-                print('Error converting value to float')
+                # print('Error converting value to float')
+                pass
 
         if type_expected == 'int':
             try:
                 value = int(value)
-                print(f'{key} converted to int')
+                # print(f'{key} converted to int')
             except:
-                print('Error converting value to int')
+                # print('Error converting value to int')
+                pass
 
         type_extracted = type(value).__name__
 
-        print(f'Key: {key} - Value: {value}')
-        print(f'Type: {type(value).__name__}')
-        print(f'Type expected: {type_expected}')
-        print()
+        # print(f'Key: {key} - Value: {value}')
+        # print(f'Type: {type(value).__name__}')
+        # print(f'Type expected: {type_expected}')
+        # print()
 
         type_matched_bools.append(type_expected == type_extracted)
 
@@ -274,36 +277,14 @@ def verify_data(data, extracted_data):
 
     return False
 
-# Display the extracted data
+def process_extracted_data(data, extracted_data, verbose=True, simple_table=False):
+    type_matched_bools = []
 
-
-def display_data(data, extracted_data, model_name, verbose=True, header=True, show_table=True, gauge=True, simple_table=False, container=None):
-    if header:
-        if not container:
-            header_container = st.container()
-        else:
-            header_container = container
-        # Display the model name
-        if model_name is not None and model_name != "":
-            header_container.markdown(f'### Speckle Model Name:')
-            header_container.markdown(f'#### {model_name}')
-        else:
-            header_container.markdown(f'### Speckle Model: ')
-            header_container.markdown(f'#### {model_name} not found.')
-
-        # st.markdown('---')
-
-    if verbose:
-        print(f'Extracted data: {extracted_data}')
     if simple_table:
         header = ['Attribute Name', 'Value', 'Unit']
     else:
         header = ['Attribute Name', 'Found', 'Value', 'Type', 'Unit']
     table = [header]
-
-    print()
-
-    type_matched_bools = []
 
     for key in data:
         value = extracted_data[key]
@@ -320,28 +301,30 @@ def display_data(data, extracted_data, model_name, verbose=True, header=True, sh
         if type_expected == 'float':
             try:
                 value = float(value)
-                print(f'{key} converted to float')
+                # print(f'{key} converted to float')
             except:
-                print('Error converting value to float')
+                # print('Error converting value to float')
+                pass
 
         if type_expected == 'int':
             try:
                 value = int(value)
-                print(f'{key} converted to int')
+                # print(f'{key} converted to int')
             except:
-                print('Error converting value to int')
+                # print('Error converting value to int')
+                pass
 
         type_extracted = type(value).__name__
 
-        print(f'Key: {key} - Value: {value}')
-        print(f'Type: {type(value).__name__}')
-        print(f'Type expected: {type_expected}')
-        print()
+        # print(f'Key: {key} - Value: {value}')
+        # print(f'Type: {type(value).__name__}')
+        # print(f'Type expected: {type_expected}')
+        # print()
 
         type_matched_bools.append(type_expected == type_extracted)
-        if verbose:
-            print(
-                f'Key: {key} - Value: {value} - Type Expected: {type_expected} - Type Extracted: {type_extracted}')
+        # if verbose:
+            # print(
+                # f'Key: {key} - Value: {value} - Type Expected: {type_expected} - Type Extracted: {type_extracted}')
         if extracted_data[key] is not None:
             if type_expected == type_extracted:
                 if simple_table:
@@ -360,6 +343,32 @@ def display_data(data, extracted_data, model_name, verbose=True, header=True, sh
                 table.append([key, str(value), unit])
             else:
                 table.append([key, 'No', str(value), type_expected, unit])
+
+    return table, type_matched_bools
+
+
+# Display the extracted data
+def display_data(data, extracted_data, model_name, verbose=True, header=True, show_table=True, gauge=True, simple_table=False, container=None):
+    if header:
+        if not container:
+            header_container = st.container()
+        else:
+            header_container = container
+        # Display the model name
+        if model_name is not None and model_name != "":
+            header_container.markdown(f'### Speckle Model Name:')
+            header_container.markdown(f'#### {model_name}')
+        else:
+            header_container.markdown(f'### Speckle Model: ')
+            header_container.markdown(f'#### {model_name} not found.')
+
+        # st.markdown('---')
+
+    # if verbose:
+        # print(f'Extracted data: {extracted_data}')
+
+    table, type_matched_bools = process_extracted_data(
+        data, extracted_data, verbose=verbose, simple_table=simple_table)
 
     if show_table:
         # Convert the table to a pandas dataframe

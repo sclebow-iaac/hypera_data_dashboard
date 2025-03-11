@@ -59,8 +59,7 @@ def display_interactive_calculators(container, metrics: list[Metric], grid: bool
     for interactive_container, metric in zip(interactive_containers, metrics):
         metric.display_interactive_calculator(interactive_container)
 
-        
-def setup_speckle_connection():
+def setup_speckle_connection(models_limit=100):
     speckle_server = "macad.speckle.xyz"
     speckle_token = "61c9dd1efb887a27eb3d52d0144f1e7a4a23f962d7"
     client = SpeckleClient(host=speckle_server)
@@ -68,12 +67,38 @@ def setup_speckle_connection():
     client.authenticate_with_account(account)
 
     project_id = '31f8cca4e0'
+    selected_project = client.project.get(project_id=project_id)
     project = client.project.get_with_models(
-        project_id=project_id, models_limit=100)
+        project_id=selected_project.id, models_limit=models_limit)
     models = project.models.items
 
     return models, client, project_id
 
+def display_speckle_viewer(container, project_id, model_id, is_transparent=False, hide_controls=False, hide_selection_info=False, no_scroll=False):
+        speckle_model_url = f'https://macad.speckle.xyz/projects/{project_id}/models/{model_id}'
+        # https://macad.speckle.xyz/projects/31f8cca4e0/models/e76ccf2e0f,3f178d9658,a4e3d78009,c710b396d3,5512057f5b,d68a58c12d,2b48d3f757,767672f412
+        # speckle_model_url += '#embed={%22isEnabled%22:true,%22isTransparent%22:true,%22hideControls%22:true,%22hideSelectionInfo%22:true,%22noScroll%22:true}'
+
+        embed_str = '%22isEnabled%22:true'
+        if is_transparent:
+            embed_str += ',%22isTransparent%22:true'
+        if hide_controls:
+            embed_str += ',%22hideControls%22:true'
+        if hide_selection_info:
+            embed_str += ',%22hideSelectionInfo%22:true'
+        if no_scroll:
+            embed_str += ',%22noScroll%22:true'
+
+        speckle_model_url += f'#embed={{{embed_str}}}'
+
+        iframe_code = f"""
+        <iframe src="{speckle_model_url}"
+                style="width: 100%; height: 600px; border: none;">
+        </iframe>
+        """
+        container.markdown(iframe_code, unsafe_allow_html=True)
+
+        return speckle_model_url
 
 def display_page_title(team_name: str) -> None:
     st.markdown(f'''

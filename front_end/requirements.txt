@@ -3,3 +3,4 @@ pandas
 specklepy
 colour
 pythreejs
+tabulate
