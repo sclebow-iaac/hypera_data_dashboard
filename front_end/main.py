@@ -5,6 +5,7 @@ import streamlit as st
 from specklepy.api.client import SpeckleClient
 from specklepy.api.credentials import get_account_from_token
 import numpy as np
+from dashboards.dashboard import *
 
 # import dashboards from local files
 import dashboards.residential_dashboard as residential_dashboard
@@ -153,8 +154,11 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Sidebar for selecting dashboards
-dashboard_options = ["Main", "Residential", "Service", "Structure", "Industrial", "Facade", "Data", "Slack Configuration"]
-selected_dashboard = st.sidebar.radio("Select Dashboard", dashboard_options)
+# dashboard_options = ["Main", "Residential", "Service", "Structure", "Industrial", "Facade", "Data", "Slack Configuration"]
+# selected_dashboard = st.sidebar.radio("Select Dashboard", dashboard_options)
+
+
+selected_dashboard = create_top_menu(["Main", "Residential", "Service", "Structure", "Industrial", "Facade", "Data", "Slack Configuration"])
 
 # Create a placeholder for the dashboard content
 dashboard_placeholder = st.empty()
@@ -170,7 +174,7 @@ graphs = st.container()
 #--------------------------
 
 
-# Only show main interface if "Main" is selected
+# # Only show main interface if "Main" is selected
 if selected_dashboard == "Main":
     #HEADER
     #Page Header

@@ -1,22 +1,25 @@
-import streamlit as st
+def display_speckle_viewer(container, project_id, model_id, is_transparent=False, hide_controls=False, hide_selection_info=False, no_scroll=False):
+        speckle_model_url = f'https://macad.speckle.xyz/projects/{project_id}/models/{model_id}'
+        # https://macad.speckle.xyz/projects/31f8cca4e0/models/e76ccf2e0f,3f178d9658,a4e3d78009,c710b396d3,5512057f5b,d68a58c12d,2b48d3f757,767672f412
+        # speckle_model_url += '#embed={%22isEnabled%22:true,%22isTransparent%22:true,%22hideControls%22:true,%22hideSelectionInfo%22:true,%22noScroll%22:true}'
 
-# Create a iframe to display the selected version
-def version2viewer(project, model, version, height=400) -> str:
-    embed_src = f"https://macad.speckle.xyz/projects/{project.id}/models/{model.id}@{version.id}#embed=%7B%22isEnabled%22%3Atrue%2C%7D"
-    # print(f'embed_src {embed_src}')  # Print the URL to verify correctness
-    # print()
-    return st.components.v1.iframe(src=embed_src, height=height)
+        embed_str = '%22isEnabled%22:true'
+        if is_transparent:
+            embed_str += ',%22isTransparent%22:true'
+        if hide_controls:
+            embed_str += ',%22hideControls%22:true'
+        if hide_selection_info:
+            embed_str += ',%22hideSelectionInfo%22:true'
+        if no_scroll:
+            embed_str += ',%22noScroll%22:true'
 
+        speckle_model_url += f'#embed={{{embed_str}}}'
 
-def show_viewer(viewer, project, selected_model, selected_version):
-    # --------------------------
-    # create a definition that generates an iframe from commit id
-    def commit2viewer(stream, commit, height=400) -> str:
-        embed_src = f"https://macad.speckle.xyz/embed?stream={stream.id}&commit={commit.id}"
-        # print(embed_src)  # Print the URL to verify correctness
-        return st.components.v1.iframe(src=embed_src, height=height)
+        iframe_code = f"""
+        <iframe src="{speckle_model_url}"
+                style="width: 100%; height: 600px; border: none;">
+        </iframe>
+        """
+        container.markdown(iframe_code, unsafe_allow_html=True)
 
-    # VIEWER👁‍🗨
-    with viewer:
-        st.subheader("Selected Version👇")
-        version2viewer(project, selected_model, selected_version)
+        return speckle_model_url
