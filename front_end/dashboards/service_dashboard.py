@@ -1,13 +1,9 @@
 import streamlit as st
-import pandas as pd
-import plotly.express as px
 from specklepy.api.client import SpeckleClient
 from specklepy.api.credentials import get_account_from_token
+from viewer import display_speckle_viewer
 
 import data_extraction.service_extractor as team_extractor
-import pandas as pd
-import plotly.express as px
-
 from dashboards.dashboard import *
 
 def metric_calc_occupancy_efficiency(utilization_rate, active_hours, function_exchange_factor, total_available_hours_per_day, total_area, area_of_functions):
@@ -19,62 +15,63 @@ def metric_calc_occupancy_efficiency(utilization_rate, active_hours, function_ex
 
 def metric_interactive_calculator_occupancy_efficiency(container, utilization_rate, active_hours, function_exchange_factor, total_available_hours_per_day, total_area, area_of_functions):
     with container:
-        col_1 = st.columns(1)
-        with col_1:
-            n = len(utilization_rate)
+            
+        n = len(utilization_rate)
 
-            utilization_rate = float(utilization_rate[0])
-            active_hours = float(active_hours[0])
-            function_exchange_factor = float(function_exchange_factor[0])
-            total_available_hours_per_day = float(total_available_hours_per_day)
-            total_area = float(total_area)
-            area_of_functions = float(area_of_functions[0])
+        utilization_rate = float(utilization_rate[0])
+        active_hours = float(active_hours[0])
+        function_exchange_factor = float(function_exchange_factor[0])
+        total_available_hours_per_day = float(total_available_hours_per_day)
+        total_area = float(total_area)
+        area_of_functions = float(area_of_functions[0])
 
-            def create_slider(label, value, help_text):
-                return st.slider(label, value * 0.5, value * 1.5, value, help=help_text)
+        def create_slider(label, value, help_text):
+            return st.slider(label, value * 0.5, value * 1.5, value, help=help_text)
 
-            utilization_rate_slider = create_slider("Utilization Rate (%)", utilization_rate, "Percentage of space utilization")
-            active_hours_slider = create_slider("Active Hours", active_hours, "Hours of active use per day")
-            function_exchange_factor_slider = create_slider("Function Exchange Factor", function_exchange_factor, "Multiplier for function flexibility")
-            total_area_slider = create_slider("Total Area", total_area, "Total area of the building")
-            area_of_functions_slider = create_slider("Area of Functions", area_of_functions, "Area of the specific function")
+        utilization_rate_slider = create_slider("Utilization Rate (%)", utilization_rate, "Percentage of space utilization")
+        active_hours_slider = create_slider("Active Hours", active_hours, "Hours of active use per day")
+        function_exchange_factor_slider = create_slider("Function Exchange Factor", function_exchange_factor, "Multiplier for function flexibility")
+        total_area_slider = create_slider("Total Area", total_area, "Total area of the building")
+        area_of_functions_slider = create_slider("Area of Functions", area_of_functions, "Area of the specific function")
 
-            utilization_rate_slider = [utilization_rate_slider for _ in range(n)]
-            active_hours_slider = [active_hours_slider for _ in range(n)]
-            function_exchange_factor_slider = [function_exchange_factor_slider for _ in range(n)]
-            area_of_functions_slider = [area_of_functions_slider for _ in range(n)]
-            total_area_slider = total_area_slider
+        utilization_rate_slider = [utilization_rate_slider for _ in range(n)]
+        active_hours_slider = [active_hours_slider for _ in range(n)]
+        function_exchange_factor_slider = [function_exchange_factor_slider for _ in range(n)]
+        area_of_functions_slider = [area_of_functions_slider for _ in range(n)]
+        total_area_slider = total_area_slider
 
-            new_occupancy_efficiency = metric_calc_occupancy_efficiency(
-                utilization_rate_slider,
-                active_hours_slider,
-                function_exchange_factor_slider,
-                total_available_hours_per_day,
-                total_area_slider,
-                area_of_functions_slider
-            )
-            st.markdown(f"### Occupancy Efficiency: {new_occupancy_efficiency:.2f}")
+        new_occupancy_efficiency = metric_calc_occupancy_efficiency(
+            utilization_rate_slider,
+            active_hours_slider,
+            function_exchange_factor_slider,
+            total_available_hours_per_day,
+            total_area_slider,
+            area_of_functions_slider
+        )
+        st.markdown(f"### Occupancy Efficiency: {new_occupancy_efficiency:.2f}")
 
 def run(selected_team: str) -> None:
     
-    # Create a container for the slideshow and iframe
-    container = st.container()
-    
-    # Create two equal columns
-    col1, col2 = container.columns(2)  # Both columns will have equal width
+     # Create two equal columns
+    col1, col2 = st.columns(2)  # Both columns will have equal width
 
     # In the first column, display the image slideshow
     with col1:
-        display_image_slideshow(col1, "./front_end/dashboards/pictures", "slideshow_1")  # Pass a unique key
+
+        # Create a container for the slideshow
+        container = st.container()
+        
+        # Call the display_image_slideshow function
+        # Example usage
+        folder_path = "./front_end/dashboards/pictures"  # Update this to your actual image folder path
+        display_image_slideshow(container, folder_path, "facade_slideshow")  # Change interval as needed
+
 
     # In the second column, display the iframe for the Speckle model
     with col2:
-        iframe_code = f"""
-        <iframe src="https://macad.speckle.xyz/projects/31f8cca4e0/models/5adade2d5f" 
-                style="width: 100%; height: 600px; border: none;">
-        </iframe>
-        """
-        st.markdown(iframe_code, unsafe_allow_html=True)
+        container = st.container()
+        display_speckle_viewer(container, '31f8cca4e0', '76b50ad007', is_transparent=False, hide_controls=False, hide_selection_info=False, no_scroll=False)
+        container.markdown("https://macad.speckle.xyz/projects/31f8cca4e0/models/76b50ad007" , unsafe_allow_html=True)
 
     # Extract data
     models, client, project_id = setup_speckle_connection()
@@ -83,7 +80,7 @@ def run(selected_team: str) -> None:
     # Building Dashboard
     # Dashboard Header
     display_page_title(selected_team)
-    team_extractor.display_data(extracted_data=team_data, verbose=False, header=False, show_table=False, gauge=False, simple_table=True)
+    team_extractor.display_data(extracted_data=team_data, verbose=False, header=False, show_table=False, gauge=False, simple_table=False)
 
     if not verified:
         st.error("Failed to extract data, proceding with Example Data.  Use Data Dashboard to Investigate.")
@@ -155,13 +152,16 @@ def run(selected_team: str) -> None:
                 "display_value": sum(float(x) for x in area_of_functions),
                 "unit": "m²"
             }
-        ]
+        ],
+        min_value = 0,
+        max_value = 1,
+        ideal_value = 0.5
     )
 
     metrics.append(occupancy_efficiency_metric)
 
-    # Display Formulas and Explanations
-    display_formula_section_header(selected_team)
+    # # Display Formulas and Explanations
+    # display_formula_section_header(selected_team)
 
 
     text_container = st.container()
@@ -178,7 +178,7 @@ def run(selected_team: str) -> None:
 
     st.write(" ")
 
-    team_extractor.display_data(extracted_data=team_data, verbose=False, header=False, show_table=False, gauge=False, simple_table=True)
+    team_extractor.display_data(extracted_data=team_data, verbose=False, header=False, show_table=False, gauge=False, simple_table=False)
     
     st.markdown(" ")
     st.markdown(" ")
@@ -215,8 +215,6 @@ def run(selected_team: str) -> None:
         """
     )
 
-    # # Display Formulas and Explanations
-    # display_formula_section_header(selected_team)
 
     # # Metrics Display - Updated with correct metrics
     metrics_display_container = st.container()

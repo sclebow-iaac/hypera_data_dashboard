@@ -1,6 +1,7 @@
 import streamlit as st
 from specklepy.api.client import SpeckleClient
 from specklepy.api.credentials import get_account_from_token
+from viewer import display_speckle_viewer
 
 import data_extraction.industrial_extractor as team_extractor
 
@@ -47,15 +48,16 @@ def metric_interactive_calculator_food_ratio(container, food_production, food_de
         st.markdown(f"### Food Ratio: {new_food_ratio:.2f}")
 
 
+
 def metric_interactive_calculator_recycled_water_ratio(container, recycled_water, wastewater_production):
     with container:
         st.markdown("### Water Recycling Calculator")
         recycled_water = st.slider("Recycled Water (m³)", 0, 2000, int(
             recycled_water), help="Volume of water recycled")
-        total_water = st.slider("Total Water Used (m³)", 1, 2000, int(
-            wastewater_production), help="Total water consumption")
+        wastewater_production = st.slider("Wastewater Production (m³)", 1, 2000, int(
+            wastewater_production), help="Wastewater produced")
 
-        new_water_ratio = recycled_water / total_water
+        new_water_ratio = recycled_water / wastewater_production
         st.markdown(f"### Water Recycling Rate: {new_water_ratio:.2f}")
 
 
@@ -73,24 +75,26 @@ def metric_interactive_calculator_waste_utilization_ratio(container, recycled_so
 def run(selected_team: str) -> None:
     # st.title(f"{selected_team} Dashboard")
     
-    # Create a container for the slideshow and iframe
-    container = st.container()
-    
     # Create two equal columns
-    col1, col2 = container.columns(2)  # Both columns will have equal width
+    col1, col2 = st.columns(2)  # Both columns will have equal width
 
     # In the first column, display the image slideshow
     with col1:
-        display_image_slideshow(col1, "./front_end/dashboards/pictures", "slideshow_1")  # Pass a unique key
+
+        # Create a container for the slideshow
+        container = st.container()
+        
+        # Call the display_image_slideshow function
+        # Example usage
+        folder_path = "./front_end/dashboards/pictures"  # Update this to your actual image folder path
+        display_image_slideshow(container, folder_path, "facade_slideshow")  # Change interval as needed
+
 
     # In the second column, display the iframe for the Speckle model
     with col2:
-        iframe_code = f"""
-        <iframe src="https://macad.speckle.xyz/projects/31f8cca4e0/models/5adade2d5f" 
-                style="width: 100%; height: 600px; border: none;">
-        </iframe>
-        """
-        st.markdown(iframe_code, unsafe_allow_html=True)
+        container = st.container()
+        display_speckle_viewer(container, '31f8cca4e0', '89db050bc3', is_transparent=False, hide_controls=False, hide_selection_info=False, no_scroll=False)
+        container.markdown("https://macad.speckle.xyz/projects/31f8cca4e0/models/89db050bc3" , unsafe_allow_html=True)
 
     # Extract data
     models, client, project_id = setup_speckle_connection()
@@ -117,6 +121,8 @@ def run(selected_team: str) -> None:
         food_demand = 1000     # kg
         recycled_solid_waste = 120   # kg/day
         solid_waste_production = 200        # kg/day
+        recycled_water = 100   # m³
+        wastewater_production = 200        # m³
 
     else:
         # Extracted data
@@ -126,6 +132,8 @@ def run(selected_team: str) -> None:
         food_demand = float(team_data['FoodDemand'])
         recycled_solid_waste = float(team_data['RecycledSolidWaste'])
         solid_waste_production = float(team_data['SolidWasteProduction'])
+        recycled_water = float(team_data['RecycledWater'])
+        wastewater_production = float(team_data['WasteWaterProduction'])
 
     metrics = []
 
@@ -147,7 +155,10 @@ def run(selected_team: str) -> None:
                 "value": energy_demand,
                 "unit": "kWh"
             }
-        ]
+        ],
+        min_value = 0,
+        max_value = 150,
+        ideal_value = 100
     )
     print("APPENDING METRIC", energy_ratio_metric.inputs)
     metrics.append(energy_ratio_metric)
@@ -170,10 +181,37 @@ def run(selected_team: str) -> None:
                 "value": food_demand,
                 "unit": "kg"
             }
-        ]
+        ],
+        min_value = 0,
+        max_value = 1,
+        ideal_value = 0.5
     )
     metrics.append(food_ratio_metric)
 
+    recycled_water_ratio_metric = Metric(
+        "Water Recycling Ratio",
+        r'\frac{Recycled Water}{Wastewater Production}',
+        "Shows the efficiency of water recycling systems.",
+        metric_interactive_calculator_recycled_water_ratio,
+        metric_calc_recycled_water_ratio,
+        './front_end/dashboards/pictures/water.png',
+        [
+            {
+                "name": "Recycled Water",
+                "value": recycled_water,
+                "unit": "m³"
+            },
+            {
+                "name": "Wastewater Production",
+                "value": wastewater_production,
+                "unit": "m³"
+            }
+        ],
+        min_value = 0,
+        max_value = 1,
+        ideal_value = 0.5
+    )
+    metrics.append(recycled_water_ratio_metric)
     waste_utilization_ratio_metric = Metric(
         "Waste Utilization Ratio",
         r'1 - \frac{Waste Produced}{Maximum Target}',
@@ -192,7 +230,10 @@ def run(selected_team: str) -> None:
                 "value": solid_waste_production,
                 "unit": "kg/day"
             }
-        ]
+        ],
+        min_value = 0,
+        max_value = 1,
+        ideal_value = 0.5
     )
     metrics.append(waste_utilization_ratio_metric)
 
@@ -241,9 +282,7 @@ def run(selected_team: str) -> None:
     metrics_visualization_container = st.container()
     display_metric_visualizations(metrics_visualization_container, metrics, add_text=True)
 
-        # Interactive Calculators
-    # metric_interactive_calculator_container = st.container()
-    # display_interactive_calculators(
-    #     metric_interactive_calculator_container, metrics, grid=True)
-    # st.write(" ")
+    # Interactive Calculators
+    metric_interactive_calculator_container = st.container()
+    display_interactive_calculators(metric_interactive_calculator_container, metrics, grid=True)
 

@@ -1,8 +1,7 @@
 import streamlit as st
-import pandas as pd
-import plotly.express as px
 from specklepy.api.client import SpeckleClient
 from specklepy.api.credentials import get_account_from_token
+from viewer import display_speckle_viewer
 
 import data_extraction.structure_extractor as team_extractor
 from dashboards.dashboard import *
@@ -15,14 +14,6 @@ def metric_calc_load_capacity_per_square_meter(load_capacity, self_weight_of_str
     return float(load_capacity) / float(self_weight_of_structure)
 
 
-# def metric_calc_material_efficiency_ratio(theoretical_minimum_material_usage, actual_material_usage):
-#     return theoretical_minimum_material_usage / actual_material_usage
-
-
-# def metric_calc_embodied_carbon_emissions_per_square_meter(total_embodied_carbon_emissions, usable_floor_area):
-#     return total_embodied_carbon_emissions / usable_floor_area
-
-
 def metric_interactive_calculator_column_free_floor_area_ratio(container, total_column_free_floor_area, total_floor_area):
     with container:
         st.markdown("### Column-Free FAR Calculator")
@@ -33,24 +24,38 @@ def metric_interactive_calculator_column_free_floor_area_ratio(container, total_
         new_ratio = new_column_free_area / new_total_area
         st.markdown(f"### Resulting Ratio: {new_ratio:.2f}")
 
-def run(selected_team: str) -> None:
-    # st.title(f"{selected_team} Structure Dashboard")
+def metric_interactive_calculator_load_capacity(container, load_capacity, self_weight_of_structure):
+    with container:
+        st.markdown("### Load Capacity Calculator")
+        new_load_capacity = st.slider("Load Capacity (kg)", 0, 2000, int(
+            load_capacity), help="Load capacity of the structure")
+        new_self_weight = st.slider("Self Weight of Structure (kg)", 1, 1000, int(
+            self_weight_of_structure), help="Self weight of the structure")
+        new_load_ratio = new_load_capacity / new_self_weight
+        st.markdown(f"### Resulting Ratio: {new_load_ratio:.2f}")
 
-    # Create two equal columns
+def run(selected_team: str) -> None:
+
+     # Create two equal columns
     col1, col2 = st.columns(2)  # Both columns will have equal width
 
     # In the first column, display the image slideshow
     with col1:
-        display_image_slideshow(col1, "./front_end/dashboards/pictures", "slideshow_1")  # Pass a unique key
+
+        # Create a container for the slideshow
+        container = st.container()
+        
+        # Call the display_image_slideshow function
+        # Example usage
+        folder_path = "./front_end/dashboards/pictures"  # Update this to your actual image folder path
+        display_image_slideshow(container, folder_path, "facade_slideshow")  # Change interval as needed
+
 
     # In the second column, display the iframe for the Speckle model
     with col2:
-        iframe_code = f"""
-        <iframe src="https://macad.speckle.xyz/projects/31f8cca4e0/models/5adade2d5f" 
-                style="width: 100%; height: 600px; border: none;">
-        </iframe>
-        """
-        st.markdown(iframe_code, unsafe_allow_html=True)
+        container = st.container()
+        display_speckle_viewer(container, '31f8cca4e0', 'c2df017258', is_transparent=False, hide_controls=False, hide_selection_info=False, no_scroll=False)
+        container.markdown("https://macad.speckle.xyz/projects/31f8cca4e0/models/c2df017258" , unsafe_allow_html=True)
 
     # Extract data
     models, client, project_id = setup_speckle_connection()
@@ -103,7 +108,10 @@ def run(selected_team: str) -> None:
                 "value": total_floor_area,
                 "unit": "m²"
             }
-        ]
+        ],
+        min_value = 0,
+        max_value = 1,
+        ideal_value = 0.5
     )
     metrics.append(column_free_floor_area_metric)
 
@@ -125,7 +133,10 @@ def run(selected_team: str) -> None:
                 "value": self_weight_of_structure,
                 "unit": "kg"
             }
-        ]
+        ],
+        min_value = 0,
+        max_value = 3,
+        ideal_value = 2
     )
     metrics.append(load_capacity_metric)
 
@@ -177,6 +188,10 @@ def run(selected_team: str) -> None:
     metrics_visualization_container = st.container()
     display_metric_visualizations(metrics_visualization_container, metrics, add_text=True)
 
+    # Interactive Calculators
+    metric_interactive_calculator_container = st.container()
+    display_interactive_calculators(metric_interactive_calculator_container, metrics, grid=True)
+
 
 # def metric_interactive_calculator_column_free_floor_area_ratio(container, total_column_free_floor_area, total_floor_area):
 #     with container:
@@ -190,15 +205,7 @@ def run(selected_team: str) -> None:
 
 
 
-def metric_interactive_calculator_load_capacity(container, load_capacity, self_weight_of_structure):
-    with container:
-        st.markdown("### Load Capacity Calculator")
-        new_load_capacity = st.slider("Load Capacity (kg)", 0, 2000, int(
-            load_capacity), help="Load capacity of the structure")
-        new_self_weight = st.slider("Self Weight of Structure (kg)", 1, 1000, int(
-            self_weight_of_structure), help="Self weight of the structure")
-        new_load_ratio = new_load_capacity / new_self_weight
-        st.markdown(f"### Resulting Ratio: {new_load_ratio:.2f}")
+
 
 
 # def metric_interactive_calculator_material_efficiency(container, theoretical_minimum_material_usage, actual_material_usage):

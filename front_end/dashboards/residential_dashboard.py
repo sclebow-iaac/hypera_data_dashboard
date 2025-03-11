@@ -4,6 +4,7 @@ import plotly.express as px
 from pythreejs import *
 from specklepy.api.client import SpeckleClient
 from specklepy.api.credentials import get_account_from_token
+from viewer import display_speckle_viewer
 
 import data_extraction.residential_extractor as team_extractor
 
@@ -32,26 +33,28 @@ def run(selected_team: str) -> None:
     # Dashboard Header
     display_page_title(selected_team)
     team_extractor.display_data(extracted_data=team_data, verbose=False,
-                                header=True, show_table=True, gauge=False, simple_table=True)
-    
-    # Create a container for the slideshow and iframe
-    container = st.container()
+                                header=False, show_table=False, gauge=False, simple_table=True)
     
     # Create two equal columns
-    col1, col2 = container.columns(2)  # Both columns will have equal width
+    col1, col2 = st.columns(2)  # Both columns will have equal width
 
     # In the first column, display the image slideshow
     with col1:
-        display_image_slideshow(col1, "./front_end/dashboards/pictures", "slideshow_2")
+
+        # Create a container for the slideshow
+        container = st.container()
+        
+        # Call the display_image_slideshow function
+        # Example usage
+        folder_path = "./front_end/dashboards/pictures"  # Update this to your actual image folder path
+        display_image_slideshow(container, folder_path, "facade_slideshow")  # Change interval as needed
+
 
     # In the second column, display the iframe for the Speckle model
     with col2:
-        iframe_code = f"""
-        <iframe src="https://macad.speckle.xyz/projects/31f8cca4e0/models/000e6c757a" 
-                style="width: 100%; height: 600px; border: none;">
-        </iframe>
-        """
-        st.markdown(iframe_code, unsafe_allow_html=True)
+        container = st.container()
+        display_speckle_viewer(container, '31f8cca4e0', '000e6c757a', is_transparent=False, hide_controls=False, hide_selection_info=False, no_scroll=False)
+        container.markdown("https://macad.speckle.xyz/projects/31f8cca4e0/models/000e6c757a" , unsafe_allow_html=True)
 
 
 
@@ -97,16 +100,15 @@ def run(selected_team: str) -> None:
                 "display_value": sum(float(x) for x in number_of_units),
                 "unit": ""
             }
-        ]
+        ],
+        min_value = 0,
+        max_value = 1,
+        ideal_value = 0.7
     )
     metrics.append(index_metric)
 
     # Display Formulas and Explanations
     display_formula_section_header(selected_team)
-
-    # Metrics Display - Updated with correct metrics
-    metrics_display_container = st.container()
-    display_st_metric_values(metrics_display_container, metrics)
 
     st.markdown(" ")
     st.markdown(" ")
