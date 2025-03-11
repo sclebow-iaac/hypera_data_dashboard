@@ -1,5 +1,5 @@
-Recent Project Activity: 1
-Data Availability: 0
+Recent Project Activity: 0
+Data Availability: 1
 Data Analysis: 0
 Monday: 1
 Tuesday: 1

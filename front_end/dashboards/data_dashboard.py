@@ -10,19 +10,10 @@ import data_extraction.service_extractor as service_extractor
 import data_extraction.structure_extractor as structure_extractor
 import data_extraction.industrial_extractor as industrial_extractor
 
+import dashboards.dashboard as dashboard
 
 def run(selected_team: str = "") -> None:
-    speckleServer = "macad.speckle.xyz"
-    speckleToken = "61c9dd1efb887a27eb3d52d0144f1e7a4a23f962d7"
-    client = SpeckleClient(host=speckleServer)
-    account = get_account_from_token(speckleToken, speckleServer)
-    client.authenticate_with_account(account)
-
-    project_id = '31f8cca4e0'
-    selected_project = client.project.get(project_id=project_id)
-    project = client.project.get_with_models(
-        project_id=selected_project.id, models_limit=100)
-    models = project.models.items
+    models, client, project_id = dashboard.setup_speckle_connection()
 
     st.title("Data Dashboard")
     st.markdown(

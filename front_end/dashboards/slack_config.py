@@ -2,6 +2,7 @@ import streamlit as st
 import datetime
 
 from dashboards.dashboard import *
+from data_extraction.data_extractor import *
 
 import data_extraction.service_extractor as service_extractor
 import data_extraction.residential_extractor as residential_extractor
@@ -9,7 +10,6 @@ import data_extraction.facade_extractor as facade_extractor
 import data_extraction.structure_extractor as structure_extractor
 import data_extraction.industrial_extractor as industrial_extractor
 
-import specklepy.api
 import specklepy.api.models
 import specklepy.api.operations
 import specklepy.api.resource
@@ -17,10 +17,12 @@ import specklepy.api.resources
 import specklepy.core
 import specklepy.core.api
 
+import requests
+
 import pandas as pd
 
 def format_time(dt):
-    return dt.strftime("%d/%m %H:%M")
+    return dt.strftime("%d/%m %H:%M") + " GMT"
 
 def get_last_message_time(day_bools, time_of_day) -> datetime.datetime:
     # Get the current time in GMT timezone
@@ -109,7 +111,7 @@ def get_last_message_time(day_bools, time_of_day) -> datetime.datetime:
 def generate_recent_project_activity_message(day_bools, time_of_day_value) -> list[str]:
     messages = []
 
-    models, client, project_id = setup_speckle_connection()
+    models, client, project_id = setup_speckle_connection(models_limit=50)
 
     last_message_time = get_last_message_time(day_bools, time_of_day_value)
     
@@ -140,8 +142,6 @@ def generate_recent_project_activity_message(day_bools, time_of_day_value) -> li
                         recent_versions_dataframe.loc[recent_versions_dataframe["Model Name"] == model.name, "Version Count"] += 1
                         recent_versions_dataframe.loc[recent_versions_dataframe["Model Name"] == model.name, "Last Version Time"] = format_time(version_creation_time)
 
-    # Convert the DataFrame to Markdown
-    markdown = recent_versions_dataframe.to_markdown(index=False)
 
     # print(f'markdown: {markdown}') # Debugging
     # Add the Markdown table to the messages list
@@ -157,28 +157,52 @@ def generate_recent_project_activity_message(day_bools, time_of_day_value) -> li
     # determine the team responsible for each model
     team_counts = {}
     
-    messages.append(markdown)
+    # # Convert the DataFrame to Markdown
+    # table_message = recent_versions_dataframe.to_markdown(index=False)
+
+    # # Convert the DataFrame to String
+    # table_message = recent_versions_dataframe.to_string(index=False, justify="left")
+
+    # # Replace \n with <br> for HTML rendering
+    # table_message = table_message.replace("\n", "<br>")
+
+    # Convert each row of the DataFrame to a human-readable string
+    for index, row in recent_versions_dataframe.iterrows():
+        model_name = row["Model Name"]
+        version_count = row["Version Count"]
+        last_version_time = row["Last Version Time"]
+        team = row["Team"].capitalize()
+        author = row["Author"]
+        
+        message = f'{author} of the {team} team uploaded {version_count} new version(s) of {model_name} at {last_version_time}'
+        messages.append(message)
+
+    # messages.append(table_message)
     return messages
 
 # Generate Data Availability Message (Markdown)
 def generate_data_availability_message() -> list[str]:
     messages = []
-
-    all_extractors = [
-        service_extractor,
-        residential_extractor,
-        facade_extractor,
-        structure_extractor,
-        industrial_extractor
-    ]
+    
+    # Generate the header
+    messages.append(f"#### Data Availability Report")
+    
+    all_extractors = {
+        "Service": service_extractor,
+        "Residential": residential_extractor,
+        "Facade": facade_extractor,
+        "Structure": structure_extractor,
+        "Industrial": industrial_extractor
+    }
 
     # Setup Speckle connection
     models, client, project_id = setup_speckle_connection()
 
-    for extractor in all_extractors:
+    # for extractor in all_extractors:
+    for team_name, extractor in all_extractors.items():
         # Extract data using the extractor
         # Placeholder for actual data extraction
-        data = extractor.extract(
+        fully_verified, extracted_data = extractor.extract(
             models=models,
             client=client,
             project_id=project_id,
@@ -187,11 +211,23 @@ def generate_data_availability_message() -> list[str]:
             gauge=False,
             attribute_display=False
         )
+        print(f"fully_verified: {fully_verified}") # Debugging
+        print(f"extracted_data: {extracted_data}") # Debugging
+        table, type_matched_bools = process_extracted_data(extractor.data, extracted_data, verbose=False)
 
-        # Process the data and generate a message
-        # Placeholder for actual data processing
-        message = f"Data availability for {extractor.__name__}: {data}"
-        messages.append(message)
+        # print(f"table: {table}") # Debugging
+        # print(f"type_matched_bools: {type_matched_bools}") # Debugging
+
+        percentage_verified = sum(type_matched_bools) / len(type_matched_bools) * 100
+        print(f"percentage_verified: {percentage_verified}") # Debugging
+
+        # Generate the message
+        messages.append(f'{team_name.capitalize()} team data is {percentage_verified:.2f}% in the correct format.')
+        if percentage_verified < 100:
+            for bool, data_name, data_type in zip(type_matched_bools, extractor.data_names, extractor.data_types):
+                if not bool:
+                    # print(f"data_item: {data_item}") # Debugging
+                    messages.append(f' - {data_name} is in the wrong format, we were expecting {data_type} but got {type(extracted_data[data_name]).__name__}')
 
     return messages
 
@@ -200,6 +236,19 @@ def generate_data_analysis_message() -> list[str]:
     # Placeholder function to generate a message about data analysis
     messages = []
     messages.append("Data analysis: Placeholder message.")
+    return messages
+
+def generate_message(recent_project_activity_bool, data_availability_bool, data_analysis_bool, day_bools, time_of_day_value):
+    messages = []
+
+    # Generate the message based on the selected options
+    if recent_project_activity_bool:
+        messages = messages + generate_recent_project_activity_message(day_bools, time_of_day_value)
+    if data_availability_bool:
+        messages = messages + generate_data_availability_message()
+    if data_analysis_bool:
+        messages = messages + generate_data_analysis_message()
+    # Display the generated message
     return messages
 
 def run():
@@ -292,28 +341,59 @@ def run():
                 
             st.success("Configuration saved successfully! Reload Page to see changes.")
 
+    message_generated = False # A flag to check if the message has been generated at least once
+
     # Add a button that triggers the message generation
-    generate_message_trigger = False
+    generate_message_trigger = False # A flag to check if the button has been clicked
     if st.button("Generate Message", use_container_width=True):
         generate_message_trigger = True
 
+    # Add a button that sends the message to Slack
+    send_message_trigger = False
+    if st.button("Send Message to Slack", use_container_width=True):
+        send_message_trigger = True
+
     # If the button is clicked, generate the message
     if generate_message_trigger:
-        st.subheader('Next Message')
+        st.subheader('Next Message Preview')
 
-        # Generate the message based on the selected options
-        messages = []
-        if recent_project_activity_bool:
-            with st.spinner('Getting recent project activity...'):
-                messages = messages + generate_recent_project_activity_message(day_bools, time_of_day_value)
-        if data_availability_bool:
-            with st.spinner('Getting data availability...'):
-                messages = messages + generate_data_availability_message()
-        if data_analysis_bool:
-            with st.spinner('Getting data analysis...'):
-                messages = messages + generate_data_analysis_message()
-            
+        # Generate the message
+        messages = generate_message(recent_project_activity_bool, data_availability_bool, data_analysis_bool, day_bools, time_of_day_value)            
+
         # Display the generated message
         for message in messages:
             # print(message) # Debugging
             st.markdown(message, unsafe_allow_html=True)
+
+        message_generated = True # Set the flag to True if the message has been generated
+
+    if send_message_trigger:
+        # Check if the message has been generated
+        if message_generated:
+            message = '<br>'.join(messages)
+        else:
+            messages = generate_message(recent_project_activity_value, data_availability_value, data_analysis_value, day_bools, time_of_day_value)
+            message = '<br>'.join(messages)
+
+        # Send the message to Slack
+        slack_webhook_url = "https://hooks.slack.com/services/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"
+        payload = {
+            "text": message,
+            "mrkdwn": True
+        }
+        headers = {
+            "Content-Type": "application/json"
+        }
+        response = requests.post(slack_webhook_url, json=payload, headers=headers)
+        # Check the response status
+        if response.status_code != 200:
+            st.error(f"Failed to send message to Slack: {response.status_code} - {response.text}")
+            return
+        else:
+            # If the message was sent successfully, display a success message
+            st.success("Message sent to Slack successfully!")
+            # Optionally, you can display the response from Slack
+            st.write(response.json())
+            
+
+        st.success("Message sent to Slack successfully!")
