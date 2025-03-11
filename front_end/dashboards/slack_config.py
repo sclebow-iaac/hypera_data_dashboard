@@ -145,7 +145,7 @@ def generate_recent_project_activity_message(day_bools, time_of_day_value) -> li
 
     # print(f'markdown: {markdown}') # Debugging
     # Add the Markdown table to the messages list
-    messages.append(f"#### Recent Project Activity since {format_time(last_message_time)}")
+    messages.append(f'*Recent Project Activity since {format_time(last_message_time)}*')
     
     # Calculate the number of versions added
     total_versions = recent_versions_dataframe["Version Count"].sum()
@@ -185,7 +185,7 @@ def generate_data_availability_message() -> list[str]:
     messages = []
     
     # Generate the header
-    messages.append(f"#### Data Availability Report")
+    messages.append(f'*Data Availability Report*')
     
     all_extractors = {
         "Service": service_extractor,
@@ -241,13 +241,21 @@ def generate_data_analysis_message() -> list[str]:
 def generate_message(recent_project_activity_bool, data_availability_bool, data_analysis_bool, day_bools, time_of_day_value):
     messages = []
 
+    # Generate message header
+    now = datetime.datetime.now(datetime.timezone.utc)
+    messages.append(f'*HyperA Project Update for {format_time(now)}:*')
+    messages.append('')
+
     # Generate the message based on the selected options
     if recent_project_activity_bool:
-        messages = messages + generate_recent_project_activity_message(day_bools, time_of_day_value)
+        with st.spinner("Generating recent project activity message..."):
+            messages = messages + generate_recent_project_activity_message(day_bools, time_of_day_value)
     if data_availability_bool:
-        messages = messages + generate_data_availability_message()
+        with st.spinner("Generating data availability message..."):
+            messages = messages + generate_data_availability_message()
     if data_analysis_bool:
-        messages = messages + generate_data_analysis_message()
+        with st.spinner("Generating data analysis message..."):
+            messages = messages + generate_data_analysis_message()
     # Display the generated message
     return messages
 
@@ -345,7 +353,7 @@ def run():
 
     # Add a button that triggers the message generation
     generate_message_trigger = False # A flag to check if the button has been clicked
-    if st.button("Generate Message", use_container_width=True):
+    if st.button("Generate Message Preview", use_container_width=True):
         generate_message_trigger = True
 
     # Add a button that sends the message to Slack
@@ -355,7 +363,7 @@ def run():
 
     # If the button is clicked, generate the message
     if generate_message_trigger:
-        st.subheader('Next Message Preview')
+        st.subheader('Preview of the Next Message:')
 
         # Generate the message
         messages = generate_message(recent_project_activity_bool, data_availability_bool, data_analysis_bool, day_bools, time_of_day_value)            
@@ -363,6 +371,9 @@ def run():
         # Display the generated message
         for message in messages:
             # print(message) # Debugging
+            # If message is between a single asterisk at the beginning and end, make it bold by adding another asterisk
+            if message.startswith("*") and message.endswith("*"):
+                message = message.replace("*", "**")
             st.markdown(message, unsafe_allow_html=True)
 
         message_generated = True # Set the flag to True if the message has been generated
@@ -370,13 +381,14 @@ def run():
     if send_message_trigger:
         # Check if the message has been generated
         if message_generated:
-            message = '<br>'.join(messages)
+            message = '\n'.join(messages)
         else:
-            messages = generate_message(recent_project_activity_value, data_availability_value, data_analysis_value, day_bools, time_of_day_value)
-            message = '<br>'.join(messages)
+            with st.spinner("Generating message..."):
+                messages = generate_message(recent_project_activity_value, data_availability_value, data_analysis_value, day_bools, time_of_day_value)
+                message = '\n'.join(messages)
 
         # Send the message to Slack
-        slack_webhook_url = "https://hooks.slack.com/services/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"
+        slack_webhook_url = "https://hooks.slack.com/services/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"
         payload = {
             "text": message,
             "mrkdwn": True
@@ -392,8 +404,9 @@ def run():
         else:
             # If the message was sent successfully, display a success message
             st.success("Message sent to Slack successfully!")
-            # Optionally, you can display the response from Slack
-            st.write(response.json())
+            
+            print(f"Message sent to Slack: {message}") # Debugging
+            print(f"Response from Slack: {response.text}") # Debugging
             
 
         st.success("Message sent to Slack successfully!")
