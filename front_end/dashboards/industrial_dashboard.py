@@ -176,7 +176,7 @@ def run(selected_team: str) -> None:
 
     recycled_water_ratio_metric = Metric(
         "Water Recycling Ratio",
-        r'\frac{Recycled Water}{Total Water Used}',
+        r'\frac{Recycled Water}{Waste Water Production}',
         "Shows the efficiency of water recycling systems.",
         metric_interactive_calculator_recycled_water_ratio,
         metric_calc_recycled_water_ratio,

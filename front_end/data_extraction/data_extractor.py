@@ -278,8 +278,13 @@ def verify_data(data, extracted_data):
     return False
 
 def process_extracted_data(data, extracted_data, verbose=True, simple_table=False):
-    table = []
     type_matched_bools = []
+
+    if simple_table:
+        header = ['Attribute Name', 'Value', 'Unit']
+    else:
+        header = ['Attribute Name', 'Found', 'Value', 'Type', 'Unit']
+    table = [header]
 
     for key in data:
         value = extracted_data[key]
@@ -361,15 +366,6 @@ def display_data(data, extracted_data, model_name, verbose=True, header=True, sh
 
     # if verbose:
         # print(f'Extracted data: {extracted_data}')
-    if simple_table:
-        header = ['Attribute Name', 'Value', 'Unit']
-    else:
-        header = ['Attribute Name', 'Found', 'Value', 'Type', 'Unit']
-    table = [header]
-
-    # print()
-
-    type_matched_bools = []
 
     table, type_matched_bools = process_extracted_data(
         data, extracted_data, verbose=verbose, simple_table=simple_table)
