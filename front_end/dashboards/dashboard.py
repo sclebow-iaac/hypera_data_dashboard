@@ -88,8 +88,9 @@ class Metric:
         new_value = self.calculation_func(*input_values)
         # Display the new value
         metric_container.metric(
-            label="Calculated Value",
-            value=f"{new_value:.4f}"
+            label=f"**Goal Value:** {self.ideal_value:.2f} | **Current Value:** {new_value:.2f}",
+            value=f"{new_value:.4f}",
+            delta=f"{new_value - self.ideal_value:.4f}",
         )
 
 def generate_dashboard(selected_team: str, metrics: list[Metric], project_id: str, team_members: list[dict], team_extractor, extracted_data, text_dict: list[dict], presentation_model_id) -> None:
@@ -170,24 +171,25 @@ def display_interactive_calculators(container, metrics: list[Metric], grid: bool
     container.markdown("""
     <h2 style='text-align: center;'>Interactive Sustainability Calculators</h3>
     """, unsafe_allow_html=True)
+    
+    columns = []
+
     if len(metrics) < 2:
         grid = False
+
     if grid:
-        metric_index = 0
-        cell_count = len(metrics)
-        cols = 2
-        rows = (cell_count + cols - 1) // cols
-
-        interactive_containers = []
-        for i in range(rows):
-            col_1, col_2 = container.columns(cols, border=True)
-            interactive_containers.append(col_1.container())
-            interactive_containers.append(col_2.container())
-
+        max_columns_in_row = 2
+        columns_to_create = len(metrics)
+        while columns_to_create > 0:
+            columns_in_row = min(max_columns_in_row, columns_to_create)
+            row = container.container()
+            cols = row.columns(columns_in_row, border=True)
+            columns.extend(cols)
+            columns_to_create -= columns_in_row
     else:
-        interactive_containers = [container.container()
-                                  for _ in range(len(metrics))]
-    for interactive_container, metric in zip(interactive_containers, metrics):
+        columns = [container.container() for _ in range(len(metrics))]
+
+    for interactive_container, metric in zip(columns, metrics):
         metric.display_interactive_calculator(interactive_container, columns=not(grid))
 
 def setup_speckle_connection(models_limit=100):
