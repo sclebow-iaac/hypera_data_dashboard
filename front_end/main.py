@@ -332,16 +332,16 @@ if selected_dashboard == "Main":
                     st.subheader("Selected Version👇")
                     version2viewer(project, selected_model, selected_version)
 
+            if show_statistics:
+                statistics.show(report, client, project, models, versions)
+
+            # Add a separator
+            st.markdown("---")
+            # Add attribute extraction for debugging
+            attribute_extraction.run(selected_version, client, project)
         except:
             st.error("No version selected/found. Please select a version to analyze.")
 
-        if show_statistics:
-            statistics.show(report, client, project, models, versions)
-
-        # Add a separator
-        st.markdown("---")
-        # Add attribute extraction for debugging
-        attribute_extraction.run(selected_version, client, project)
 
 
 else:
