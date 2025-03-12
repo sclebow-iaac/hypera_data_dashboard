@@ -10,11 +10,11 @@ import time
 
 
 class Metric:
-    def __init__(self, title: str, formula_markdown: str, description: str, interactive_calculator_func, calculation_func, image_path: str, inputs: list, min_value: float, max_value: float, ideal_value: float):
+    # def __init__(self, title: str, formula_markdown: str, description: str, interactive_calculator_func, calculation_func, image_path: str, inputs: list, min_value: float, max_value: float, ideal_value: float):
+    def __init__(self, title: str, formula_markdown: str, description: str, calculation_func, image_path: str, inputs: list, min_value: float, max_value: float, ideal_value: float):
         self.title = title
         self.formula_markdown = formula_markdown
         self.description = description
-        self.interactive_calculator_func = interactive_calculator_func
         self.calculation_func = calculation_func
         self.image_path = image_path
         self.inputs = inputs
@@ -30,10 +30,70 @@ class Metric:
     def display(self, container, add_text=True):
         display_metric(container, self, add_text)
 
-    def display_interactive_calculator(self, container):
-        # Unpack the inputs correctly and pass them as arguments
-        input_values = [input['value'] for input in self.inputs]
-        self.interactive_calculator_func(container, *input_values)
+    def display_interactive_calculator(self, container, columns=True):
+        # # Unpack the inputs correctly and pass them as arguments
+        # input_values = [input['value'] for input in self.inputs]
+        # self.interactive_calculator_func(container, *input_values)
+
+        # Create a header for the interactive calculator
+        container.markdown(f"### {self.title} Interactive Calculator")
+
+        if columns: # If columns are enabled, create two columns
+            slider_container, metric_container = container.columns(2)
+        else: # If columns are not enabled, use a single container
+            slider_container = container
+            metric_container = container
+
+        # Create a list to hold the input values
+        input_values = []
+
+        # Create a slider for each input
+        for input in self.inputs:
+            # If the input is a list, use the first value
+            is_list = False
+            name = input["name"]
+            val = input["value"]
+
+            if type(input["value"]) == list:
+                is_list = True
+                if type(input["value"][0]) == str:
+                    input_values.append(input["value"])
+                    continue
+                else:
+                    if 'rate' in input["name"].lower() or 'factor' in input["name"].lower():
+                        # If the input is a rate or factor, calculate the average
+                        val = sum([float(x) for x in input["value"]]) / len(input["value"])
+                        name += " (Avg)"
+                    else:
+                        # If the input is a list of numbers, sum them
+                        val = sum(input["value"])
+                        name += " (Sum)"
+            # Otherwise, use the value directly
+            else:
+                val = input["value"]
+            
+            # Create a slider for the input
+            input_slider = slider_container.slider(
+                label=name,
+                value=val,
+                min_value=val * 0.5,
+                max_value=val * 1.5,
+            )
+
+            if type(input['value']) == list:
+                input_values.append([input_slider])
+            else:
+                input_values.append(input_slider)
+        
+        print("Input Values for Interactive Calculator: ", input_values)  # Debugging: Print input values
+        
+        # Calculate the new value using the calculation function
+        new_value = self.calculation_func(*input_values)
+        # Display the new value
+        metric_container.metric(
+            label="Calculated Value",
+            value=f"{new_value:.4f}"
+        )
 
 def display_interactive_calculators(container, metrics: list[Metric], grid: bool = True):
     container.markdown("""
@@ -57,7 +117,7 @@ def display_interactive_calculators(container, metrics: list[Metric], grid: bool
         interactive_containers = [container.container()
                                   for _ in range(len(metrics))]
     for interactive_container, metric in zip(interactive_containers, metrics):
-        metric.display_interactive_calculator(interactive_container)
+        metric.display_interactive_calculator(interactive_container, columns=not(grid))
 
 def setup_speckle_connection(models_limit=100):
     speckle_server = "macad.speckle.xyz"
@@ -231,7 +291,6 @@ def display_metric(container, metric: Metric, add_text=True) -> None:
         st.markdown(metric.description)
         # st.metric(metric.title, f'{metric.value:.2f}')  # Display the metric value
         st.markdown('</div>', unsafe_allow_html=True)  # Close the div
-
 
     # Call the function to display circles and tape
     with container:

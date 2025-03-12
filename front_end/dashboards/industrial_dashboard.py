@@ -23,55 +23,6 @@ def metric_calc_recycled_water_ratio(recycled_water, wastewater_production):
 def metric_calc_waste_utilization_ratio(recycled_solid_waste, solid_waste_production):
     return 1 - (recycled_solid_waste / solid_waste_production)
 
-
-def metric_interactive_calculator_energy_ratio(container, energy_generation, energy_demand):
-    with container:
-        st.markdown("### Energy Self-Sufficiency Calculator")
-        energy_produced = st.slider("Energy Produced (kWh)", 0, 2000, int(
-            energy_generation), help="Energy produced by building systems")
-        energy_needed = st.slider("Energy Needed (kWh)", 1, 2000, int(
-            energy_demand), help="Total energy required")
-
-        new_energy_ratio = energy_produced / energy_needed
-        st.markdown(f"### Energy Ratio: {new_energy_ratio:.2f}")
-
-
-def metric_interactive_calculator_food_ratio(container, food_production, food_demand):
-    with container:
-        st.markdown("### Food Self-Sufficiency Calculator")
-        food_produced_slider = st.slider("Food Produced (kg)", 0, 2000, int(
-            food_production), help="Food produced within building")
-        food_needed_slider = st.slider("Food Needed (kg)", 1, 2000, int(
-            food_demand), help="Total food requirements")
-
-        new_food_ratio = food_produced_slider / food_needed_slider
-        st.markdown(f"### Food Ratio: {new_food_ratio:.2f}")
-
-
-
-def metric_interactive_calculator_recycled_water_ratio(container, recycled_water, wastewater_production):
-    with container:
-        st.markdown("### Water Recycling Calculator")
-        recycled_water = st.slider("Recycled Water (m³)", 0, 2000, int(
-            recycled_water), help="Volume of water recycled")
-        wastewater_production = st.slider("Wastewater Production (m³)", 1, 2000, int(
-            wastewater_production), help="Wastewater produced")
-
-        new_water_ratio = recycled_water / wastewater_production
-        st.markdown(f"### Water Recycling Rate: {new_water_ratio:.2f}")
-
-
-def metric_interactive_calculator_waste_utilization_ratio(container, recycled_solid_waste, solid_waste_production):
-    with container:
-        st.markdown("### Waste Production Calculator")
-        waste_produced = st.slider("Waste Produced (kg/day)", 0, 400,
-                                   int(recycled_solid_waste), help="Daily waste production")
-        waste_target = st.slider("Maximum Target (kg/day)", 1, 400,
-                                 int(solid_waste_production), help="Maximum acceptable waste")
-
-        new_waste_ratio = 1 - (waste_produced / waste_target)
-        st.markdown(f"### Waste Efficiency: {new_waste_ratio:.2f}")
-
 def run(selected_team: str) -> None:
     # st.title(f"{selected_team} Dashboard")
     
@@ -141,7 +92,6 @@ def run(selected_team: str) -> None:
         "Energy Self-Sufficiency Ratio",
         r'\frac{Energy Produced}{Energy Needed}',
         "Measures the building's ability to meet its own energy demands.",
-        metric_interactive_calculator_energy_ratio,
         metric_calc_energy_ratio,
         './front_end/dashboards/pictures/energy_industrial.png',
         [
@@ -167,7 +117,6 @@ def run(selected_team: str) -> None:
         "Food Self-Sufficiency Ratio",
         r'\frac{Food Produced}{Food Needed}',
         "Indicates the proportion of food requirements met through internal production.",
-        metric_interactive_calculator_food_ratio,
         metric_calc_food_ratio,
         './front_end/dashboards/pictures/food.png',
         [
@@ -192,7 +141,6 @@ def run(selected_team: str) -> None:
         "Water Recycling Ratio",
         r'\frac{Recycled Water}{Wastewater Production}',
         "Shows the efficiency of water recycling systems.",
-        metric_interactive_calculator_recycled_water_ratio,
         metric_calc_recycled_water_ratio,
         './front_end/dashboards/pictures/water.png',
         [
@@ -216,7 +164,6 @@ def run(selected_team: str) -> None:
         "Waste Utilization Ratio",
         r'1 - \frac{Waste Produced}{Maximum Target}',
         "Measures the efficiency of waste management relative to targets.",
-        metric_interactive_calculator_waste_utilization_ratio,
         metric_calc_waste_utilization_ratio,
         './front_end/dashboards/pictures/waste.png',
         [

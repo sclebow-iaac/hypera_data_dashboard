@@ -15,14 +15,6 @@ def metric_calc_index(number_of_units, unit_types, total_number_of_units):
     denominator = float(total_number_of_units) * (float(total_number_of_units) - 1)
     return 1 - (numerator / denominator) if denominator != 0 else None
 
-def metric_interactive_calculator_index(container, number_of_units, unit_types, total_number_of_units):
-    with container:
-        st.markdown("### Mixed Use Index Calculator")
-        number_of_units_slider = st.slider("Number of Units", 0, 100, 50, help="Adjust number of units")
-        total_number_of_units_slider = st.slider("Total Number of Units", 1, 100, 50, help="Adjust total number of units")
-        new_index_value = metric_calc_index([number_of_units_slider] * len(unit_types), [], total_number_of_units_slider)
-        st.markdown(f"### Resulting Index: {new_index_value:.2f}")
-
 # Define the function to run the dashboard
 def run(selected_team: str) -> None:
     # Extract data
@@ -78,7 +70,6 @@ def run(selected_team: str) -> None:
         "Mixed Use Index",
         r'1 - \frac{\sum \text{NumberOfUnitsOfASingleFunction}_i \cdot (\text{NumberOfUnitsOfASingleFunction}_i - 1)}{\text{TotalNumberOfUnits} \cdot (\text{TotalNumberOfUnits} - 1)}',
         "Measures the diversity of unit types in the project.",
-        metric_interactive_calculator_index,
         metric_calc_index,
         './front_end/dashboards/pictures/residential.png',
         [

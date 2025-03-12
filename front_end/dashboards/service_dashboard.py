@@ -13,43 +13,6 @@ def metric_calc_occupancy_efficiency(utilization_rate, active_hours, function_ex
     occupancy_efficiency = numerator / (float(total_available_hours_per_day) * float(total_area))
     return occupancy_efficiency
 
-def metric_interactive_calculator_occupancy_efficiency(container, utilization_rate, active_hours, function_exchange_factor, total_available_hours_per_day, total_area, area_of_functions):
-    with container:
-            
-        n = len(utilization_rate)
-
-        utilization_rate = float(utilization_rate[0])
-        active_hours = float(active_hours[0])
-        function_exchange_factor = float(function_exchange_factor[0])
-        total_available_hours_per_day = float(total_available_hours_per_day)
-        total_area = float(total_area)
-        area_of_functions = float(area_of_functions[0])
-
-        def create_slider(label, value, help_text):
-            return st.slider(label, value * 0.5, value * 1.5, value, help=help_text)
-
-        utilization_rate_slider = create_slider("Utilization Rate (%)", utilization_rate, "Percentage of space utilization")
-        active_hours_slider = create_slider("Active Hours", active_hours, "Hours of active use per day")
-        function_exchange_factor_slider = create_slider("Function Exchange Factor", function_exchange_factor, "Multiplier for function flexibility")
-        total_area_slider = create_slider("Total Area", total_area, "Total area of the building")
-        area_of_functions_slider = create_slider("Area of Functions", area_of_functions, "Area of the specific function")
-
-        utilization_rate_slider = [utilization_rate_slider for _ in range(n)]
-        active_hours_slider = [active_hours_slider for _ in range(n)]
-        function_exchange_factor_slider = [function_exchange_factor_slider for _ in range(n)]
-        area_of_functions_slider = [area_of_functions_slider for _ in range(n)]
-        total_area_slider = total_area_slider
-
-        new_occupancy_efficiency = metric_calc_occupancy_efficiency(
-            utilization_rate_slider,
-            active_hours_slider,
-            function_exchange_factor_slider,
-            total_available_hours_per_day,
-            total_area_slider,
-            area_of_functions_slider
-        )
-        st.markdown(f"### Occupancy Efficiency: {new_occupancy_efficiency:.2f}")
-
 def run(selected_team: str) -> None:
     
      # Create two equal columns
@@ -95,7 +58,6 @@ def run(selected_team: str) -> None:
         area_of_functions = [100, 200, 300]
 
     else:
-        
         function_names = team_data["ListOfFunctionNames"]
         utilization_rate = team_data["UtilizationRateOfFunction"]
         utilization_rate = [float(x) for x in utilization_rate]
@@ -114,7 +76,6 @@ def run(selected_team: str) -> None:
         "Occupancy Efficiency",
         r'\frac{\sum_{i=1}^{n} (UtilizationRateOfFunction_i \cdot ActiveHoursOfFunctionPerDay_i \cdot FunctionExchangeFactor \cdot AreaOfFunction_i)}{TotalAvailableHoursPerDay \cdot TotalArea}',
         "Measures the efficiency of space utilization throughout the day.",
-        metric_interactive_calculator_occupancy_efficiency,
         metric_calc_occupancy_efficiency,
         './front_end/dashboards/pictures/service.png',
         [
@@ -128,18 +89,18 @@ def run(selected_team: str) -> None:
                 "name": "Active Hours",
                 "value": active_hours,
                 "display_value": sum(float(x) for x in active_hours),
-                "unit": "hours"
+                "unit": "hrs"
             },
             {
                 "name": "Function Exchange Factor",
                 "value": function_exchange_factor,
-                "display_value": sum(float(x) for x in function_exchange_factor),
-                "unit": "hours"
+                "display_value": sum(float(x) for x in function_exchange_factor) / len(function_exchange_factor),
+                "unit": "Average"
             },
             {
                 "name": "Total Available Hours per Day",
                 "value": total_available_hours_per_day,
-                "unit": "hours"
+                "unit": "hrs"
             },
             {
                 "name": "Total Area",
