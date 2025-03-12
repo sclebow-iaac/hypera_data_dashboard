@@ -338,10 +338,10 @@ if selected_dashboard == "Main":
         if show_statistics:
             statistics.show(report, client, project, models, versions)
 
-    # Add a separator
-    st.markdown("---")
-    # Add attribute extraction for debugging
-    attribute_extraction.run(selected_version, client, project)
+        # Add a separator
+        st.markdown("---")
+        # Add attribute extraction for debugging
+        attribute_extraction.run(selected_version, client, project)
 
 
 else:
