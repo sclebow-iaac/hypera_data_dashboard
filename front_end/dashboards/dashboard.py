@@ -3,6 +3,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from specklepy.api.client import SpeckleClient
 from specklepy.api.credentials import get_account_from_token
 import os
@@ -31,10 +32,6 @@ class Metric:
         display_metric(container, self, add_text)
 
     def display_interactive_calculator(self, container, columns=True):
-        # # Unpack the inputs correctly and pass them as arguments
-        # input_values = [input['value'] for input in self.inputs]
-        # self.interactive_calculator_func(container, *input_values)
-
         # Create a header for the interactive calculator
         container.markdown(f"### {self.title} Interactive Calculator")
 
@@ -250,17 +247,8 @@ def display_formula_section_header(team_name: str) -> None:
         </div>
     ''', unsafe_allow_html=True)
 
-def display_metric(container, title: str, formula_markdown: str, description: str, value: float, add_text=True):
-    def metric_text_display(title, formula_markdown, description, value):
-        st.markdown(f"### {title}")
-        st.latex(formula_markdown)
-        st.markdown(description)
-        if value is not None:
-            st.markdown(
-                f"<h4 style='text-align: center;'>Current Value: {value:.2f}</h4>", unsafe_allow_html=True)
-
 def display_st_metric_values(container, metrics):
-    container.markdown('### Key Performance Indicators')
+    container.markdown('#### Key Performance Indicators')
 
     column_containers = container.columns(len(metrics))
     for column_container, metric in zip(column_containers, metrics):
@@ -269,11 +257,15 @@ def display_st_metric_values(container, metrics):
             column_container.metric(metric.title, f'{metric.value:.2f}', delta=f'{delta:.2f}', delta_color="normal", help=metric.description)
 
 def display_metric_visualizations(container, metrics, add_text=True):
-    vis_cotainers = [container.container() for _ in range(len(metrics))]
-    for vis_container, metric in zip(vis_cotainers, metrics):
-        metric.display(vis_container, add_text=add_text)
+    container.markdown('#### Metric Details')
 
-    st.markdown("---")
+    vis_cotainers = [container.container() for _ in range(len(metrics))]
+    # for vis_container, metric in zip(vis_cotainers, metrics):
+    for vis_container, metric, index in zip(vis_cotainers, metrics, range(len(metrics))):
+        metric.display(vis_container, add_text=add_text)
+        if index < len(metrics) - 1:
+            # Add a horizontal line between metrics
+            vis_container.markdown("---")
 
 def display_text_section(container, text: str) -> None:
     """Display a text section in the given container."""
@@ -339,33 +331,89 @@ def display_custom_bullet_list(container, items: list[str], bullet_image_path: s
     container.markdown(bullet_style + bullet_list, unsafe_allow_html=True)
 
 def display_metric(container, metric: Metric, add_text=True) -> None:
-    """Display a metric in the specified container."""
-    print("DISPLAY METRIC: ", metric.title)
+    # Display a metric in the specified container.
     
-    # Create two columns with specified widths
-    col1, col2 = container.columns([1, 2])  # First column is 1 part, second column is 2 parts
+    # Display the metric title 
+    container.markdown(f"##### {metric.title}")
 
-    # In the first column, display the image with some right margin
-    with col1:
-        image_width = 400  # Set your desired width
-        st.markdown(f'<div style="text-align: right;">', unsafe_allow_html=True)  # Align image to the right
-        st.image(metric.image_path, width=image_width, use_container_width=False)
-        st.markdown('</div>', unsafe_allow_html=True)  # Close the div
+    # Display the metric image
+    if metric.image_path:
+        container.image(metric.image_path, width=100)
+    
+    # Display the metric formula
+    container.latex(metric.formula_markdown)
 
-    # In the second column, display the text with additional margin
-    with col2:
-        st.markdown(f'<div style="margin-top: 20px;">', unsafe_allow_html=True)  # Add top margin
-        st.markdown(f"### {metric.title}")
-        st.latex(metric.formula_markdown)
-        st.markdown(metric.description)
-        # st.metric(metric.title, f'{metric.value:.2f}')  # Display the metric value
-        st.markdown('</div>', unsafe_allow_html=True)  # Close the div
+    # Display the metric description
+    container.markdown(metric.description)
 
-    # Call the function to display circles and tape
-    with container:
-        display_metric_circles_and_tape(container, metric)
-        for _ in range(5):
-            st.markdown("")
+    # Display the metric value and ideal value
+    container.markdown(f"**Goal Value:** {metric.ideal_value:.2f} | **Current Value:** {metric.value:.2f}")
+
+    # Display the tape diagram
+    display_tape_diagram(container, metric)
+
+    # """Display a metric in the specified container."""
+    # print("DISPLAY METRIC: ", metric.title)
+    
+    # # Create two columns with specified widths
+    # col1, col2 = container.columns([1, 2])  # First column is 1 part, second column is 2 parts
+
+    # # In the first column, display the image with some right margin
+    # with col1:
+    #     image_width = 400  # Set your desired width
+    #     st.markdown(f'<div style="text-align: right;">', unsafe_allow_html=True)  # Align image to the right
+    #     st.image(metric.image_path, width=image_width, use_container_width=False)
+    #     st.markdown('</div>', unsafe_allow_html=True)  # Close the div
+
+    # # In the second column, display the text with additional margin
+    # with col2:
+    #     st.markdown(f'<div style="margin-top: 20px;">', unsafe_allow_html=True)  # Add top margin
+    #     st.markdown(f"### {metric.title}")
+    #     st.latex(metric.formula_markdown)
+    #     st.markdown(metric.description)
+    #     # st.metric(metric.title, f'{metric.value:.2f}')  # Display the metric value
+    #     st.markdown('</div>', unsafe_allow_html=True)  # Close the div
+
+    # # Call the function to display circles and tape
+    # with container:
+    #     display_metric_circles_and_tape(container, metric)
+    #     for _ in range(5):
+    #         st.markdown("")
+
+def display_tape_diagram(container, metric: Metric) -> None:
+    fig = go.Figure(go.Indicator(
+        mode = "number+gauge+delta",
+        gauge = {
+            'shape': "bullet",
+            'axis': {'range': [metric.min_value, metric.max_value]},
+            'steps': [
+                {'range': [metric.min_value, metric.ideal_value], 'color': "Salmon"},
+                {'range': [metric.ideal_value, metric.max_value], 'color': "PaleGreen"},
+            ],                
+            'threshold': {
+                'line': {'color': "SteelBlue", 'width': 8},
+                'value': metric.ideal_value
+            },
+            'bar': {'color': "Silver",},
+        },
+        value = metric.value,
+        delta = {'reference': metric.ideal_value, 'position': 'right'},
+        domain = {'x': [0, 1], 'y': [0, 1]},
+    ),)
+
+    side_margin = 100
+    top_margin = 0
+    height = 50
+    font_size = 16
+    
+    fig.update_layout(
+        height=height,
+        margin=dict(l=side_margin, r=side_margin, t=top_margin, b=top_margin),
+        font=dict(size=font_size),
+        paper_bgcolor='rgba(0, 0, 0, 0)',
+        plot_bgcolor='rgba(0, 0, 0, 0)',
+    )
+    container.plotly_chart(fig)
 
 def create_top_menu(teams: list[str]) -> str:
     """Create a horizontal menu at the top of the page."""

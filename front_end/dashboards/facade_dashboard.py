@@ -126,7 +126,7 @@ def run(selected_team: str) -> None:
             }
         ],
         min_value=0,
-        max_value=1,
+        max_value=3,
         ideal_value=1.0
     )
     metrics.append(panel_optimization_metric)
@@ -191,106 +191,3 @@ def run(selected_team: str) -> None:
         text_dict=text_dict,
         presentation_model_id=presentation_model_id
     )
-
-    # OLD STUFF BELOW HERE
-    st.markdown('---')
-    st.markdown('---')
-    st.title('OLD STUFF BELOW TO BE REMOVED')
-    st.markdown('---')
-    st.markdown('---')
-    st.title(f"{selected_team} Dashboard")
-
-    # Create two equal columns
-    col1, col2 = st.columns(2)  # Both columns will have equal width
-
-    # # In the first column, display the image slideshow
-    # with col1:
-
-    #     # Create a container for the slideshow
-    #     container = st.container()
-        
-        # Call the display_image_slideshow function
-        # Example usage
-        # folder_path = "./front_end/dashboards/pictures"  # Update this to your actual image folder path
-        # display_image_slideshow(container, folder_path, "facade_slideshow")  # Change interval as needed
-
-
-    # In the second column, display the iframe for the Speckle model
-    with col2:
-        container = st.container()
-        display_speckle_viewer(container, '31f8cca4e0', '29bc37af8e', is_transparent=False, hide_controls=False, hide_selection_info=False, no_scroll=False)
-        container.markdown("https://macad.speckle.xyz/projects/31f8cca4e0/models/29bc37af8e" , unsafe_allow_html=True)
-
-
-    # Building Dashboard
-    # Dashboard Header
-    # display_page_title(selected_team)
-    # team_extractor.display_data(extracted_data=team_data, verbose=False, header=True, show_table=False, gauge=False, simple_table=True)
-
-
-    # Building Dashboard
-   
-    text_container = st.container()
-    display_text_section(
-        text_container,
-        """
-        ## Facade Design Overview
-        Our facade design integrates sustainable features with aesthetic considerations.
-        """
-    )
-
-
-    st.markdown("---")
-
-    st.write(" ")
-
-    team_extractor.display_data(extracted_data=team_data, verbose=False, header=False, show_table=False, gauge=False, simple_table=True)
-
-
-    # Now, display the custom bullet list underneath the iframe and STL model
-    bullet_items = [
-        "1. Solar panels optimized for maximum energy generation",
-        "2. Strategic window placement for natural daylight",
-        "3. Thermal insulation systems for energy efficiency"
-    ]
-    display_custom_bullet_list(st.container(), bullet_items)  # Call the function to display the bullet list
-
-    st.markdown(" ")
-    st.markdown(" ")
-
-    team_extractor.display_data(extracted_data=team_data, verbose=False, header=False, show_table=True, gauge=False, simple_table=True)
-
-    text_container = st.container()
-    display_text_section(
-        text_container,
-        """
-        ## Detailed KPI Explanations
-        """
-    )
-
-    st.markdown(" ")
-    st.markdown(" ")
-
-    # Metrics Display - Updated with correct metrics
-    metrics_display_container = st.container()
-    display_st_metric_values(metrics_display_container, metrics)
-
-    st.markdown(" ")
-    st.markdown(" ")
-    st.markdown(" ")
-    st.markdown(" ")
-    st.markdown(" ")
-    st.markdown(" ")
-    st.markdown(" ")
-
-
-    # Display Formulas and Explanations
-    display_formula_section_header(selected_team)
-
-    metrics_visualization_container = st.container()
-    display_metric_visualizations(metrics_visualization_container, metrics, add_text=True)
-
-
-    # Interactive Calculators
-    metric_interactive_calculator_container = st.container()
-    display_interactive_calculators(metric_interactive_calculator_container, metrics, grid=True)
