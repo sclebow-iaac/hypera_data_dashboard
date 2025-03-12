@@ -25,31 +25,31 @@ import attribute_extraction
 # Function to display the residential dashboard
 def display_residential_dashboard():
     with dashboard_placeholder.container():
-        selected_team = "Residential Team"  # Set the selected team or get it from user input
+        selected_team = "residential"  # Set the selected team or get it from user input
         residential_dashboard.run(selected_team)  # Call the function from the residential dashboard
 
 # Function to display the service dashboard
 def display_service_dashboard():
     with dashboard_placeholder.container():
-        selected_team = "Service Team"  # Set the selected team
+        selected_team = "service"  # Set the selected team
         service_dashboard.run(selected_team)  # Only pass selected_team
 
 # Function to display the structure dashboard
 def display_structure_dashboard():
     with dashboard_placeholder.container():
-        selected_team = "Structure Team"  # Set the selected team
+        selected_team = "structure"  # Set the selected team
         structure_dashboard.run(selected_team)  # Only pass selected_team
 
 # Function to display the industrial dashboard
 def display_industrial_dashboard():
     with dashboard_placeholder.container():
-        selected_team = "Industrial Team"  # Set the selected team
+        selected_team = "industrial"  # Set the selected team
         industrial_dashboard.run(selected_team)  # Only pass selected_team
 
 # Function to display the facade dashboard
 def display_facade_dashboard():
     with dashboard_placeholder.container():
-        selected_team = "Facade Team"  # Set the selected team
+        selected_team = "facade"  # Set the selected team
         facade_dashboard.run(selected_team)  # Only pass selected_team
 
 #PAGE CONFIG AND CUSTOM CSS

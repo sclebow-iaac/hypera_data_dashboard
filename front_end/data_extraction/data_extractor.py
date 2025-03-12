@@ -356,8 +356,9 @@ def display_data(data, extracted_data, model_name, verbose=True, header=True, sh
             header_container = container
         # Display the model name
         if model_name is not None and model_name != "":
-            header_container.markdown(f'### Speckle Model Name:')
-            header_container.markdown(f'#### {model_name}')
+            # header_container.markdown(f'### Speckle Model Name:')
+            # header_container.markdown(f'#### {model_name}')
+            header_container.markdown(f'#### Data Extracted from {model_name}')
         else:
             header_container.markdown(f'### Speckle Model: ')
             header_container.markdown(f'#### {model_name} not found.')
@@ -376,15 +377,15 @@ def display_data(data, extracted_data, model_name, verbose=True, header=True, sh
         # Display the table
         if container:
             with container:
-                st.markdown('#### Extracted Data')
+                # st.markdown('#### Extracted Data')
                 st.dataframe(df.style.set_properties(
                     **{'font-family': 'Roboto Mono', 'font-size': '18px'}), hide_index=True, use_container_width=True)
-                st.markdown('---')
+                # st.markdown('---')
         else:
             st.markdown('#### Extracted Data')
             st.dataframe(df.style.set_properties(
                 **{'font-family': 'Roboto Mono', 'font-size': '18px'}), hide_index=True, use_container_width=True)
-            st.markdown('---')
+            # st.markdown('---')
 
     if gauge:
         # Display a percentage of the data found compared to the total data expected

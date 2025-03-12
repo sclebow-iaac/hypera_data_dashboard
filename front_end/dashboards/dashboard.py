@@ -7,7 +7,7 @@ from specklepy.api.client import SpeckleClient
 from specklepy.api.credentials import get_account_from_token
 import os
 import time
-
+import math
 
 class Metric:
     # def __init__(self, title: str, formula_markdown: str, description: str, interactive_calculator_func, calculation_func, image_path: str, inputs: list, min_value: float, max_value: float, ideal_value: float):
@@ -75,9 +75,9 @@ class Metric:
             # Create a slider for the input
             input_slider = slider_container.slider(
                 label=name,
-                value=val,
+                value=float(val),
                 min_value=val * 0.5,
-                max_value=val * 1.5,
+                max_value=val * 1.5
             )
 
             if type(input['value']) == list:
@@ -94,6 +94,80 @@ class Metric:
             label="Calculated Value",
             value=f"{new_value:.4f}"
         )
+
+def generate_dashboard(selected_team: str, metrics: list[Metric], project_id: str, team_members: list[dict], team_extractor, extracted_data, text_dict: list[dict], presentation_model_id) -> None:
+    # Display the page title
+    display_page_title(selected_team)
+
+    # Display the Team Members
+    team_members_container = st.container()
+    display_team_members(team_members_container, team_members)
+
+    # Display the Speckle viewer
+    viewer_height = 400
+    speckle_container = st.container(border=True)
+    display_speckle_viewer(speckle_container, project_id, presentation_model_id, is_transparent=True, hide_controls=True, hide_selection_info=True, no_scroll=True, height=viewer_height)
+
+    # Display the images
+    images_container = st.container(border=True)
+    display_images(images_container, selected_team)
+
+    # Display the text section
+    text_container = st.container(border=True)
+    display_text(text_container, text_dict)
+    
+
+    # Display the extracted data
+    extracted_data_container = st.container(border=True)
+    team_extractor.display_data(extracted_data=extracted_data, header=True, show_table=True, gauge=False, simple_table=True, container=extracted_data_container)
+
+    # Display the KPI section
+    kpi_container = st.container(border=True)
+    display_st_metric_values(kpi_container, metrics)
+
+    # Display the detailed metrics
+    detailed_metrics_container = st.container(border=True)
+    display_metric_visualizations(detailed_metrics_container, metrics, add_text=True)
+    
+    # Display the interactive calculators
+    interactive_calculator_container = st.container(border=True)
+    grid = True if len(metrics) > 2 else False
+    display_interactive_calculators(interactive_calculator_container, metrics, grid=grid)
+
+    pass
+
+def display_text(container, text_dict: list[dict]) -> None:
+    design_overview_container = container.container()
+    display_design_overview(design_overview_container, text_dict)
+    container.markdown('') # Add some space
+
+    display_custom_bullet_list(container, text_dict['bullet_items'], bullet_image_path=None)
+
+def display_design_overview(container, text_dict: list[dict]) -> None:
+    container.markdown('#### Design Overview')
+    container.markdown(text_dict['design_overview'])
+
+def display_team_members(container, team_members: list[dict]) -> None:
+    container.markdown('') # Add some space
+    # Display the team members
+    for col, member in zip(container.columns(len(team_members)), team_members):
+        with col:
+            st.markdown(f'<div style="text-align: center;"><h5>{member["name"]}</h5></div>', unsafe_allow_html=True)
+            st.markdown(f'<div style="text-align: center;"><a href="{member["link"]}">Profile</a></div>', unsafe_allow_html=True)
+
+    # Style for team members
+    container.markdown("""
+    <style>
+        .team-member {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .team-member h5 {
+            margin: 0;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+    container.markdown('') # Add some space
 
 def display_interactive_calculators(container, metrics: list[Metric], grid: bool = True):
     container.markdown("""
@@ -134,7 +208,9 @@ def setup_speckle_connection(models_limit=100):
 
     return models, client, project_id
 
-def display_speckle_viewer(container, project_id, model_id, is_transparent=False, hide_controls=False, hide_selection_info=False, no_scroll=False):
+def display_speckle_viewer(container, project_id, model_id, is_transparent=False, hide_controls=False, hide_selection_info=False, no_scroll=False, height=400):
+        container.markdown('#### Representational Model')
+
         speckle_model_url = f'https://macad.speckle.xyz/projects/{project_id}/models/{model_id}'
         # https://macad.speckle.xyz/projects/31f8cca4e0/models/e76ccf2e0f,3f178d9658,a4e3d78009,c710b396d3,5512057f5b,d68a58c12d,2b48d3f757,767672f412
         # speckle_model_url += '#embed={%22isEnabled%22:true,%22isTransparent%22:true,%22hideControls%22:true,%22hideSelectionInfo%22:true,%22noScroll%22:true}'
@@ -153,7 +229,7 @@ def display_speckle_viewer(container, project_id, model_id, is_transparent=False
 
         iframe_code = f"""
         <iframe src="{speckle_model_url}"
-                style="width: 100%; height: 600px; border: none;">
+                style="width: 100%; height: {height}px; border: none;">
         </iframe>
         """
         container.markdown(iframe_code, unsafe_allow_html=True)
@@ -163,18 +239,16 @@ def display_speckle_viewer(container, project_id, model_id, is_transparent=False
 def display_page_title(team_name: str) -> None:
     st.markdown(f'''
         <div style="text-align: center;">
-            <h1>{team_name} Dashboard</h1>
+            <h1>{team_name.capitalize()} Team Dashboard</h1>
         </div>
     ''', unsafe_allow_html=True)
-
 
 def display_formula_section_header(team_name: str) -> None:
     st.markdown(f'''
         <div style="text-align: center;">
-            <h2>{team_name} Metrics</h2>
+            <h2>{team_name.capitalize()} Team Metrics</h2>
         </div>
     ''', unsafe_allow_html=True)
-
 
 def display_metric(container, title: str, formula_markdown: str, description: str, value: float, add_text=True):
     def metric_text_display(title, formula_markdown, description, value):
@@ -185,13 +259,14 @@ def display_metric(container, title: str, formula_markdown: str, description: st
             st.markdown(
                 f"<h4 style='text-align: center;'>Current Value: {value:.2f}</h4>", unsafe_allow_html=True)
 
-
 def display_st_metric_values(container, metrics):
-    column_containers = container.columns(4)
+    container.markdown('### Key Performance Indicators')
+
+    column_containers = container.columns(len(metrics))
     for column_container, metric in zip(column_containers, metrics):
         with column_container:
-            column_container.metric(metric.title, f'{metric.value:.2f}')
-
+            delta = metric.value - metric.ideal_value
+            column_container.metric(metric.title, f'{metric.value:.2f}', delta=f'{delta:.2f}', delta_color="normal", help=metric.description)
 
 def display_metric_visualizations(container, metrics, add_text=True):
     vis_cotainers = [container.container() for _ in range(len(metrics))]
@@ -199,7 +274,6 @@ def display_metric_visualizations(container, metrics, add_text=True):
         metric.display(vis_container, add_text=add_text)
 
     st.markdown("---")
-
 
 def display_text_section(container, text: str) -> None:
     """Display a text section in the given container."""
@@ -217,7 +291,6 @@ def display_text_section(container, text: str) -> None:
         </div>
         <hr style="border: 1px solid white;"/>  <!-- Add a horizontal line -->
     """, unsafe_allow_html=True)
-
 
 def display_custom_bullet_list(container, items: list[str], bullet_image_path: str = None) -> None:
     """Display a list with custom bullet points using an image."""
@@ -252,12 +325,8 @@ def display_custom_bullet_list(container, items: list[str], bullet_image_path: s
         background-repeat: no-repeat;
         background-position: left top;  
         background-size: 25px;        
-        line-height: 25px;           
         padding-top: 1px;             
         display: flex;               
-        align-items: center;        
-        min-height: 30px;
-        font-size: 22px;
     }}
     </style>
     """
@@ -334,39 +403,56 @@ def create_top_menu(teams: list[str]) -> str:
     # Initialize session state if not exists
     if 'current_selection' not in st.session_state:
         st.session_state.current_selection = teams[0]
+    # Create a expander for the menu
+    menu_expander = st.expander("Site Navigation", expanded=False)
+    with menu_expander:
+        # Create columns for each team
+        total_buttons_var = len(teams)
+        cols_in_row = 4
+        created_rows = []
+        created_cols = []
 
-    # Create columns for each team
-    cols = st.columns(len(teams))
-    
-    # Create buttons in each column and handle selection
-    selected = None
-    for col, item in zip(cols, teams):
-        with col:
-            is_selected = item == st.session_state.current_selection
-            button_html = f"""
-                <button 
-                    data-selected="{str(is_selected).lower()}"
-                    style="width: 100%; {{
-                        'border-bottom: 2px solid #000000; border-radius: 0;' if is_selected else ''
-                    }}"
-                >
-                    {item}
-                </button>
-            """
-            if st.button(
-                item, 
-                key=f"menu_{item}",  # Ensure unique key by prefixing with 'menu_'
-                use_container_width=True
-            ):
-                selected = item
-    
-    # Update selection if a new item was clicked
-    if selected is not None:
-        st.session_state.current_selection = selected
-    
-    # Return the current selection
-    return st.session_state.current_selection
+        while total_buttons_var > 0:
+            columns_to_create = min(cols_in_row, total_buttons_var)
+            row = st.container()
+            cols = row.columns(columns_to_create, border=True)
+            created_rows.append(row)
+            created_cols.extend(cols)
+            total_buttons_var -= columns_to_create
 
+        print(f'Created {len(created_cols)} columns for {len(teams)} teams.')
+            
+        # cols = st.columns(len(teams))
+        cols = created_cols
+        
+        # Create buttons in each column and handle selection
+        selected = None
+        for col, item in zip(cols, teams):
+            with col:
+                is_selected = item == st.session_state.current_selection
+                button_html = f"""
+                    <button 
+                        data-selected="{str(is_selected).lower()}"
+                        style="width: 100%; {{
+                            'border-bottom: 2px solid #000000; border-radius: 0;' if is_selected else ''
+                        }}"
+                    >
+                        {item}
+                    </button>
+                """
+                if st.button(
+                    item, 
+                    key=f"menu_{item}",  # Ensure unique key by prefixing with 'menu_'
+                    use_container_width=True,
+                ):
+                    selected = item
+        
+        # Update selection if a new item was clicked
+        if selected is not None:
+            st.session_state.current_selection = selected
+        
+        # Return the current selection
+        return st.session_state.current_selection
 
 def display_metric_circles_and_tape(container, metric: Metric) -> None:
     """Display input values for metrics in circles and a tape diagram showing progress using the Metric class."""
@@ -493,39 +579,44 @@ def display_metric_circles_and_tape(container, metric: Metric) -> None:
         </script>
     """, unsafe_allow_html=True)
 
-
 def run(selected_team: str) -> None:
     st.title(f"{selected_team} Dashboard")
 
+def display_images(container, team_name: str) -> None:
+    container.markdown('#### Concept Images')
 
-def display_image_slideshow(container, folder_path: str, slideshow_key: str) -> None:
-    """Display a slideshow of images from a specified folder in the given container."""
-    # Get a list of image files in the specified folder
-    image_urls = [os.path.join(folder_path, file) for file in os.listdir(folder_path) 
+    folder_path = f"./front_end/dashboards/pictures/team_dashboards/{team_name}/"
+    image_urls = [os.path.join(folder_path, file) for file in os.listdir(folder_path)
                   if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif'))]
     
     if image_urls:
-        # Create session state to keep track of current image index
-        if 'image_index' not in st.session_state:
-            st.session_state.image_index = 0
+        # Display images in the container
+        for image_url, column in zip(image_urls, container.columns(len(image_urls))):
+            column.image(image_url)
+
+    # """Display a slideshow of images from a specified folder in the given container."""
+    # # Get a list of image files in the specified folder
+    # image_urls = [os.path.join(folder_path, file) for file in os.listdir(folder_path) 
+    #               if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif'))]
+    
+    # if image_urls:
+    #     # Create session state to keep track of current image index
+    #     if 'image_index' not in st.session_state:
+    #         st.session_state.image_index = 0
             
-        # Create three columns: left arrow, image, right arrow
-        col1, col2, col3 = container.columns([1, 10, 1])
+    #     # Create three columns: left arrow, image, right arrow
+    #     col1, col2, col3 = container.columns([1, 10, 1])
         
-        # Left arrow
-        with col1:
-            if st.button('←', key=f'{slideshow_key}_prev'):  # Use unique key
-                st.session_state.image_index = (st.session_state.image_index - 1) % len(image_urls)
+    #     # Left arrow
+    #     with col1:
+    #         if st.button('←', key=f'{slideshow_key}_prev'):  # Use unique key
+    #             st.session_state.image_index = (st.session_state.image_index - 1) % len(image_urls)
             
-        # Display current image in the middle column
-        with col2:
-            st.image(image_urls[st.session_state.image_index], use_container_width=True)
+    #     # Display current image in the middle column
+    #     with col2:
+    #         st.image(image_urls[st.session_state.image_index], use_container_width=True)
             
-        # Right arrow
-        with col3:
-            if st.button('→', key=f'{slideshow_key}_next'):  # Use unique key
-                st.session_state.image_index = (st.session_state.image_index + 1) % len(image_urls)
-
-
-
-
+    #     # Right arrow
+    #     with col3:
+    #         if st.button('→', key=f'{slideshow_key}_next'):  # Use unique key
+    #             st.session_state.image_index = (st.session_state.image_index + 1) % len(image_urls)

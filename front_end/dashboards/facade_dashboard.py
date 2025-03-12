@@ -23,38 +23,9 @@ def metric_calc_panel_optimization(total_final_panel_area, total_initial_panel_a
     return total_final_panel_area / total_initial_panel_area
 
 def run(selected_team: str) -> None:
-    st.title(f"{selected_team} Dashboard")
-
-    # Create two equal columns
-    col1, col2 = st.columns(2)  # Both columns will have equal width
-
-    # In the first column, display the image slideshow
-    with col1:
-
-        # Create a container for the slideshow
-        container = st.container()
-        
-        # Call the display_image_slideshow function
-        # Example usage
-        folder_path = "./front_end/dashboards/pictures"  # Update this to your actual image folder path
-        display_image_slideshow(container, folder_path, "facade_slideshow")  # Change interval as needed
-
-
-    # In the second column, display the iframe for the Speckle model
-    with col2:
-        container = st.container()
-        display_speckle_viewer(container, '31f8cca4e0', '29bc37af8e', is_transparent=False, hide_controls=False, hide_selection_info=False, no_scroll=False)
-        container.markdown("https://macad.speckle.xyz/projects/31f8cca4e0/models/29bc37af8e" , unsafe_allow_html=True)
-
     # Extract data
     models, client, project_id = setup_speckle_connection()
     verified, team_data = team_extractor.extract(models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
-
-    # Building Dashboard
-    # Dashboard Header
-    display_page_title(selected_team)
-    team_extractor.display_data(extracted_data=team_data, verbose=False, header=True, show_table=False, gauge=False, simple_table=True)
-
     if not verified:
         st.error("Failed to extract data, proceeding with Example Data. Use Data Dashboard to Investigate.")
         team_extractor.display_data(extracted_data=team_data, header=False, show_table=False, gauge=True, simple_table=False)
@@ -156,7 +127,7 @@ def run(selected_team: str) -> None:
         ],
         min_value=0,
         max_value=1,
-        ideal_value=0.5
+        ideal_value=1.0
     )
     metrics.append(panel_optimization_metric)
     
@@ -184,8 +155,80 @@ def run(selected_team: str) -> None:
     )
     metrics.append(energy_ratio_metric)
 
-    # Building Dashboard
+    team_members = [
+        {
+            'name': 'Andrea Ardizzi',
+            'link': 'https://blog.iaac.net/user/andrea.ardizzi/',
+        },
+        {
+            'name': 'Christina Christoforou',
+            'link': 'https://blog.iaac.net/user/christina153/',
+        },
+        {
+            'name': 'Giulia Tortorella',
+            'link': 'https://blog.iaac.net/user/giulia+tortorella/'
+        }
+    ]
 
+    text_dict = {
+        'design_overview': 'Our facade design integrates sustainable features with aesthetic considerations.',
+        'bullet_items': [
+            "1. Solar panels optimized for maximum energy generation",
+            "2. Strategic window placement for natural daylight",
+            "3. Thermal insulation systems for energy efficiency"
+        ]
+    }
+
+    presentation_model_id = '29bc37af8e'
+
+    generate_dashboard(
+        selected_team=selected_team,
+        metrics=metrics,
+        project_id=project_id,
+        team_members=team_members,
+        team_extractor=team_extractor,
+        extracted_data=team_data,
+        text_dict=text_dict,
+        presentation_model_id=presentation_model_id
+    )
+
+    # OLD STUFF BELOW HERE
+    st.markdown('---')
+    st.markdown('---')
+    st.title('OLD STUFF BELOW TO BE REMOVED')
+    st.markdown('---')
+    st.markdown('---')
+    st.title(f"{selected_team} Dashboard")
+
+    # Create two equal columns
+    col1, col2 = st.columns(2)  # Both columns will have equal width
+
+    # # In the first column, display the image slideshow
+    # with col1:
+
+    #     # Create a container for the slideshow
+    #     container = st.container()
+        
+        # Call the display_image_slideshow function
+        # Example usage
+        # folder_path = "./front_end/dashboards/pictures"  # Update this to your actual image folder path
+        # display_image_slideshow(container, folder_path, "facade_slideshow")  # Change interval as needed
+
+
+    # In the second column, display the iframe for the Speckle model
+    with col2:
+        container = st.container()
+        display_speckle_viewer(container, '31f8cca4e0', '29bc37af8e', is_transparent=False, hide_controls=False, hide_selection_info=False, no_scroll=False)
+        container.markdown("https://macad.speckle.xyz/projects/31f8cca4e0/models/29bc37af8e" , unsafe_allow_html=True)
+
+
+    # Building Dashboard
+    # Dashboard Header
+    # display_page_title(selected_team)
+    # team_extractor.display_data(extracted_data=team_data, verbose=False, header=True, show_table=False, gauge=False, simple_table=True)
+
+
+    # Building Dashboard
    
     text_container = st.container()
     display_text_section(
