@@ -7,6 +7,39 @@ import data_extraction.industrial_extractor as team_extractor
 
 from dashboards.dashboard import *
 
+def process_data(verified, team_data):
+    if not verified:
+        st.error(
+            "Failed to extract data, proceding with Example Data.  Use Data Dashboard to Investigate.")
+        team_extractor.display_data(
+            extracted_data=team_data, header=False, show_table=False, gauge=True, simple_table=False)
+
+        # Example data
+        energy_generation = 750  # kWh
+        energy_demand = 1000   # kWh
+        food_production = 600    # kg
+        food_demand = 1000     # kg
+        recycled_solid_waste = 120   # kg/day
+        solid_waste_production = 200        # kg/day
+        recycled_water = 100   # m³
+        wastewater_production = 200        # m³
+
+    else:
+        # Extracted data
+        energy_generation = float(team_data['EnergyGeneration'])
+        energy_demand = float(team_data['EnergyDemand'])
+        food_production = float(team_data['FoodProduction'])
+        food_demand = float(team_data['FoodDemand'])
+        recycled_solid_waste = float(team_data['RecycledSolidWaste'])
+        solid_waste_production = float(team_data['SolidWasteProduction'])
+        recycled_water = float(team_data['RecycledWater'])
+        wastewater_production = float(team_data['WasteWaterProduction'])
+    
+    return (energy_generation, energy_demand,
+            food_production, food_demand,
+            recycled_solid_waste, solid_waste_production,
+            recycled_water, wastewater_production)
+
 # Define data for the dashboard
 team_members = [
     {
@@ -46,37 +79,8 @@ def metric_calc_recycled_water_ratio(recycled_water, wastewater_production):
 def metric_calc_waste_utilization_ratio(recycled_solid_waste, solid_waste_production):
     return 1 - (recycled_solid_waste / solid_waste_production)
 
-def run(selected_team: str) -> None:
-    # Extract data
-    models, client, project_id = setup_speckle_connection()
-    verified, team_data = team_extractor.extract(models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
-
-    if not verified:
-        st.error(
-            "Failed to extract data, proceding with Example Data.  Use Data Dashboard to Investigate.")
-        team_extractor.display_data(
-            extracted_data=team_data, header=False, show_table=False, gauge=True, simple_table=False)
-
-        # Example data
-        energy_generation = 750  # kWh
-        energy_demand = 1000   # kWh
-        food_production = 600    # kg
-        food_demand = 1000     # kg
-        recycled_solid_waste = 120   # kg/day
-        solid_waste_production = 200        # kg/day
-        recycled_water = 100   # m³
-        wastewater_production = 200        # m³
-
-    else:
-        # Extracted data
-        energy_generation = float(team_data['EnergyGeneration'])
-        energy_demand = float(team_data['EnergyDemand'])
-        food_production = float(team_data['FoodProduction'])
-        food_demand = float(team_data['FoodDemand'])
-        recycled_solid_waste = float(team_data['RecycledSolidWaste'])
-        solid_waste_production = float(team_data['SolidWasteProduction'])
-        recycled_water = float(team_data['RecycledWater'])
-        wastewater_production = float(team_data['WasteWaterProduction'])
+def generate_metrics(verified, team_data) -> list[Metric]:
+    energy_generation, energy_demand, food_production, food_demand, recycled_solid_waste, solid_waste_production, recycled_water, wastewater_production = process_data(verified, team_data)
 
     metrics = []
 
@@ -175,6 +179,14 @@ def run(selected_team: str) -> None:
         ideal_value = 1
     )
     metrics.append(waste_utilization_ratio_metric)
+    return metrics
+
+def run(selected_team: str) -> None:
+    # Extract data
+    models, client, project_id = setup_speckle_connection()
+    verified, team_data = team_extractor.extract(models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
+
+    metrics = generate_metrics(verified, team_data)
 
     generate_dashboard(
         selected_team=selected_team,

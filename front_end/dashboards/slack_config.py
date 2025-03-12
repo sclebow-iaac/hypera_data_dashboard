@@ -10,6 +10,12 @@ import data_extraction.facade_extractor as facade_extractor
 import data_extraction.structure_extractor as structure_extractor
 import data_extraction.industrial_extractor as industrial_extractor
 
+import dashboards.facade_dashboard as facade_dashboard
+import dashboards.residential_dashboard as residential_dashboard
+import dashboards.service_dashboard as service_dashboard
+import dashboards.structure_dashboard as structure_dashboard
+import dashboards.industrial_dashboard as industrial_dashboard
+
 import specklepy.api.models
 import specklepy.api.operations
 import specklepy.api.resource
@@ -236,6 +242,38 @@ def generate_data_analysis_message() -> list[str]:
     # Placeholder function to generate a message about data analysis
     messages = []
     messages.append("Data analysis: Placeholder message.")
+
+    dashboards = {
+        "Facade": facade_dashboard,
+        "Residential": residential_dashboard,
+        "Service": service_dashboard,
+        "Structure": structure_dashboard,
+        "Industrial": industrial_dashboard
+    }
+
+    # Setup Speckle connection
+    models, client, project_id = setup_speckle_connection()
+
+    for team_name, dashboard in dashboards.items():
+        # Extract data using the extractor
+        # Placeholder for actual data extraction
+        fully_verified, extracted_data = dashboard.extract(
+            models=models,
+            client=client,
+            project_id=project_id,
+            header=False,
+            table=False,
+            gauge=False,
+            attribute_display=False
+        )
+        print(f"fully_verified: {fully_verified}")
+
+        if not(fully_verified):
+            messages.append(f'{team_name.capitalize()} team data is not fully verified.')
+            continue
+        
+        # Calculate the 
+
     return messages
 
 def generate_message(recent_project_activity_bool, data_availability_bool, data_analysis_bool, day_bools, time_of_day_value):

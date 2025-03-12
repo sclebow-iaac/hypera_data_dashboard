@@ -36,23 +36,7 @@ text_dict = {
 
 presentation_model_id = '29bc37af8e'
 
-
-def metric_calc_daylight_factor(weight_residential, weight_work, residential_area_with_daylight, total_residential_area, work_area_with_daylight, total_work_area):
-    return (
-        weight_residential * (residential_area_with_daylight / total_residential_area) +
-        weight_work * (work_area_with_daylight / total_work_area)
-    )
-
-def metric_calc_energy_ratio(energy_generation, energy_required_by_industrial_team):
-    return energy_generation / energy_required_by_industrial_team
-
-def metric_calc_panel_optimization(total_final_panel_area, total_initial_panel_area):
-    return total_final_panel_area / total_initial_panel_area
-
-def run(selected_team: str) -> None:
-    # Extract data
-    models, client, project_id = setup_speckle_connection()
-    verified, team_data = team_extractor.extract(models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
+def process_data(verified, team_data):
     if not verified:
         st.error("Failed to extract data, proceeding with Example Data. Use Data Dashboard to Investigate.")
         team_extractor.display_data(extracted_data=team_data, header=False, show_table=False, gauge=True, simple_table=False)
@@ -83,7 +67,32 @@ def run(selected_team: str) -> None:
 
         total_final_panel_area = team_data['TotalFinalPanelArea']
         total_initial_panel_area = team_data['TotalInitialPanelArea']
-    
+
+    return (energy_generation, energy_required_by_industrial_team,
+            weight_residential, weight_work,
+            residential_area_with_daylight, total_residential_area,
+            work_area_with_daylight, total_work_area,
+            total_final_panel_area, total_initial_panel_area)
+
+def metric_calc_daylight_factor(weight_residential, weight_work, residential_area_with_daylight, total_residential_area, work_area_with_daylight, total_work_area):
+    return (
+        weight_residential * (residential_area_with_daylight / total_residential_area) +
+        weight_work * (work_area_with_daylight / total_work_area)
+    )
+
+def metric_calc_energy_ratio(energy_generation, energy_required_by_industrial_team):
+    return energy_generation / energy_required_by_industrial_team
+
+def metric_calc_panel_optimization(total_final_panel_area, total_initial_panel_area):
+    return total_final_panel_area / total_initial_panel_area
+
+def generate_metrics(verified, team_data) -> list[Metric]:
+    (energy_generation, energy_required_by_industrial_team,
+     weight_residential, weight_work,
+     residential_area_with_daylight, total_residential_area,
+     work_area_with_daylight, total_work_area,
+     total_final_panel_area, total_initial_panel_area) = process_data(verified, team_data)
+
     metrics = []
 
     daylight_factor_metric = Metric(
@@ -181,6 +190,14 @@ def run(selected_team: str) -> None:
         ideal_value=1
     )
     metrics.append(energy_ratio_metric)
+    return metrics
+
+def run(selected_team: str) -> None:
+    # Extract data
+    models, client, project_id = setup_speckle_connection()
+    verified, team_data = team_extractor.extract(models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
+    
+    metrics = generate_metrics(verified, team_data)
 
     generate_dashboard(
         selected_team=selected_team,

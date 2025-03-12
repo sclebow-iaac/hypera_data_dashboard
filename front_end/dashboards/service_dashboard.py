@@ -32,18 +32,7 @@ text_dict = {
 
 presentation_model_id = '76b50ad007'
 
-def metric_calc_occupancy_efficiency(utilization_rate, active_hours, function_exchange_factor, total_available_hours_per_day, total_area, area_of_functions):
-    numerator = 0
-    for utilization, hours, factor, area in zip(utilization_rate, active_hours, function_exchange_factor, area_of_functions):
-        numerator += float(utilization) * float(hours) * float(factor) * float(area)
-    occupancy_efficiency = numerator / (float(total_available_hours_per_day) * float(total_area))
-    return occupancy_efficiency
-
-def run(selected_team: str) -> None:
-    # Extract data
-    models, client, project_id = setup_speckle_connection()
-    verified, team_data = team_extractor.extract(models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
-   
+def process_data(verified, team_data):
     if not verified:
         st.error("Failed to extract data, proceding with Example Data.  Use Data Dashboard to Investigate.")
         team_extractor.display_data(extracted_data=team_data, header=False, show_table=False, gauge=True, simple_table=False)
@@ -68,6 +57,19 @@ def run(selected_team: str) -> None:
         total_area = float(team_data["TotalArea"][0])
         area_of_functions = team_data["AreaOfFunctions"]
         area_of_functions = [float(x) for x in area_of_functions]
+
+    return (function_names, utilization_rate, active_hours, function_exchange_factor,
+            total_available_hours_per_day, total_area, area_of_functions)
+
+def metric_calc_occupancy_efficiency(utilization_rate, active_hours, function_exchange_factor, total_available_hours_per_day, total_area, area_of_functions):
+    numerator = 0
+    for utilization, hours, factor, area in zip(utilization_rate, active_hours, function_exchange_factor, area_of_functions):
+        numerator += float(utilization) * float(hours) * float(factor) * float(area)
+    occupancy_efficiency = numerator / (float(total_available_hours_per_day) * float(total_area))
+    return occupancy_efficiency
+
+def generate_metrics(verified, team_data) -> list[Metric]:
+    function_names, utilization_rate, active_hours, function_exchange_factor, total_available_hours_per_day, total_area, area_of_functions = process_data(verified, team_data)
 
     metrics = []
 
@@ -119,7 +121,15 @@ def run(selected_team: str) -> None:
     )
 
     metrics.append(occupancy_efficiency_metric)
+    return metrics
+
+def run(selected_team: str) -> None:
+    # Extract data
+    models, client, project_id = setup_speckle_connection()
+    verified, team_data = team_extractor.extract(models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
     
+    metrics = generate_metrics(verified, team_data)
+
     generate_dashboard(
         selected_team=selected_team,
         metrics=metrics,
