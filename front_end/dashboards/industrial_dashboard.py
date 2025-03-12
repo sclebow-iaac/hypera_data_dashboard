@@ -7,57 +7,49 @@ import data_extraction.industrial_extractor as team_extractor
 
 from dashboards.dashboard import *
 
+# Define data for the dashboard
+team_members = [
+    {
+        'name': 'Alice',
+        'link': 'https://www.linkedin.com/in/alice/',
+    },
+    {
+        'name': 'Bob',
+        'link': 'https://www.linkedin.com/in/bob/',
+    },
+    {
+        'name': 'Charlie',
+        'link': 'https://www.linkedin.com/in/charlie/',
+    },
+]
+
+text_dict = {
+    'design_overview': 'Our industrial design integrates sustainable features with aesthetic considerations.',
+    'bullet_items': [
+        "1. Energy generation optimized for maximum efficiency",
+        "2. Food production systems to meet dietary needs",
+        "3. Water recycling systems for sustainability"
+    ],
+}
+
+presentation_model_id = '89db050bc3'
 
 def metric_calc_energy_ratio(energy_generation, energy_demand):
     return energy_generation / energy_demand
 
-
 def metric_calc_food_ratio(food_production, food_demand):
     return food_production / food_demand
 
-
 def metric_calc_recycled_water_ratio(recycled_water, wastewater_production):
     return recycled_water / wastewater_production
-
 
 def metric_calc_waste_utilization_ratio(recycled_solid_waste, solid_waste_production):
     return 1 - (recycled_solid_waste / solid_waste_production)
 
 def run(selected_team: str) -> None:
-    # st.title(f"{selected_team} Dashboard")
-    
-    # Create two equal columns
-    col1, col2 = st.columns(2)  # Both columns will have equal width
-
-    # In the first column, display the image slideshow
-    with col1:
-
-        # Create a container for the slideshow
-        container = st.container()
-        
-        # Call the display_image_slideshow function
-        # Example usage
-        folder_path = "./front_end/dashboards/pictures"  # Update this to your actual image folder path
-        display_image_slideshow(container, folder_path, "facade_slideshow")  # Change interval as needed
-
-
-    # In the second column, display the iframe for the Speckle model
-    with col2:
-        container = st.container()
-        display_speckle_viewer(container, '31f8cca4e0', '89db050bc3', is_transparent=False, hide_controls=False, hide_selection_info=False, no_scroll=False)
-        container.markdown("https://macad.speckle.xyz/projects/31f8cca4e0/models/89db050bc3" , unsafe_allow_html=True)
-
     # Extract data
     models, client, project_id = setup_speckle_connection()
-    verified, team_data = team_extractor.extract(
-        models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
-
-    # Building Dashboard
-    # Dashboard Header
-    display_page_title(selected_team)
-    team_extractor.display_data(extracted_data=team_data, verbose=False,
-                                header=False, show_table=False, gauge=False, simple_table=True)
-    
+    verified, team_data = team_extractor.extract(models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
 
     if not verified:
         st.error(
@@ -133,7 +125,7 @@ def run(selected_team: str) -> None:
         ],
         min_value = 0,
         max_value = 1,
-        ideal_value = 0.5
+        ideal_value = 1
     )
     metrics.append(food_ratio_metric)
 
@@ -157,7 +149,7 @@ def run(selected_team: str) -> None:
         ],
         min_value = 0,
         max_value = 1,
-        ideal_value = 0.5
+        ideal_value = 1
     )
     metrics.append(recycled_water_ratio_metric)
     waste_utilization_ratio_metric = Metric(
@@ -180,56 +172,17 @@ def run(selected_team: str) -> None:
         ],
         min_value = 0,
         max_value = 1,
-        ideal_value = 0.5
+        ideal_value = 1
     )
     metrics.append(waste_utilization_ratio_metric)
 
-    text_container = st.container()
-    display_text_section(
-        text_container,
-        """
-        ## 
-        Our industrial design integrates sustainable features with aesthetic considerations.
-        """
+    generate_dashboard(
+        selected_team=selected_team,
+        metrics=metrics,
+        project_id=project_id,
+        team_members=team_members,
+        team_extractor=team_extractor,
+        extracted_data=team_data,
+        text_dict=text_dict,
+        presentation_model_id=presentation_model_id
     )
-
-
-    team_extractor.display_data(extracted_data=team_data, verbose=False, header=False, show_table=False, gauge=False, simple_table=True)
-
-
-    st.markdown(" ")
-    st.markdown(" ")
-
-    # Now, display the custom bullet list underneath the iframe and STL model
-    bullet_items = [
-        "1. Solar panels optimized for maximum energy generation",
-        "2. Strategic window placement for natural daylight",
-        "3. Thermal insulation systems for energy efficiency"
-    ]
-    display_custom_bullet_list(st.container(), bullet_items)  # Call the function to display the bullet list
-
-    team_extractor.display_data(extracted_data=team_data, verbose=False, header=False, show_table=True, gauge=False, simple_table=True)
-
-    # Metrics Display - Updated with correct metrics
-    metrics_display_container = st.container()
-    display_st_metric_values(metrics_display_container, metrics)
-
-    st.markdown(" ")
-    st.markdown(" ")
-    st.markdown(" ")
-    st.markdown(" ")
-    st.markdown(" ")
-    st.markdown(" ")
-    st.markdown(" ")
-
-
-    # Display Formulas and Explanations
-    display_formula_section_header(selected_team)
-
-    metrics_visualization_container = st.container()
-    display_metric_visualizations(metrics_visualization_container, metrics, add_text=True)
-
-    # Interactive Calculators
-    metric_interactive_calculator_container = st.container()
-    display_interactive_calculators(metric_interactive_calculator_container, metrics, grid=True)
-

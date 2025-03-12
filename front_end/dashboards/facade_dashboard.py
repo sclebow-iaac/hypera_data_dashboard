@@ -9,6 +9,33 @@ from viewer import display_speckle_viewer
 import data_extraction.facade_extractor as team_extractor  # Only import the extractor module
 from dashboards.dashboard import *
 
+# Define data for the dashboard
+team_members = [
+    {
+        'name': 'Andrea Ardizzi',
+        'link': 'https://blog.iaac.net/user/andrea.ardizzi/',
+    },
+    {
+        'name': 'Christina Christoforou',
+        'link': 'https://blog.iaac.net/user/christina153/',
+    },
+    {
+        'name': 'Giulia Tortorella',
+        'link': 'https://blog.iaac.net/user/giulia+tortorella/'
+    }
+]
+
+text_dict = {
+    'design_overview': 'Our facade design integrates sustainable features with aesthetic considerations.',
+    'bullet_items': [
+        "1. Solar panels optimized for maximum energy generation",
+        "2. Strategic window placement for natural daylight",
+        "3. Thermal insulation systems for energy efficiency"
+    ]
+}
+
+presentation_model_id = '29bc37af8e'
+
 
 def metric_calc_daylight_factor(weight_residential, weight_work, residential_area_with_daylight, total_residential_area, work_area_with_daylight, total_work_area):
     return (
@@ -154,32 +181,6 @@ def run(selected_team: str) -> None:
         ideal_value=1
     )
     metrics.append(energy_ratio_metric)
-
-    team_members = [
-        {
-            'name': 'Andrea Ardizzi',
-            'link': 'https://blog.iaac.net/user/andrea.ardizzi/',
-        },
-        {
-            'name': 'Christina Christoforou',
-            'link': 'https://blog.iaac.net/user/christina153/',
-        },
-        {
-            'name': 'Giulia Tortorella',
-            'link': 'https://blog.iaac.net/user/giulia+tortorella/'
-        }
-    ]
-
-    text_dict = {
-        'design_overview': 'Our facade design integrates sustainable features with aesthetic considerations.',
-        'bullet_items': [
-            "1. Solar panels optimized for maximum energy generation",
-            "2. Strategic window placement for natural daylight",
-            "3. Thermal insulation systems for energy efficiency"
-        ]
-    }
-
-    presentation_model_id = '29bc37af8e'
 
     generate_dashboard(
         selected_team=selected_team,

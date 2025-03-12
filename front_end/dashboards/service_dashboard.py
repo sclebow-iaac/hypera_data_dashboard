@@ -6,6 +6,32 @@ from viewer import display_speckle_viewer
 import data_extraction.service_extractor as team_extractor
 from dashboards.dashboard import *
 
+# Define data for the dashboard
+team_members = [
+    {
+        'name': 'Alice',
+        'link': 'https://www.linkedin.com/in/alice/',
+    },
+    {
+        'name': 'Bob',
+        'link': 'https://www.linkedin.com/in/bob/',
+    },
+    {
+        'name': 'Charlie',
+        'link': 'https://www.linkedin.com/in/charlie/',
+    },
+]
+
+text_dict = {
+    'design_overview': "Our service design integrates sustainable features with aesthetic considerations.",
+    'bullet_items': [
+        "1. Service design optimized for maximum occupancy efficiency",
+        "2. Strategic service placement for maximum occupancy efficiency",
+    ],
+}
+
+presentation_model_id = '76b50ad007'
+
 def metric_calc_occupancy_efficiency(utilization_rate, active_hours, function_exchange_factor, total_available_hours_per_day, total_area, area_of_functions):
     numerator = 0
     for utilization, hours, factor, area in zip(utilization_rate, active_hours, function_exchange_factor, area_of_functions):
@@ -14,37 +40,10 @@ def metric_calc_occupancy_efficiency(utilization_rate, active_hours, function_ex
     return occupancy_efficiency
 
 def run(selected_team: str) -> None:
-    
-     # Create two equal columns
-    col1, col2 = st.columns(2)  # Both columns will have equal width
-
-    # In the first column, display the image slideshow
-    with col1:
-
-        # Create a container for the slideshow
-        container = st.container()
-        
-        # Call the display_image_slideshow function
-        # Example usage
-        folder_path = "./front_end/dashboards/pictures"  # Update this to your actual image folder path
-        display_image_slideshow(container, folder_path, "facade_slideshow")  # Change interval as needed
-
-
-    # In the second column, display the iframe for the Speckle model
-    with col2:
-        container = st.container()
-        display_speckle_viewer(container, '31f8cca4e0', '76b50ad007', is_transparent=False, hide_controls=False, hide_selection_info=False, no_scroll=False)
-        container.markdown("https://macad.speckle.xyz/projects/31f8cca4e0/models/76b50ad007" , unsafe_allow_html=True)
-
     # Extract data
     models, client, project_id = setup_speckle_connection()
     verified, team_data = team_extractor.extract(models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
-
-    # Building Dashboard
-    # Dashboard Header
-    display_page_title(selected_team)
-    team_extractor.display_data(extracted_data=team_data, verbose=False, header=False, show_table=False, gauge=False, simple_table=False)
-
+   
     if not verified:
         st.error("Failed to extract data, proceding with Example Data.  Use Data Dashboard to Investigate.")
         team_extractor.display_data(extracted_data=team_data, header=False, show_table=False, gauge=True, simple_table=False)
@@ -120,6 +119,45 @@ def run(selected_team: str) -> None:
     )
 
     metrics.append(occupancy_efficiency_metric)
+    
+    generate_dashboard(
+        selected_team=selected_team,
+        metrics=metrics,
+        project_id=project_id,
+        team_members=team_members,
+        team_extractor=team_extractor,
+        extracted_data=team_data,
+        text_dict=text_dict,
+        presentation_model_id=presentation_model_id
+    )
+    
+     # Create two equal columns
+    col1, col2 = st.columns(2)  # Both columns will have equal width
+
+    # In the first column, display the image slideshow
+    with col1:
+
+        # Create a container for the slideshow
+        container = st.container()
+        
+        # Call the display_image_slideshow function
+        # Example usage
+        folder_path = "./front_end/dashboards/pictures"  # Update this to your actual image folder path
+        display_image_slideshow(container, folder_path, "facade_slideshow")  # Change interval as needed
+
+
+    # In the second column, display the iframe for the Speckle model
+    with col2:
+        container = st.container()
+        display_speckle_viewer(container, '31f8cca4e0', '76b50ad007', is_transparent=False, hide_controls=False, hide_selection_info=False, no_scroll=False)
+        container.markdown("https://macad.speckle.xyz/projects/31f8cca4e0/models/76b50ad007" , unsafe_allow_html=True)
+
+    # Extract data
+    models, client, project_id = setup_speckle_connection()
+    verified, team_data = team_extractor.extract(models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
+
+    team_extractor.display_data(extracted_data=team_data, verbose=False, header=False, show_table=False, gauge=False, simple_table=False)
+
 
     # # Display Formulas and Explanations
     # display_formula_section_header(selected_team)
