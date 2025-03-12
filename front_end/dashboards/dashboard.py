@@ -86,11 +86,12 @@ class Metric:
         
         # Calculate the new value using the calculation function
         new_value = self.calculation_func(*input_values)
+        delta_percent = (new_value - self.ideal_value) / self.ideal_value * 100 if self.ideal_value != 0 else 0
         # Display the new value
         metric_container.metric(
             label=f"**Goal Value:** {self.ideal_value:.2f} | **Current Value:** {new_value:.2f}",
             value=f"{new_value:.4f}",
-            delta=f"{new_value - self.ideal_value:.4f}",
+            delta=f"{delta_percent:.2f}%",
         )
 
 def generate_dashboard(selected_team: str, metrics: list[Metric], project_id: str, team_members: list[dict], team_extractor, extracted_data, text_dict: list[dict], presentation_model_id) -> None:
@@ -259,8 +260,8 @@ def display_st_metric_values(container, metrics):
     column_containers = container.columns(len(metrics))
     for column_container, metric in zip(column_containers, metrics):
         with column_container:
-            delta = metric.value - metric.ideal_value
-            column_container.metric(metric.title, f'{metric.value:.2f}', delta=f'{delta:.2f}', delta_color="normal", help=metric.description)
+            delta = (metric.value - metric.ideal_value) / metric.ideal_value * 100 if metric.ideal_value != 0 else 0
+            column_container.metric(metric.title, f'{metric.value:.2f}', delta=f'{delta:.2f}%', delta_color="normal", help=metric.description)
 
 def display_metric_visualizations(container, metrics, add_text=True):
     container.markdown('#### Metric Details')
@@ -403,7 +404,7 @@ def display_tape_diagram(container, metric: Metric) -> None:
             'bar': {'color': "Silver",},
         },
         value = metric.value,
-        delta = {'reference': metric.ideal_value, 'position': 'right'},
+        delta = {'reference': metric.ideal_value, 'position': 'right', 'relative': True},
         domain = {'x': [0, 1], 'y': [0, 1]},
     ),)
 
