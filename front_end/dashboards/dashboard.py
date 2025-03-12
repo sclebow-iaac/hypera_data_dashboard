@@ -147,6 +147,10 @@ def display_design_overview(container, text_dict: list[dict]) -> None:
 
 def display_team_members(container, team_members: list[dict]) -> None:
     container.markdown('') # Add some space
+    
+    # Sort the team members by last name
+    team_members.sort(key=lambda x: x["name"].split()[-1])
+    
     # Display the team members
     for col, member in zip(container.columns(len(team_members)), team_members):
         with col:
