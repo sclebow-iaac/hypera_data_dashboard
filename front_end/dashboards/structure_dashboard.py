@@ -9,16 +9,12 @@ from dashboards.dashboard import *
 # Define data for the dashboard
 team_members = [
     {
-        'name': 'Alice',
-        'link': 'https://www.linkedin.com/in/alice/',
+        'name': 'Marco Durand',
+        'link': 'https://blog.iaac.net/user/marcodurand/',
     },
     {
-        'name': 'Bob',
-        'link': 'https://www.linkedin.com/in/bob/',
-    },
-    {
-        'name': 'Charlie',
-        'link': 'https://www.linkedin.com/in/charlie/',
+        'name': 'Joaquin Broquedis',
+        'link': 'https://blog.iaac.net/user/joaquin+broquedis/',
     },
 ]
 
