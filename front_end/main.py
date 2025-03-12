@@ -317,20 +317,23 @@ if selected_dashboard == "Main":
             options=keys,
             help="Select a specific version to analyze"
         )
+        try:
+            selected_version = versions[keys.index(selected_version_key)]
 
-        selected_version = versions[keys.index(selected_version_key)]
+            # Create a iframe to display the selected version
+            def version2viewer(project, model, version, height=400) -> str:
+                embed_src = f"https://macad.speckle.xyz/projects/{project.id}/models/{model.id}@{version.id}#embed=%7B%22isEnabled%22%3Atrue%2C%7D"            
+                # print(f'embed_src {embed_src}')  # Print the URL to verify correctness
+                # print()
+                return st.components.v1.iframe(src=embed_src, height=height)
 
-        # Create a iframe to display the selected version
-        def version2viewer(project, model, version, height=400) -> str:
-            embed_src = f"https://macad.speckle.xyz/projects/{project.id}/models/{model.id}@{version.id}#embed=%7B%22isEnabled%22%3Atrue%2C%7D"            
-            # print(f'embed_src {embed_src}')  # Print the URL to verify correctness
-            # print()
-            return st.components.v1.iframe(src=embed_src, height=height)
+            if show_viewer:
+                with viewer:
+                    st.subheader("Selected Version👇")
+                    version2viewer(project, selected_model, selected_version)
 
-        if show_viewer:
-            with viewer:
-                st.subheader("Selected Version👇")
-                version2viewer(project, selected_model, selected_version)
+        except:
+            st.error("No version selected/found. Please select a version to analyze.")
 
         if show_statistics:
             statistics.show(report, client, project, models, versions)
