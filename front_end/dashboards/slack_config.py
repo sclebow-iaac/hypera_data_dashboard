@@ -151,26 +151,20 @@ def generate_recent_project_activity_message(day_bools, time_of_day_value) -> li
 
     # print(f'markdown: {markdown}') # Debugging
     # Add the Markdown table to the messages list
-    messages.append(f'*Recent Project Activity since {format_time(last_message_time)}*')
+    messages.append(f'**Recent Project Activity since {format_time(last_message_time)}**')
+    st.markdown(messages[-1]) # Display the message in Streamlit
     
     # Calculate the number of versions added
     total_versions = recent_versions_dataframe["Version Count"].sum()
     if total_versions > 0:
         messages.append(f"Total versions added: {total_versions}")
+        st.markdown(messages[-1]) # Display the message in Streamlit
     else:
         messages.append("No new versions")
+        st.markdown(messages[-1]) # Display the message in Streamlit
 
     # determine the team responsible for each model
     team_counts = {}
-    
-    # # Convert the DataFrame to Markdown
-    # table_message = recent_versions_dataframe.to_markdown(index=False)
-
-    # # Convert the DataFrame to String
-    # table_message = recent_versions_dataframe.to_string(index=False, justify="left")
-
-    # # Replace \n with <br> for HTML rendering
-    # table_message = table_message.replace("\n", "<br>")
 
     # Convert each row of the DataFrame to a human-readable string
     for index, row in recent_versions_dataframe.iterrows():
@@ -182,6 +176,7 @@ def generate_recent_project_activity_message(day_bools, time_of_day_value) -> li
         
         message = f'{author} of the {team} team uploaded {version_count} new version(s) of {model_name} at {last_version_time}'
         messages.append(message)
+        st.markdown(messages[-1]) # Display the message in Streamlit
 
     # messages.append(table_message)
     return messages
@@ -191,7 +186,8 @@ def generate_data_availability_message() -> list[str]:
     messages = []
     
     # Generate the header
-    messages.append(f'*Data Availability Report*')
+    messages.append(f'**Data Availability Report**')
+    st.markdown(messages[-1]) # Display the message in Streamlit
     
     all_extractors = {
         "Service": service_extractor,
@@ -229,11 +225,13 @@ def generate_data_availability_message() -> list[str]:
 
         # Generate the message
         messages.append(f'{team_name.capitalize()} team data is {percentage_verified:.2f}% in the correct format.')
+        st.markdown(messages[-1]) # Display the message in Streamlit
         if percentage_verified < 100:
             for bool, data_name, data_type in zip(type_matched_bools, extractor.data_names, extractor.data_types):
                 if not bool:
                     # print(f"data_item: {data_item}") # Debugging
                     messages.append(f' - {data_name} is in the wrong format, we were expecting {data_type} but got {type(extracted_data[data_name]).__name__}')
+                    st.markdown(messages[-1]) # Display the message in Streamlit
 
     return messages
 
@@ -241,7 +239,6 @@ def generate_data_availability_message() -> list[str]:
 def generate_data_analysis_message() -> list[str]:
     # Placeholder function to generate a message about data analysis
     messages = []
-    messages.append("Data analysis: Placeholder message.")
 
     dashboards = {
         "Facade": facade_dashboard,
@@ -251,13 +248,20 @@ def generate_data_analysis_message() -> list[str]:
         "Industrial": industrial_dashboard
     }
 
+    extractors = {
+        "Facade": facade_extractor,
+        "Residential": residential_extractor,
+        "Service": service_extractor,
+        "Structure": structure_extractor,
+        "Industrial": industrial_extractor
+    }
+
     # Setup Speckle connection
     models, client, project_id = setup_speckle_connection()
 
-    for team_name, dashboard in dashboards.items():
+    for team_name, dashboard, extractor in zip(dashboards.keys(), dashboards.values(), extractors.values()):
         # Extract data using the extractor
-        # Placeholder for actual data extraction
-        fully_verified, extracted_data = dashboard.extract(
+        fully_verified, extracted_data = extractor.extract(
             models=models,
             client=client,
             project_id=project_id,
@@ -266,13 +270,29 @@ def generate_data_analysis_message() -> list[str]:
             gauge=False,
             attribute_display=False
         )
-        print(f"fully_verified: {fully_verified}")
-
+        # print(f"fully_verified: {fully_verified}") # Debugging
+        # print(f"extracted_data: {extracted_data}") # Debugging
+                
         if not(fully_verified):
             messages.append(f'{team_name.capitalize()} team data is not fully verified.')
+            st.markdown(messages[-1])
             continue
         
-        # Calculate the 
+        metrics = dashboard.generate_metrics(fully_verified, extracted_data)
+
+        # Generate the message header
+        messages.append('')
+        st.markdown(messages[-1])
+        messages.append(f'**{team_name.capitalize()} Team Metric Analysis:**')
+        st.markdown(messages[-1])
+        
+        # Create a message for each metric
+        for metric in metrics:
+            # print(f"metric: {metric}") # Debugging
+            metric_value = f"{metric.value:.2f}"
+            metric_ideal_value = f"{metric.ideal_value:.2f}"
+            messages.append(f'{metric.title} value is currently {metric_value}, goal value is {metric_ideal_value}')
+            st.markdown(messages[-1])
 
     return messages
 
@@ -281,8 +301,10 @@ def generate_message(recent_project_activity_bool, data_availability_bool, data_
 
     # Generate message header
     now = datetime.datetime.now(datetime.timezone.utc)
-    messages.append(f'*HyperA Project Update for {format_time(now)}:*')
+    messages.append(f'**HyperA Project Update for {format_time(now)}:**')
+    st.markdown(messages[-1]) # Display the message in Streamlit
     messages.append('')
+    st.markdown(messages[-1]) # Display the message in Streamlit
 
     # Generate the message based on the selected options
     if recent_project_activity_bool:
@@ -406,18 +428,19 @@ def run():
         # Generate the message
         messages = generate_message(recent_project_activity_bool, data_availability_bool, data_analysis_bool, day_bools, time_of_day_value)            
 
-        # Display the generated message
-        for message in messages:
-            # print(message) # Debugging
-            # If message is between a single asterisk at the beginning and end, make it bold by adding another asterisk
-            if message.startswith("*") and message.endswith("*"):
-                message = message.replace("*", "**")
-            st.markdown(message, unsafe_allow_html=True)
+        # # Display the generated message
+        # for message in messages:
+        #     # print(message) # Debugging
+        #     # If message is between a single asterisk at the beginning and end, make it bold by adding another asterisk
+        #     if message.startswith("*") and message.endswith("*"):
+        #         message = message.replace("*", "**")
+            # st.markdown(message, unsafe_allow_html=True)
 
         message_generated = True # Set the flag to True if the message has been generated
 
     if send_message_trigger:
         # Check if the message has been generated
+        st.subheader('Sending Message to Slack:')
         if message_generated:
             message = '\n'.join(messages)
         else:
