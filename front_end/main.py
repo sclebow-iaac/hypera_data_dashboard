@@ -22,6 +22,43 @@ import project_statistics as statistics
 # import attribute extraction
 import attribute_extraction
 
+def display_federated_speckle_viewer(container, project_id, height):
+    # Function to create a federated Speckle viewer
+    # With multiple models
+
+    model_ids = [] # List to store model IDs
+
+    # Get the team dashboards
+    team_dashboards = [
+        residential_dashboard,
+        service_dashboard,
+        structure_dashboard,
+        industrial_dashboard,
+        facade_dashboard,
+    ]
+
+    # Loop through each dashboard and get the model IDs
+    for dashboard in team_dashboards:
+        # Get the model IDs from the dashboard
+        model_id = dashboard.presentation_model_id
+        # Check if the model ID is not None
+        if model_id is not None:
+            model_ids.append(model_id)
+
+    # Join the model IDs into a single string
+    federated_model_id = ','.join(model_ids)
+
+    display_speckle_viewer(
+        container=container, 
+        project_id=project_id, 
+        model_id=federated_model_id,
+        is_transparent=True,
+        hide_controls=False,
+        hide_selection_info=False,
+        no_scroll=False,
+        height=height,
+    )
+
 # Function to display the residential dashboard
 def display_residential_dashboard():
     with dashboard_placeholder.container():
