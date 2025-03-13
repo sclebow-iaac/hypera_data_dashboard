@@ -35,9 +35,9 @@ class Metric:
         # Create a header for the interactive calculator
         container.markdown(f"### {self.title} Interactive Calculator")
 
-        if columns: # If columns are enabled, create two columns
+        if columns:  # If columns are enabled, create two columns
             slider_container, metric_container = container.columns(2)
-        else: # If columns are not enabled, use a single container
+        else:  # If columns are not enabled, use a single container
             slider_container = container
             metric_container = container
 
@@ -59,7 +59,8 @@ class Metric:
                 else:
                     if 'rate' in input["name"].lower() or 'factor' in input["name"].lower():
                         # If the input is a rate or factor, calculate the average
-                        val = sum([float(x) for x in input["value"]]) / len(input["value"])
+                        val = sum([float(x) for x in input["value"]]
+                                  ) / len(input["value"])
                         name += " (Avg)"
                     else:
                         # If the input is a list of numbers, sum them
@@ -68,7 +69,7 @@ class Metric:
             # Otherwise, use the value directly
             else:
                 val = input["value"]
-            
+
             # Create a slider for the input
             input_slider = slider_container.slider(
                 label=name,
@@ -81,12 +82,14 @@ class Metric:
                 input_values.append([input_slider])
             else:
                 input_values.append(input_slider)
-        
-        print("Input Values for Interactive Calculator: ", input_values)  # Debugging: Print input values
-        
+
+        print("Input Values for Interactive Calculator: ",
+              input_values)  # Debugging: Print input values
+
         # Calculate the new value using the calculation function
         new_value = self.calculation_func(*input_values)
-        delta_percent = (new_value - self.ideal_value) / self.ideal_value * 100 if self.ideal_value != 0 else 0
+        delta_percent = (new_value - self.ideal_value) / \
+            self.ideal_value * 100 if self.ideal_value != 0 else 0
         # Display the new value
         metric_container.metric(
             label=f"**Goal Value:** {self.ideal_value:.2f} | **Current Value:** {new_value:.2f}",
@@ -94,7 +97,12 @@ class Metric:
             delta=f"{delta_percent:.2f}%",
         )
 
+
 def generate_dashboard(selected_team: str, metrics: list[Metric], project_id: str, team_members: list[dict], team_extractor, extracted_data, text_dict: list[dict], presentation_model_id) -> None:
+    # Display the images
+    header_image_container = st.container(border=True)
+    display_images(header_image_container, selected_team, "02")
+
     # Display the page title
     display_page_title(selected_team)
 
@@ -105,20 +113,21 @@ def generate_dashboard(selected_team: str, metrics: list[Metric], project_id: st
     # Display the Speckle viewer
     viewer_height = 400
     speckle_container = st.container(border=True)
-    display_speckle_viewer(speckle_container, project_id, presentation_model_id, is_transparent=True, hide_controls=True, hide_selection_info=True, no_scroll=True, height=viewer_height)
+    display_speckle_viewer(speckle_container, project_id, presentation_model_id, is_transparent=True,
+                           hide_controls=True, hide_selection_info=True, no_scroll=False, height=viewer_height, include_site=True)
 
     # Display the images
     images_container = st.container(border=True)
-    display_images(images_container, selected_team)
+    display_images(images_container, selected_team, "01")
 
     # Display the text section
     text_container = st.container(border=True)
     display_text(text_container, text_dict)
-    
 
     # Display the extracted data
     extracted_data_container = st.container(border=True)
-    team_extractor.display_data(extracted_data=extracted_data, header=True, show_table=True, gauge=False, simple_table=True, container=extracted_data_container)
+    team_extractor.display_data(extracted_data=extracted_data, header=True, show_table=True,
+                                gauge=False, simple_table=True, container=extracted_data_container)
 
     # Display the KPI section
     kpi_container = st.container(border=True)
@@ -126,37 +135,45 @@ def generate_dashboard(selected_team: str, metrics: list[Metric], project_id: st
 
     # Display the detailed metrics
     detailed_metrics_container = st.container(border=True)
-    display_metric_visualizations(detailed_metrics_container, metrics, add_text=True)
-    
+    display_metric_visualizations(
+        detailed_metrics_container, metrics, add_text=True)
+
     # Display the interactive calculators
     interactive_calculator_container = st.container(border=True)
     grid = True if len(metrics) > 2 else False
-    display_interactive_calculators(interactive_calculator_container, metrics, grid=grid)
+    display_interactive_calculators(
+        interactive_calculator_container, metrics, grid=grid)
 
     pass
+
 
 def display_text(container, text_dict: list[dict]) -> None:
     design_overview_container = container.container()
     display_design_overview(design_overview_container, text_dict)
-    container.markdown('') # Add some space
+    container.markdown('')  # Add some space
 
-    display_custom_bullet_list(container, text_dict['bullet_items'], bullet_image_path=None)
+    display_custom_bullet_list(
+        container, text_dict['bullet_items'], bullet_image_path=None)
+
 
 def display_design_overview(container, text_dict: list[dict]) -> None:
     container.markdown('#### Design Overview')
     container.markdown(text_dict['design_overview'])
 
+
 def display_team_members(container, team_members: list[dict]) -> None:
-    container.markdown('') # Add some space
-    
+    container.markdown('')  # Add some space
+
     # Sort the team members by last name
     team_members.sort(key=lambda x: x["name"].split()[-1])
-    
+
     # Display the team members
     for col, member in zip(container.columns(len(team_members)), team_members):
         with col:
-            st.markdown(f'<div style="text-align: center;"><h5>{member["name"]}</h5></div>', unsafe_allow_html=True)
-            st.markdown(f'<div style="text-align: center;"><a href="{member["link"]}">Profile</a></div>', unsafe_allow_html=True)
+            st.markdown(
+                f'<div style="text-align: center;"><h5>{member["name"]}</h5></div>', unsafe_allow_html=True)
+            st.markdown(
+                f'<div style="text-align: center;"><a href="{member["link"]}">Profile</a></div>', unsafe_allow_html=True)
 
     # Style for team members
     container.markdown("""
@@ -170,13 +187,14 @@ def display_team_members(container, team_members: list[dict]) -> None:
         }
     </style>
     """, unsafe_allow_html=True)
-    container.markdown('') # Add some space
+    container.markdown('')  # Add some space
+
 
 def display_interactive_calculators(container, metrics: list[Metric], grid: bool = True):
     container.markdown("""
     <h2 style='text-align: center;'>Interactive Sustainability Calculators</h3>
     """, unsafe_allow_html=True)
-    
+
     columns = []
 
     if len(metrics) < 2:
@@ -195,7 +213,9 @@ def display_interactive_calculators(container, metrics: list[Metric], grid: bool
         columns = [container.container() for _ in range(len(metrics))]
 
     for interactive_container, metric in zip(columns, metrics):
-        metric.display_interactive_calculator(interactive_container, columns=not(grid))
+        metric.display_interactive_calculator(
+            interactive_container, columns=not (grid))
+
 
 def setup_speckle_connection(models_limit=100):
     speckle_server = "macad.speckle.xyz"
@@ -212,33 +232,39 @@ def setup_speckle_connection(models_limit=100):
 
     return models, client, project_id
 
-def display_speckle_viewer(container, project_id, model_id, is_transparent=False, hide_controls=False, hide_selection_info=False, no_scroll=False, height=400):
-        container.markdown('#### Representational Model')
 
-        speckle_model_url = f'https://macad.speckle.xyz/projects/{project_id}/models/{model_id}'
-        # https://macad.speckle.xyz/projects/31f8cca4e0/models/e76ccf2e0f,3f178d9658,a4e3d78009,c710b396d3,5512057f5b,d68a58c12d,2b48d3f757,767672f412
-        # speckle_model_url += '#embed={%22isEnabled%22:true,%22isTransparent%22:true,%22hideControls%22:true,%22hideSelectionInfo%22:true,%22noScroll%22:true}'
+def display_speckle_viewer(container, project_id, model_id, is_transparent=False, hide_controls=False, hide_selection_info=False, no_scroll=False, height=400, include_site=False):
+    container.markdown('#### Representational Model')
 
-        embed_str = '%22isEnabled%22:true'
-        if is_transparent:
-            embed_str += ',%22isTransparent%22:true'
-        if hide_controls:
-            embed_str += ',%22hideControls%22:true'
-        if hide_selection_info:
-            embed_str += ',%22hideSelectionInfo%22:true'
-        if no_scroll:
-            embed_str += ',%22noScroll%22:true'
+    speckle_model_url = f'https://macad.speckle.xyz/projects/{project_id}/models/{model_id}'
 
-        speckle_model_url += f'#embed={{{embed_str}}}'
+    if include_site:
+        speckle_model_url += ',693847dff2'
 
-        iframe_code = f"""
+    # https://macad.speckle.xyz/projects/31f8cca4e0/models/e76ccf2e0f,3f178d9658,a4e3d78009,c710b396d3,5512057f5b,d68a58c12d,2b48d3f757,767672f412
+    # speckle_model_url += '#embed={%22isEnabled%22:true,%22isTransparent%22:true,%22hideControls%22:true,%22hideSelectionInfo%22:true,%22noScroll%22:true}'
+
+    embed_str = '%22isEnabled%22:true'
+    if is_transparent:
+        embed_str += ',%22isTransparent%22:true'
+    if hide_controls:
+        embed_str += ',%22hideControls%22:true'
+    if hide_selection_info:
+        embed_str += ',%22hideSelectionInfo%22:true'
+    if no_scroll:
+        embed_str += ',%22noScroll%22:true'
+
+    speckle_model_url += f'#embed={{{embed_str}}}'
+
+    iframe_code = f"""
         <iframe src="{speckle_model_url}"
                 style="width: 100%; height: {height}px; border: none;">
         </iframe>
         """
-        container.markdown(iframe_code, unsafe_allow_html=True)
+    container.markdown(iframe_code, unsafe_allow_html=True)
 
-        return speckle_model_url
+    return speckle_model_url
+
 
 def display_page_title(team_name: str) -> None:
     st.markdown(f'''
@@ -247,6 +273,7 @@ def display_page_title(team_name: str) -> None:
         </div>
     ''', unsafe_allow_html=True)
 
+
 def display_formula_section_header(team_name: str) -> None:
     st.markdown(f'''
         <div style="text-align: center;">
@@ -254,14 +281,18 @@ def display_formula_section_header(team_name: str) -> None:
         </div>
     ''', unsafe_allow_html=True)
 
+
 def display_st_metric_values(container, metrics):
     container.markdown('#### Key Performance Indicators')
 
     column_containers = container.columns(len(metrics))
     for column_container, metric in zip(column_containers, metrics):
         with column_container:
-            delta = (metric.value - metric.ideal_value) / metric.ideal_value * 100 if metric.ideal_value != 0 else 0
-            column_container.metric(metric.title, f'{metric.value:.2f}', delta=f'{delta:.2f}%', delta_color="normal", help=metric.description)
+            delta = (metric.value - metric.ideal_value) / \
+                metric.ideal_value * 100 if metric.ideal_value != 0 else 0
+            column_container.metric(
+                metric.title, f'{metric.value:.2f}', delta=f'{delta:.2f}%', delta_color="normal", help=metric.description)
+
 
 def display_metric_visualizations(container, metrics, add_text=True):
     container.markdown('#### Metric Details')
@@ -273,6 +304,7 @@ def display_metric_visualizations(container, metrics, add_text=True):
         if index < len(metrics) - 1:
             # Add a horizontal line between metrics
             vis_container.markdown("---")
+
 
 def display_text_section(container, text: str) -> None:
     """Display a text section in the given container."""
@@ -291,17 +323,18 @@ def display_text_section(container, text: str) -> None:
         <hr style="border: 1px solid white;"/>  <!-- Add a horizontal line -->
     """, unsafe_allow_html=True)
 
+
 def display_custom_bullet_list(container, items: list[str], bullet_image_path: str = None) -> None:
     """Display a list with custom bullet points using an image."""
     # Read and encode the image
     import base64
     from pathlib import Path
-    
+
     # Default to enso circle if no path provided
     if bullet_image_path is None:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         bullet_image_path = os.path.join(current_dir, "enso_circle.png")
-    
+
     try:
         image_path = Path(bullet_image_path)
         with open(image_path, "rb") as img_file:
@@ -309,7 +342,7 @@ def display_custom_bullet_list(container, items: list[str], bullet_image_path: s
     except Exception as e:
         st.error(f"Failed to load image: {e}")
         return
-        
+
     bullet_style = f"""
     <style>
     .enso-list {{
@@ -329,24 +362,25 @@ def display_custom_bullet_list(container, items: list[str], bullet_image_path: s
     }}
     </style>
     """
-    
+
     bullet_list = "<ul class='enso-list'>"
     for item in items:
         bullet_list += f"<li>{item}</li>"
     bullet_list += "</ul>"
-    
+
     container.markdown(bullet_style + bullet_list, unsafe_allow_html=True)
+
 
 def display_metric(container, metric: Metric, add_text=True) -> None:
     # Display a metric in the specified container.
-    
-    # Display the metric title 
+
+    # Display the metric title
     container.markdown(f"##### {metric.title}")
 
     # Display the metric image
     if metric.image_path:
         container.image(metric.image_path, width=100)
-    
+
     # Display the metric formula
     container.latex(metric.formula_markdown)
 
@@ -354,14 +388,15 @@ def display_metric(container, metric: Metric, add_text=True) -> None:
     container.markdown(metric.description)
 
     # Display the metric value and ideal value
-    container.markdown(f"**Goal Value:** {metric.ideal_value:.2f} | **Current Value:** {metric.value:.2f}")
+    container.markdown(
+        f"**Goal Value:** {metric.ideal_value:.2f} | **Current Value:** {metric.value:.2f}")
 
     # Display the tape diagram
     display_tape_diagram(container, metric)
 
     # """Display a metric in the specified container."""
     # print("DISPLAY METRIC: ", metric.title)
-    
+
     # # Create two columns with specified widths
     # col1, col2 = container.columns([1, 2])  # First column is 1 part, second column is 2 parts
 
@@ -387,32 +422,36 @@ def display_metric(container, metric: Metric, add_text=True) -> None:
     #     for _ in range(5):
     #         st.markdown("")
 
+
 def display_tape_diagram(container, metric: Metric) -> None:
     fig = go.Figure(go.Indicator(
-        mode = "number+gauge+delta",
-        gauge = {
+        mode="number+gauge+delta",
+        gauge={
             'shape': "bullet",
             'axis': {'range': [metric.min_value, metric.max_value]},
             'steps': [
-                {'range': [metric.min_value, metric.ideal_value], 'color': "Salmon"},
-                {'range': [metric.ideal_value, metric.max_value], 'color': "PaleGreen"},
-            ],                
+                {'range': [metric.min_value, metric.ideal_value],
+                    'color': "Salmon"},
+                {'range': [metric.ideal_value, metric.max_value],
+                    'color': "PaleGreen"},
+            ],
             'threshold': {
                 'line': {'color': "SteelBlue", 'width': 8},
                 'value': metric.ideal_value
             },
-            'bar': {'color': "Silver",},
+            'bar': {'color': "Silver", },
         },
-        value = metric.value,
-        delta = {'reference': metric.ideal_value, 'position': 'right', 'relative': True},
-        domain = {'x': [0, 1], 'y': [0, 1]},
+        value=metric.value,
+        delta={'reference': metric.ideal_value,
+               'position': 'right', 'relative': True},
+        domain={'x': [0, 1], 'y': [0, 1]},
     ),)
 
     side_margin = 100
     top_margin = 0
     height = 50
     font_size = 16
-    
+
     fig.update_layout(
         height=height,
         margin=dict(l=side_margin, r=side_margin, t=top_margin, b=top_margin),
@@ -421,6 +460,7 @@ def display_tape_diagram(container, metric: Metric) -> None:
         plot_bgcolor='rgba(0, 0, 0, 0)',
     )
     container.plotly_chart(fig)
+
 
 def create_top_menu(teams: list[str]) -> str:
     """Create a horizontal menu at the top of the page."""
@@ -476,10 +516,10 @@ def create_top_menu(teams: list[str]) -> str:
             total_buttons_var -= columns_to_create
 
         print(f'Created {len(created_cols)} columns for {len(teams)} teams.')
-            
+
         # cols = st.columns(len(teams))
         cols = created_cols
-        
+
         # Create buttons in each column and handle selection
         selected = None
         for col, item in zip(cols, teams):
@@ -496,27 +536,29 @@ def create_top_menu(teams: list[str]) -> str:
                     </button>
                 """
                 if st.button(
-                    item, 
-                    key=f"menu_{item}",  # Ensure unique key by prefixing with 'menu_'
+                    item,
+                    # Ensure unique key by prefixing with 'menu_'
+                    key=f"menu_{item}",
                     use_container_width=True,
                 ):
                     selected = item
-        
+
         # Update selection if a new item was clicked
         if selected is not None:
             st.session_state.current_selection = selected
-        
+
         # Return the current selection
         return st.session_state.current_selection
+
 
 def display_metric_circles_and_tape(container, metric: Metric) -> None:
     """Display input values for metrics in circles and a tape diagram showing progress using the Metric class."""
     print("DISPLAY METRIC CIRCLES AND TAPE: ", metric.title)
 
-
     # Calculate the range and scale the value
     range_value = metric.max_value - metric.min_value
-    scaled_value = (metric.value - metric.min_value) / range_value if range_value > 0 else 0  # Avoid division by zero
+    scaled_value = (metric.value - metric.min_value) / \
+        range_value if range_value > 0 else 0  # Avoid division by zero
 
     # Create a gradient background for the tape diagram
     container.markdown(f"""
@@ -531,7 +573,8 @@ def display_metric_circles_and_tape(container, metric: Metric) -> None:
     """, unsafe_allow_html=True)
 
     # Calculate the position for the value display
-    position_percentage = scaled_value * 100  # Convert to percentage for positioning
+    # Convert to percentage for positioning
+    position_percentage = scaled_value * 100
     container.markdown(f"""
         <div style='position: relative; width: 100%;'>
             <div style='position: absolute; left: {position_percentage}%; transform: translateX(-50%); font-size: 24px; color: black; top: 30px;'>
@@ -549,7 +592,7 @@ def display_metric_circles_and_tape(container, metric: Metric) -> None:
     """, unsafe_allow_html=True)
 
     for _ in range(5):
-            st.markdown("")
+        st.markdown("")
 
     # Display the ideal optimized value
     container.markdown(f"""
@@ -559,7 +602,7 @@ def display_metric_circles_and_tape(container, metric: Metric) -> None:
     """, unsafe_allow_html=True)
 
     for _ in range(2):
-            st.markdown("")
+        st.markdown("")
 
     container.markdown(f"""
         <div style='text-align: left; font-size: 14px; color: black;'>
@@ -568,7 +611,8 @@ def display_metric_circles_and_tape(container, metric: Metric) -> None:
     """, unsafe_allow_html=True)
 
     # Add space between the tape diagram and the metric values
-    container.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+    container.markdown(
+        "<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
 
     # Ensure all values in args are numeric
     input_values = []
@@ -579,15 +623,18 @@ def display_metric_circles_and_tape(container, metric: Metric) -> None:
             input_values.append(float(input["value"]))
 
     # Find the maximum value to scale the circles
-    max_value = max(input_values) if input_values else 1  # Avoid division by zero
+    # Avoid division by zero
+    max_value = max(input_values) if input_values else 1
     scaling_factor = 200  # Maximum diameter for the largest circle
     min_circle_diameter = 30  # Minimum diameter for visibility
 
     print("Input Values for Metric: ", metric.title, input_values)
     # Create columns for layout with 2 extra columns
     total_columns = len(input_values) + 2
-    print("Total Columns for metric: ", metric.title, total_columns)  # Debugging: Print total columns      
-    cols = st.columns(total_columns)  # Create total_columns based on the number of values + 2
+    print("Total Columns for metric: ", metric.title,
+          total_columns)  # Debugging: Print total columns
+    # Create total_columns based on the number of values + 2
+    cols = st.columns(total_columns)
 
     # Place empty circles in the first and last columns
     for idx in range(total_columns):
@@ -597,8 +644,11 @@ def display_metric_circles_and_tape(container, metric: Metric) -> None:
         else:
             # Create a circle representation for the metric values
             inputs_index = idx - 1  # Adjust index for metric values
-            value = input_values[inputs_index]  # Get the value from the Metric instance
-            circle_diameter = max((value / max_value) * scaling_factor, min_circle_diameter)  # Scale for visibility with a minimum size
+            # Get the value from the Metric instance
+            value = input_values[inputs_index]
+            # Scale for visibility with a minimum size
+            circle_diameter = max((value / max_value) *
+                                  scaling_factor, min_circle_diameter)
             name = metric.inputs[inputs_index]["name"]  # Change made here
             unit = metric.inputs[inputs_index]["unit"]  # Change made here
             with cols[idx]:
@@ -634,16 +684,18 @@ def display_metric_circles_and_tape(container, metric: Metric) -> None:
         </script>
     """, unsafe_allow_html=True)
 
+
 def run(selected_team: str) -> None:
     st.title(f"{selected_team} Dashboard")
 
-def display_images(container, team_name: str) -> None:
+
+def display_images(container, team_name: str, subfolder: str) -> None:
     container.markdown('#### Concept Images')
 
-    folder_path = f"./front_end/dashboards/pictures/team_dashboards/{team_name}/"
+    folder_path = f"./front_end/assets/{team_name.capitalize()}/{subfolder}"
     image_urls = [os.path.join(folder_path, file) for file in os.listdir(folder_path)
                   if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif'))]
-    
+
     if image_urls:
         # Display images in the container
         for image_url, column in zip(image_urls, container.columns(len(image_urls))):
@@ -651,26 +703,26 @@ def display_images(container, team_name: str) -> None:
 
     # """Display a slideshow of images from a specified folder in the given container."""
     # # Get a list of image files in the specified folder
-    # image_urls = [os.path.join(folder_path, file) for file in os.listdir(folder_path) 
+    # image_urls = [os.path.join(folder_path, file) for file in os.listdir(folder_path)
     #               if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif'))]
-    
+
     # if image_urls:
     #     # Create session state to keep track of current image index
     #     if 'image_index' not in st.session_state:
     #         st.session_state.image_index = 0
-            
+
     #     # Create three columns: left arrow, image, right arrow
     #     col1, col2, col3 = container.columns([1, 10, 1])
-        
+
     #     # Left arrow
     #     with col1:
     #         if st.button('←', key=f'{slideshow_key}_prev'):  # Use unique key
     #             st.session_state.image_index = (st.session_state.image_index - 1) % len(image_urls)
-            
+
     #     # Display current image in the middle column
     #     with col2:
     #         st.image(image_urls[st.session_state.image_index], use_container_width=True)
-            
+
     #     # Right arrow
     #     with col3:
     #         if st.button('→', key=f'{slideshow_key}_next'):  # Use unique key
