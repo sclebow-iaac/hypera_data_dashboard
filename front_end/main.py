@@ -22,6 +22,19 @@ import project_statistics as statistics
 # import attribute extraction
 import attribute_extraction
 
+import subprocess
+import datetime
+
+# Streamlit secrets management
+
+def run_slack_process():
+    print("Starting Slack message task...") 
+    # Run the Slack message task in a subprocess
+    process = subprocess.Popen(['python', 'front_end/dashboards/slack_message_task.py'])
+    return process
+
+run_slack_process()
+
 def display_federated_speckle_viewer(container, project_id, height):
     # Function to create a federated Speckle viewer
     # With multiple models

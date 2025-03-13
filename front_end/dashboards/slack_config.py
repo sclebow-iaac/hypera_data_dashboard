@@ -27,6 +27,7 @@ import requests
 
 import pandas as pd
 
+
 def format_time(dt):
     return dt.strftime("%d/%m %H:%M") + " GMT"
 
@@ -319,13 +320,10 @@ def generate_message(recent_project_activity_bool, data_availability_bool, data_
     # Display the generated message
     return messages
 
-def run():
-    print() # Debugging
-
-    st.title("Slack Automatic Message Generator")
-
+def read_config_file():
     config_file_path = "front_end/slack_config.txt"
-    # Load the configuration from a file 
+    # Load the configuration from a file
+
     try:
         with open(config_file_path, "r") as f:
             config = f.read()
@@ -345,20 +343,70 @@ def run():
         friday_value = process_bool(lines[7])
         time_of_day_value = lines[8].split(": ")[1]
 
-        # print(f"Loaded configuration: {recent_project_activity_value}, {data_availability_value}, {data_analysis_value}, {monday_value}, {tuesday_value}, {wednesday_value}, {thursday_value}, {friday_value}, {time_of_day_value}")
-
+        return {
+            "recent_project_activity": recent_project_activity_value,
+            "data_availability": data_availability_value,
+            "data_analysis": data_analysis_value,
+            "monday": monday_value,
+            "tuesday": tuesday_value,
+            "wednesday": wednesday_value,
+            "thursday": thursday_value,
+            "friday": friday_value,
+            "time_of_day": time_of_day_value
+        }
     except FileNotFoundError:
         # If the file does not exist, use default values
-        recent_project_activity_value = True
-        data_availability_value = True
-        data_analysis_value = True
-        monday_value = True
-        tuesday_value = True
-        wednesday_value = False
-        thursday_value = False
-        friday_value = False
-        time_of_day_value = "09:00"
+        return {
+            "recent_project_activity": True,
+            "data_availability": True,
+            "data_analysis": True,
+            "monday": True,
+            "tuesday": True,
+            "wednesday": False,
+            "thursday": False,
+            "friday": False,
+            "time_of_day": "09:00"
+        }
 
+def send_message_to_slack(messages):
+    message = '\n'.join(messages)
+
+    # Send the message to Slack
+    payload = {
+        "text": message,
+        "mrkdwn": True
+    }
+    headers = {
+        "Content-Type": "application/json"
+    }
+    
+    slack_webhook_url = st.secrets["slack_webhook_url"]
+    response = requests.post(slack_webhook_url, json=payload, headers=headers)
+    # Check the response status
+    if response.status_code != 200:
+        print(f"Failed to send message to Slack: {response.status_code} - {response.text}")
+        return
+    else:
+        print(f"Message sent to Slack: {message}") # Debugging
+        print(f"Response from Slack: {response.text}") # Debugging
+
+def run():
+    print() # Debugging
+
+    st.title("Slack Automatic Message Generator")
+
+    # Read the configuration file
+    config = read_config_file()
+    recent_project_activity_value = config["recent_project_activity"]
+    data_availability_value = config["data_availability"]
+    data_analysis_value = config["data_analysis"]
+    monday_value = config["monday"]
+    tuesday_value = config["tuesday"]
+    wednesday_value = config["wednesday"]
+    thursday_value = config["thursday"]
+    friday_value = config["friday"]
+    time_of_day_value = config["time_of_day"]
+    
     with st.expander("## Configuration"):
         message_options_container, day_of_week_container, time_of_day_container = st.columns(3)
         with message_options_container:
