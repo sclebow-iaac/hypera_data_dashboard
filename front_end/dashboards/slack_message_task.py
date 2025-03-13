@@ -140,6 +140,7 @@ while True:
     if first_run:
         # Send a message to Slack that the bot is running
         send_message_to_slack(messages=[f'Hyper A Slack Bot is starting up at {now.strftime("%Y-%m-%d %H:%M:%S")}.'])
+        first_run = False
 
     next_message_time = get_next_message_time(day_bools, time_of_day_value)
     print(f"Next message time: {next_message_time}")
