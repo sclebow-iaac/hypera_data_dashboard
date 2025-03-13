@@ -32,7 +32,7 @@ import sys
 def run_slack_process():
     print("Starting Slack message task...") 
     # Run the Slack message task in a subprocess
-    process = subprocess.Popen([sys.executable, 'front_end/dashboards/slack_message_task.py'])
+    process = subprocess.Popen([sys.executable, 'front_end/dashboards/slack_message_task.py']) 
     return process
 
 run_slack_process()
