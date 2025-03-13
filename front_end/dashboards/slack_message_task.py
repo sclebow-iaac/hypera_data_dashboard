@@ -16,7 +16,7 @@ import datetime
 import time
 import requests
 
-from front_end.dashboards.slack_config import generate_message
+from dashboards.slack_config import generate_message
 
 def read_config_file():
     config_file_path = "front_end/slack_config.txt"
@@ -129,6 +129,8 @@ day_index_bools = {
     4: friday_value
 }
 
+check_interval = 30  # seconds
+
 while True:
     print("Checking for message...")
 
@@ -137,26 +139,38 @@ while True:
 
     # Send a test message every 30 seconds
     # Check if the current time is a multiple of 30 seconds
-    if now.second % 30 == 0:
-        print("Sending test message...")
+    if int(now.second) % check_interval == 0 and last_message_time < now - datetime.timedelta(seconds=30):
+        # print("Sending test message...")
 
-        # Generate the test message
-        test_message = f'Test message at {now.strftime("%Y-%m-%d %H:%M:%S")}'
+        # # Generate the test message
+        # test_message = f'Test message at {now.strftime("%Y-%m-%d %H:%M:%S")}'
 
-        # Send the test message to the Slack channel
-        send_message_to_slack(messages=[test_message])
+        # # Send the test message to the Slack channel
+        # send_message_to_slack(messages=[test_message])
+
+        # Generate the messages
+        messages = generate_message(
+            recent_project_activity_value,
+            data_availability_value,
+            data_analysis_value,
+            day_bools=day_bools,
+            time_of_day_value=time_of_day_value,
+        )
+
+        # Send the messages to the Slack channel
+        send_message_to_slack(messages=messages)
 
         # Update the last message time
         last_message_time = now
 
+        # # Write to log
+        # write_to_log(f'Test message sent at {now.strftime("%Y-%m-%d %H:%M:%S")}')
+
         # Write to log
-        write_to_log(f'Test message sent at {now.strftime("%Y-%m-%d %H:%M:%S")}')
+        write_to_log(f'Update Message sent at {now.strftime("%Y-%m-%d %H:%M:%S")}')
 
     else:
         print(f'Waiting for next message... {now.strftime("%Y-%m-%d %H:%M:%S")}')
-
-    # # Sleep for a short duration to avoid busy waiting
-    # time.sleep(1)
 
     # # Check if last_message_time is more than 24 hours ago
     # if (now - last_message_time).total_seconds() > 86400:
@@ -183,3 +197,13 @@ while True:
     #                 message_sent_today = True # Set the message_sent_today to True
 
     #                 print(f'Message sent at {now.strftime("%Y-%m-%d %H:%M:%S")}')
+
+    # Use time.sleep to wait for the next check
+    # Check if the current time is a multiple of the check_interval
+    if int(now.second) % check_interval == 0:
+        time.sleep(check_interval)
+    else:
+        # Calculate the time to wait until the next check
+        time_to_wait = check_interval - (now.second % check_interval)
+        print(f'Waiting for {time_to_wait} seconds...')
+        time.sleep(time_to_wait)

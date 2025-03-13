@@ -26,13 +26,24 @@ import subprocess
 import datetime
 
 import sys
+import os
+import signal
 
-# Streamlit secrets management
+#PAGE CONFIG AND CUSTOM CSS
+#--------------------------
+st.set_page_config(
+    page_title="Hyperbuilding_A Dashboard",
+    page_icon="📊",
+    layout="wide"  # Makes the dashboard use full screen width
+)
 
+@st.cache_resource
 def run_slack_process():
-    print("Starting Slack message task...") 
+    print("Starting Slack message task...")
+
     # Run the Slack message task in a subprocess
     process = subprocess.Popen([sys.executable, 'front_end/dashboards/slack_message_task.py']) 
+
     return process
 
 run_slack_process()
@@ -104,13 +115,6 @@ def display_facade_dashboard():
         selected_team = "facade"  # Set the selected team
         facade_dashboard.run(selected_team)  # Only pass selected_team
 
-#PAGE CONFIG AND CUSTOM CSS
-#--------------------------
-st.set_page_config(
-    page_title="Hyperbuilding_A Dashboard",
-    page_icon="📊",
-    layout="wide"  # Makes the dashboard use full screen width
-)
 
 st.markdown("""
     <style>

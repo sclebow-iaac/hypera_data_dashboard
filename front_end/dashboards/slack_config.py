@@ -27,7 +27,6 @@ import requests
 
 import pandas as pd
 
-
 def format_time(dt):
     return dt.strftime("%d/%m %H:%M") + " GMT"
 
@@ -444,6 +443,7 @@ def run():
         if st.button("Save Configuration", use_container_width=True):
             # Save the configuration to a file or database
             # Write to a file
+            config_file_path = "front_end/slack_config.txt"
             with open(config_file_path, "w") as f:
                 f.write(f"Recent Project Activity: {int(recent_project_activity_bool)}\n")
                 f.write(f"Data Availability: {int(data_availability_bool)}\n")
