@@ -16,7 +16,7 @@ import datetime
 import time
 import requests
 
-from dashboards.slack_config import generate_message
+from dashboards.slack_config import generate_message, get_next_message_time
 
 def read_config_file():
     config_file_path = "front_end/slack_config.txt"
@@ -129,26 +129,20 @@ day_index_bools = {
     4: friday_value
 }
 
-check_interval = 30  # seconds
+# check_interval = 30  # seconds for testing
 
 while True:
     print("Checking for message...")
 
-    # Get the current date and time
-    now = datetime.datetime.now()
+    # Get the current date and time in UTC
+    now = datetime.datetime.now(datetime.timezone.utc)
 
-    # Send a test message every 30 seconds
-    # Check if the current time is a multiple of 30 seconds
-    if int(now.second) % check_interval == 0 and last_message_time < now - datetime.timedelta(seconds=30):
-        # print("Sending test message...")
+    next_message_time = get_next_message_time(day_bools, time_of_day_value)
+    print(f"Next message time: {next_message_time}")
 
-        # # Generate the test message
-        # test_message = f'Test message at {now.strftime("%Y-%m-%d %H:%M:%S")}'
-
-        # # Send the test message to the Slack channel
-        # send_message_to_slack(messages=[test_message])
-
-        # Generate the messages
+    # Check if the current time is after the next message time
+    if now >= next_message_time:
+        # Send the message
         messages = generate_message(
             recent_project_activity_value,
             data_availability_value,
@@ -156,54 +150,83 @@ while True:
             day_bools=day_bools,
             time_of_day_value=time_of_day_value,
         )
-
-        # Send the messages to the Slack channel
         send_message_to_slack(messages=messages)
-
-        # Update the last message time
-        last_message_time = now
-
-        # # Write to log
-        # write_to_log(f'Test message sent at {now.strftime("%Y-%m-%d %H:%M:%S")}')
-
-        # Write to log
-        write_to_log(f'Update Message sent at {now.strftime("%Y-%m-%d %H:%M:%S")}')
+        last_message_time = now  # Update the last message time
 
     else:
-        print(f'Waiting for next message... {now.strftime("%Y-%m-%d %H:%M:%S")}')
-
-    # # Check if last_message_time is more than 24 hours ago
-    # if (now - last_message_time).total_seconds() > 86400:
-    #     # Check if the current day is in the day_index_bools
-    #     if day_index_bools[now.weekday()]:
-    #         # Check if the current time is after the time_of_day_value
-    #         if now.hour >= time_of_day_value:
-    #             # Check if the message has already been sent today
-    #             if not message_sent_today:
-    #                 # Generate the messages
-    #                 messages = generate_message(
-    #                     recent_project_activity_value,
-    #                     data_availability_value,
-    #                     data_analysis_value,
-    #                     day_bools=day_bools,
-    #                     time_of_day_value=time_of_day_value,
-    #                 )
-
-    #                 # Send the messages to the Slack channel
-    #                 send_message_to_slack(messages=messages)
-
-    #                 # Send the message
-    #                 last_message_time = now # Update the last message time
-    #                 message_sent_today = True # Set the message_sent_today to True
-
-    #                 print(f'Message sent at {now.strftime("%Y-%m-%d %H:%M:%S")}')
-
-    # Use time.sleep to wait for the next check
-    # Check if the current time is a multiple of the check_interval
-    if int(now.second) % check_interval == 0:
-        time.sleep(check_interval)
-    else:
-        # Calculate the time to wait until the next check
-        time_to_wait = check_interval - (now.second % check_interval)
-        print(f'Waiting for {time_to_wait} seconds...')
+        # Wait for the next message time
+        time_to_wait = (next_message_time - now).total_seconds()
+        print(f"Waiting for {time_to_wait} seconds...")
+        print(f'Until next message: {next_message_time.strftime("%Y-%m-%d %H:%M:%S")}')
         time.sleep(time_to_wait)
+
+    # # # Send a test message every 30 seconds
+    # # # Check if the current time is a multiple of 30 seconds
+    # # if int(now.second) % check_interval == 0 and last_message_time < now - datetime.timedelta(seconds=30):
+    # #     # print("Sending test message...")
+
+    # #     # # Generate the test message
+    # #     # test_message = f'Test message at {now.strftime("%Y-%m-%d %H:%M:%S")}'
+
+    # #     # # Send the test message to the Slack channel
+    # #     # send_message_to_slack(messages=[test_message])
+
+    # #     # Generate the messages
+    # #     messages = generate_message(
+    # #         recent_project_activity_value,
+    # #         data_availability_value,
+    # #         data_analysis_value,
+    # #         day_bools=day_bools,
+    # #         time_of_day_value=time_of_day_value,
+    # #     )
+
+    # #     # Send the messages to the Slack channel
+    # #     send_message_to_slack(messages=messages)
+
+    # #     # Update the last message time
+    # #     last_message_time = now
+
+    # #     # # Write to log
+    # #     # write_to_log(f'Test message sent at {now.strftime("%Y-%m-%d %H:%M:%S")}')
+
+    # #     # Write to log
+    # #     write_to_log(f'Update Message sent at {now.strftime("%Y-%m-%d %H:%M:%S")}')
+
+    # # else:
+    # #     print(f'Waiting for next message... {now.strftime("%Y-%m-%d %H:%M:%S")}')
+
+    # # # Check if last_message_time is more than 24 hours ago
+    # # if (now - last_message_time).total_seconds() > 86400:
+    # #     # Check if the current day is in the day_index_bools
+    # #     if day_index_bools[now.weekday()]:
+    # #         # Check if the current time is after the time_of_day_value
+    # #         if now.hour >= time_of_day_value:
+    # #             # Check if the message has already been sent today
+    # #             if not message_sent_today:
+    # #                 # Generate the messages
+    # #                 messages = generate_message(
+    # #                     recent_project_activity_value,
+    # #                     data_availability_value,
+    # #                     data_analysis_value,
+    # #                     day_bools=day_bools,
+    # #                     time_of_day_value=time_of_day_value,
+    # #                 )
+
+    # #                 # Send the messages to the Slack channel
+    # #                 send_message_to_slack(messages=messages)
+
+    # #                 # Send the message
+    # #                 last_message_time = now # Update the last message time
+    # #                 message_sent_today = True # Set the message_sent_today to True
+
+    # #                 print(f'Message sent at {now.strftime("%Y-%m-%d %H:%M:%S")}')
+
+    # # Use time.sleep to wait for the next check
+    # # Check if the current time is a multiple of the check_interval
+    # if int(now.second) % check_interval == 0:
+    #     time.sleep(check_interval)
+    # else:
+    #     # Calculate the time to wait until the next check
+    #     time_to_wait = check_interval - (now.second % check_interval)
+    #     print(f'Waiting for {time_to_wait} seconds...')
+    #     time.sleep(time_to_wait)

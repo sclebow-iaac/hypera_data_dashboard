@@ -30,6 +30,61 @@ import pandas as pd
 def format_time(dt):
     return dt.strftime("%d/%m %H:%M") + " GMT"
 
+def get_next_message_time(day_bools, time_of_day) -> datetime.datetime:
+    # Get the current time in GMT timezone
+    now = datetime.datetime.now(datetime.timezone.utc)
+
+    # Get the current day of the week (0=Monday, 6=Sunday)
+    current_day = now.weekday()
+
+    next_scheduled_day = None
+    day_delta = None
+    for day, is_scheduled in day_bools.items():
+        if is_scheduled: # If the day is scheduled
+            day_number = list(day_bools.keys()).index(day)
+
+            if day_number > current_day:
+                # If the scheduled day is in the future, look at the current week
+                delta = day_number - current_day
+            else:
+                # If the scheduled day is in the past, look at the next week
+                delta = day_number - current_day + 7
+            
+            if delta == 0: # If it's the same day
+                # Check if the time has passed
+                scheduled_time = datetime.datetime.strptime(time_of_day, "%H:%M:%S").time()
+                current_time = now.time()
+                if current_time < scheduled_time:
+                    # If the scheduled time is in the future, it's the next scheduled time
+                    next_scheduled_day = day_number
+                    day_delta = delta
+                    break
+                else:
+                    # If the scheduled time is in the past, skip it
+                    continue
+
+            if day_delta is None:
+                # If this is the first scheduled time, set it as the next scheduled time
+                next_scheduled_day = day_number
+                day_delta = delta
+                continue
+            elif delta < day_delta:
+                # If the delta is smaller than the previous one, update the next scheduled time
+                next_scheduled_day = day_number
+                day_delta = delta
+                continue
+            else:
+                # If the delta is larger, skip it
+                continue
+    # If no scheduled time is found, return None
+    if next_scheduled_day is None:
+        return None
+    
+    # Get the next scheduled time on the next scheduled day
+    next_scheduled_time = now.replace(hour=int(time_of_day.split(":")[0]), minute=int(time_of_day.split(":")[1]), second=0, microsecond=0)
+    next_scheduled_time = next_scheduled_time + datetime.timedelta(days=(next_scheduled_day - current_day) % 7)
+    return next_scheduled_time
+
 def get_last_message_time(day_bools, time_of_day) -> datetime.datetime:
     # Get the current time in GMT timezone
     now = datetime.datetime.now(datetime.timezone.utc)
@@ -369,6 +424,9 @@ def read_config_file():
 
 def send_message_to_slack(messages):
     message = '\n'.join(messages)
+
+    # Replace double asterisks with single asterisks for bold formatting
+    message = message.replace("**", "*")
 
     # Send the message to Slack
     payload = {
