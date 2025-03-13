@@ -131,11 +131,15 @@ day_index_bools = {
 
 # check_interval = 30  # seconds for testing
 
-while True:
-    print("Checking for message...")
+first_run = True
 
+while True:
     # Get the current date and time in UTC
     now = datetime.datetime.now(datetime.timezone.utc)
+
+    if first_run:
+        # Send a message to Slack that the bot is running
+        send_message_to_slack(messages=[f'Hyper A Slack Bot is starting up at {now.strftime("%Y-%m-%d %H:%M:%S")}.'])
 
     next_message_time = get_next_message_time(day_bools, time_of_day_value)
     print(f"Next message time: {next_message_time}")
