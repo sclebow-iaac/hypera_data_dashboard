@@ -16,33 +16,8 @@ import datetime
 import time
 import requests
 
-config = read_config_file()
+from front_end.dashboards.slack_config import generate_message
 
-recent_project_activity_value = config["recent_project_activity"]
-data_availability_value = config["data_availability"]
-data_analysis_value = config["data_analysis"]
-monday_value = config["monday"]
-tuesday_value = config["tuesday"]
-wednesday_value = config["wednesday"]
-thursday_value = config["thursday"]
-friday_value = config["friday"]
-time_of_day_value = config["time_of_day"]
-
-day_bools = {
-    "Monday": monday_value,
-    "Tuesday": tuesday_value,
-    "Wednesday": wednesday_value,
-    "Thursday": thursday_value,
-    "Friday": friday_value
-}
-
-day_index_bools = {
-    0: monday_value,
-    1: tuesday_value,
-    2: wednesday_value,
-    3: thursday_value,
-    4: friday_value
-}
 def read_config_file():
     config_file_path = "front_end/slack_config.txt"
     # Load the configuration from a file
@@ -121,33 +96,64 @@ def write_to_log(message: str) -> None:
     except Exception as e:
         print(f'Error writing to log file: {e}')
 
+### Main function to run the script
+
 last_message_time = datetime.datetime.now() - datetime.timedelta(days=1)
 message_sent_today = False
 
+config = read_config_file()
+
+recent_project_activity_value = config["recent_project_activity"]
+data_availability_value = config["data_availability"]
+data_analysis_value = config["data_analysis"]
+monday_value = config["monday"]
+tuesday_value = config["tuesday"]
+wednesday_value = config["wednesday"]
+thursday_value = config["thursday"]
+friday_value = config["friday"]
+time_of_day_value = config["time_of_day"]
+
+day_bools = {
+    "Monday": monday_value,
+    "Tuesday": tuesday_value,
+    "Wednesday": wednesday_value,
+    "Thursday": thursday_value,
+    "Friday": friday_value
+}
+
+day_index_bools = {
+    0: monday_value,
+    1: tuesday_value,
+    2: wednesday_value,
+    3: thursday_value,
+    4: friday_value
+}
+
 while True:
-    # print("Checking for message...")
+    print("Checking for message...")
 
     # Get the current date and time
     now = datetime.datetime.now()
 
-    # # Send a test message every 30 seconds
-    # if (now - last_message_time).total_seconds() >= 30:
-    #     print("Sending test message...")
+    # Send a test message every 30 seconds
+    # Check if the current time is a multiple of 30 seconds
+    if now.second % 30 == 0:
+        print("Sending test message...")
 
-    #     # Generate the test message
-    #     test_message = f'Test message at {now.strftime("%Y-%m-%d %H:%M:%S")}'
+        # Generate the test message
+        test_message = f'Test message at {now.strftime("%Y-%m-%d %H:%M:%S")}'
 
-    #     # Send the test message to the Slack channel
-    #     send_message_to_slack(messages=[test_message])
+        # Send the test message to the Slack channel
+        send_message_to_slack(messages=[test_message])
 
-    #     # Update the last message time
-    #     last_message_time = now
+        # Update the last message time
+        last_message_time = now
 
-    #     # Write to log
-    #     write_to_log(f'Test message sent at {now.strftime("%Y-%m-%d %H:%M:%S")}')
+        # Write to log
+        write_to_log(f'Test message sent at {now.strftime("%Y-%m-%d %H:%M:%S")}')
 
-    # else:
-    #     print(f'Waiting for next message... {now.strftime("%Y-%m-%d %H:%M:%S")}')
+    else:
+        print(f'Waiting for next message... {now.strftime("%Y-%m-%d %H:%M:%S")}')
 
     # # Sleep for a short duration to avoid busy waiting
     # time.sleep(1)
