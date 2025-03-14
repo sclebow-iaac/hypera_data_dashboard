@@ -222,8 +222,8 @@ if selected_dashboard == "Main":
             </div>
         """, unsafe_allow_html=True)
         
-        # Add slideshow
-        st.markdown("### Ensō Hyperb﻿uilding (円相)")
+        # # Add slideshow
+        # st.markdown("### Ensō Hyperb﻿uilding (円相)")
         
         # List of images for slideshow
         images = [
