@@ -131,7 +131,7 @@ def generate_dashboard(selected_team: str, metrics: list[Metric], project_id: st
 
     # Display the KPI section
     kpi_container = st.container(border=True)
-    display_st_metric_values(kpi_container, metrics)
+    display_st_metric_values(kpi_container, metrics, use_columns=True)
 
     # Display the detailed metrics
     detailed_metrics_container = st.container(border=True)
@@ -282,17 +282,23 @@ def display_formula_section_header(team_name: str) -> None:
     ''', unsafe_allow_html=True)
 
 
-def display_st_metric_values(container, metrics):
+def display_st_metric_values(container, metrics, use_columns=True):
     container.markdown('#### Key Performance Indicators')
 
-    column_containers = container.columns(len(metrics))
-    for column_container, metric in zip(column_containers, metrics):
-        with column_container:
+    if use_columns:
+        column_containers = container.columns(len(metrics))
+        for column_container, metric in zip(column_containers, metrics):
+            with column_container:
+                delta = (metric.value - metric.ideal_value) / \
+                    metric.ideal_value * 100 if metric.ideal_value != 0 else 0
+                column_container.metric(
+                    metric.title, f'{metric.value:.2f}', delta=f'{delta:.2f}%', delta_color="normal", help=metric.description)
+    else:
+        for metric in metrics:
             delta = (metric.value - metric.ideal_value) / \
                 metric.ideal_value * 100 if metric.ideal_value != 0 else 0
-            column_container.metric(
+            container.metric(
                 metric.title, f'{metric.value:.2f}', delta=f'{delta:.2f}%', delta_color="normal", help=metric.description)
-
 
 def display_metric_visualizations(container, metrics, add_text=True):
     container.markdown('#### Metric Details')
