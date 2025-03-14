@@ -214,52 +214,89 @@ graphs = st.container()
 if selected_dashboard == "Main":
     #HEADER
     #Page Header
-    with header:
-        # # Center title and image using HTML/CSS
-        # st.markdown("""
-        #     <div style="text-align: center;">
-        #         <h1>Welcome to Hyper Building A!</h1>
-        #     </div>
-        # """, unsafe_allow_html=True)
+  with header:
+    # First, get all images for the slideshow
+    images = [
+        {"path": "front_end/assets/Enso/02/ensolr.gif", "caption": "Unity of Opposites", 
+         "description": "The Hyperbuilding balances contrasting elements—technology and nature, community and privacy, structure and"},
+        # Add other images as needed
+    ]
+    
+    # Initialize slideshow index in session state if not exists
+    if 'slideshow_idx' not in st.session_state:
+        st.session_state.slideshow_idx = 0
+    
+    # Get current image
+    current_image = images[st.session_state.slideshow_idx]
+    
+    # Use the same container structure as the top menu bar
+    # Reference from dashboard.py: image_container, header_container, button_container = st.columns([1, 5, 7], gap="small")
+    
+    # Create an empty container to maintain consistent spacing
+    empty = st.container()
+    
+    # Create a full-width container for the image (with no padding)
+    st.markdown("""
+        <style>
+        /* Eliminate space between menu and image */
+        section.main > div.block-container {
+            padding-top: 0;
+        }
         
-        # # # Add slideshow
-        # st.markdown("### Ensō Hyperb﻿uilding (円相)")
+        /* Make the image container match the top menu width */
+        div.element-container:has(img) {
+            max-width: 100%;
+            width: 100%;
+            padding: 0;
+            margin-top: -50px;
+        }
         
-        # List of images for slideshow
-        images = [
-            {"path": "front_end/assets/Enso/02/ensolr.gif", "caption": "Core Principles of Ensō Hyperbuilding"},
-            # {"path": "front_end/assets/Enso/02/enso02.jpg", "caption": "Absolute Enlightenment"},
-            # {"path": "front_end/assets/Enso/02/enso03.jpg", "caption": "Strength in Imperfection"},
-            # {"path": "front_end/assets/Enso/02/enso05.jpg", "caption": "Cyclical Nature of Existence"},
-            # {"path": "front_end/assets/Enso/02/enso05.jpg", "caption": "Unity of Opposites"}
-        ]
+        /* Display navigation buttons as an overlay */
+        .nav-buttons {
+            position: absolute;
+            top: 50%;
+            width: 100%;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
         
-        # Create columns for slideshow navigation
-        prev_col, img_col, next_col = st.columns([1, 10, 1])
-        
-        # Initialize slideshow index in session state if not exists
-        if 'slideshow_idx' not in st.session_state:
-            st.session_state.slideshow_idx = 0
-        
-        # Navigation buttons
-        with prev_col:
-            if st.button("←", key="prev_main"):
-                st.session_state.slideshow_idx = (st.session_state.slideshow_idx - 1) % len(images)
-        with next_col:
-            if st.button("→", key="next_main"):
-                st.session_state.slideshow_idx = (st.session_state.slideshow_idx + 1) % len(images)
-        
-        # Display current image
-        with img_col:
-            current_image = images[st.session_state.slideshow_idx]
-            try:
-                st.image(current_image["path"], 
-                        caption=current_image["caption"], 
-                        use_container_width=True)
-            except FileNotFoundError:
-                st.warning(f"Please add the image {current_image['path']} to your assets folder")
-        
-        st.markdown("---")  # Add a separator
+        /* Style caption and description */
+        .image-caption {
+            text-align: center;
+            padding: 0 20px;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    # Display the image with use_container_width=True to fill the space
+    st.image(current_image["path"], use_container_width=True)
+    
+    # Add navigation buttons as a row below the image
+    nav_left, nav_center, nav_right = st.columns([1, 10, 1])
+    
+    with nav_left:
+        if st.button("←", key="prev_main"):
+            st.session_state.slideshow_idx = (st.session_state.slideshow_idx - 1) % len(images)
+            st.experimental_rerun()
+            
+    with nav_center:
+        st.markdown(f"""
+        <div class="image-caption">
+            <h2>{current_image.get('caption', '')}</h2>
+            <p>{current_image.get('description', '')}</p>
+            <p class="caption-small">Core Principles of Ensō Hyperbuilding</p>
+        </div>
+        """, unsafe_allow_html=True)
+            
+    with nav_right:
+        if st.button("→", key="next_main"):
+            st.session_state.slideshow_idx = (st.session_state.slideshow_idx + 1) % len(images)
+            st.experimental_rerun()
+    
+    # Remove separator to reduce extra space
+    # st.markdown("---")  # Commented out to remove separator
 
     with input_container:  # Use the new name here
         st.subheader("Inputs")

@@ -504,7 +504,7 @@ def create_top_menu(teams: list[str]) -> str:
         # header_container, button_container = st.columns(2, gap="small")
 
         with image_container:
-            st.image ("front_end/assets/logo4.jpg")
+            st.image ("front_end/assets/logo3.jpg")
 
         with header_container:
             st.markdown('<h2 style="color: white; padding-left: 10px">Ensō Hyperb﻿uilding (円相)</h2>', unsafe_allow_html=True)
