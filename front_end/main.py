@@ -295,7 +295,9 @@ if selected_dashboard == "Main":
             st.session_state.slideshow_idx = (st.session_state.slideshow_idx + 1) % len(images)
             st.experimental_rerun()
     
-    # Add Principles section after the slideshow
+
+
+    # PRINCIPLES SECTION
     principles_container = st.container()
     with principles_container:
         # Add more padding before the principles section
@@ -356,10 +358,10 @@ if selected_dashboard == "Main":
                 # Add some space between principles
                 if i < 2:  # Don't add after the last one
                     st.markdown("<hr style='margin: 20px 0; opacity: 0.3;'>", unsafe_allow_html=True)
-    
-    # Remove separator to reduce extra space
 
-    # Add Vision section after the principles section
+
+
+    # VISON SECTION
     vision_container = st.container()
     with vision_container:
         # Add spacing before the vision section
@@ -376,7 +378,7 @@ if selected_dashboard == "Main":
         </div>
         """, unsafe_allow_html=True)
 
-    # Add Disciplines section after the unified vision
+    # DISCIPLINES SECTION
     disciplines_container = st.container()
     with disciplines_container:
         # Add spacing before the disciplines section
@@ -501,7 +503,22 @@ if selected_dashboard == "Main":
             # st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
 
 
+    # KPI's SLIDESHOW SECTION
+    vision_container = st.container()
+    with vision_container:
+        # Add spacing before the vision section
+        st.markdown("<div style='margin-top: 200px;'></div>", unsafe_allow_html=True)
+        
+        # Add centered title and text
+        st.markdown("""
+        <div style="text-align: center; margin-top: 100px; margin-bottom: 100px;">
+            <h1>KPI's Definitions & Performance</h1>
+            <p>Distinct Intertwined neighborhoods create a dynamic social network fostering connections and interactions. The principle of space exchange enables spaces to transform seamlessly unlocking layers of openness within the building.</p>
+        </div>
+        """, unsafe_allow_html=True)
 
+        # Display the full-width image
+        st.image("front_end/assets/Service/02/service01.png", use_container_width=True)
 
 
 
