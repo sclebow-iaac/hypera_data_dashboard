@@ -359,6 +359,23 @@ if selected_dashboard == "Main":
     
     # Remove separator to reduce extra space
 
+    # Add Vision section after the principles section
+    vision_container = st.container()
+    with vision_container:
+        # Add spacing before the vision section
+        st.markdown("<div style='margin-top: 60px;'></div>", unsafe_allow_html=True)
+        
+        # Display the full-width image
+        st.image("front_end/assets/vision.png", use_container_width=True)
+        
+        # Add centered title and text
+        st.markdown("""
+        <div style="text-align: center; margin-top: 20px; margin-bottom: 40px;">
+            <h2>Our Unified Vision</h2>
+            <p>The Ensō Hyperbuilding is brought to life through six specialized teams, each contributing to our circular philosophy of completeness through continuous cycles.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
     with input_container:  # Use the new name here
         st.subheader("Inputs")
         viewer_toggle, statistics_toggle = st.columns(2)
