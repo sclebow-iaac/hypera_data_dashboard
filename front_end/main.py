@@ -363,14 +363,14 @@ if selected_dashboard == "Main":
     vision_container = st.container()
     with vision_container:
         # Add spacing before the vision section
-        st.markdown("<div style='margin-top: 60px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-top: 100px;'></div>", unsafe_allow_html=True)
         
         # Display the full-width image
         st.image("front_end/assets/vision.png", use_container_width=True)
         
         # Add centered title and text
         st.markdown("""
-        <div style="text-align: center; margin-top: 20px; margin-bottom: 40px;">
+        <div style="text-align: center; margin-top: 100px; margin-bottom: 100px;">
             <h2>Our Unified Vision</h2>
             <p>The Ensō Hyperbuilding is brought to life through six specialized teams, each contributing to our circular philosophy of completeness through continuous cycles.</p>
         </div>
