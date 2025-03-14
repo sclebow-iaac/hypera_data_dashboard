@@ -388,11 +388,11 @@ if selected_dashboard == "Main":
                 "name": "Service",
                 "gif_path": "front_end/assets/Service/01/serviceLR.gif",
                 "markdown_content": """
-## Service
+# Service
 
-* **Human-scale design** approach in expansive spaces
+* **Human-scale** design approach in expansive spaces
 * Dynamic social network creation between neighborhoods
-* *Flexible* space exchange systems
+* Flexible space exchange systems
 * Fluid and engaging circulation experiences
 * Proximity-based function organization
 * Balance between energy-demanding and energy-producing systems
@@ -403,9 +403,9 @@ if selected_dashboard == "Main":
                 "name": "Structure",
                 "gif_path": "front_end/assets/Structure/01/structureLR.gif",
                 "markdown_content": """
-## Structure
+# Structure
 
-* Integration of three primary flows (forces, people, water)
+* Integration of three **primary flows** (forces, people, water)
 * Dynamic and varied structural elements
 * Flexible space creation
 * Water management through mass damping
@@ -418,10 +418,10 @@ if selected_dashboard == "Main":
                 "name": "Residential",
                 "gif_path": "front_end/assets/Residential/01/residentialLR.gif",
                 "markdown_content": """
-## Residential
+# Residential
 
 * Connection to public spaces
-* Efficiency in Unit Clustering
+* Efficiency in **Unit Clustering**
 * Efficiency in Unit Layout
                 """,
                 "image_on_left": True
@@ -430,13 +430,13 @@ if selected_dashboard == "Main":
                 "name": "Industrial",
                 "gif_path": "front_end/assets/Industrial/01/industrialLR.gif",
                 "markdown_content": """
-## Industrial
+# Industrial
 
 * Clean energy production and management
-* Waste-to-resource transformation systems
+* **Waste-to-resource** transformation systems
 * On-site food production integration
 * Prosumer energy sharing framework
-* Zero-waste implementation strategies
+* **Zero-waste** implementation strategies
 * Nature-based solutions (NBS) integration
 * Regenerative system development
                 """,
@@ -446,13 +446,13 @@ if selected_dashboard == "Main":
                 "name": "Facade",
                 "gif_path": "front_end/assets/Facade/01/facadeLR.gif",
                 "markdown_content": """
-## Facade
+# Facade
 
 * Adaptive origami-inspired design systems
 * Integration of wood and glass materials
 * Real-time environmental response capabilities
 * Smart shading and view optimization
-* Data-driven comfort management
+* **Data-driven** comfort management
 * Modular design approach
                 """,
                 "image_on_left": True
@@ -505,7 +505,9 @@ if selected_dashboard == "Main":
 
 
 
-    # Add speckle selection menu
+
+
+    # Add speckle inputs selection menu
     with input_container:  # Use the new name here
         st.subheader("Inputs")
         viewer_toggle, statistics_toggle = st.columns(2)
