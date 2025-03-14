@@ -22,6 +22,8 @@ import project_statistics as statistics
 # import attribute extraction
 import attribute_extraction
 
+import html_viewer
+
 import subprocess
 import datetime
 
@@ -194,7 +196,7 @@ st.markdown("""
 # selected_dashboard = st.sidebar.radio("Select Dashboard", dashboard_options)
 
 
-selected_dashboard = create_top_menu(["Main", "Residential", "Service", "Structure", "Industrial", "Facade", "Data", "SlackBot"])
+selected_dashboard = create_top_menu(["Main", "Residential", "Service", "Structure", "Industrial", "Facade", "Data", "SlackBot", "html_viewer (Test)"])
 
 # Create a placeholder for the dashboard content
 dashboard_placeholder = st.empty()
@@ -359,5 +361,7 @@ else:
         data_dashboard.run()
     elif selected_dashboard == "SlackBot":
         slack_config.run()
+    elif selected_dashboard == "html_viewer (Test)":
+        html_viewer.run()
 
 #--------------------------

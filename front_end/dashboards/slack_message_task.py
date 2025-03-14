@@ -16,85 +16,7 @@ import datetime
 import time
 import requests
 
-from dashboards.slack_config import generate_message, get_next_message_time
-
-def read_config_file():
-    config_file_path = "front_end/slack_config.txt"
-    # Load the configuration from a file
-
-    try:
-        with open(config_file_path, "r") as f:
-            config = f.read()
-        # Parse the configuration
-        lines = config.split("\n")
-
-        def process_bool(line):
-            return bool(int(line.split(": ")[1]))
-        
-        recent_project_activity_value = process_bool(lines[0])
-        data_availability_value = process_bool(lines[1])
-        data_analysis_value = process_bool(lines[2])
-        monday_value = process_bool(lines[3])
-        tuesday_value = process_bool(lines[4])
-        wednesday_value = process_bool(lines[5])
-        thursday_value = process_bool(lines[6])
-        friday_value = process_bool(lines[7])
-        time_of_day_value = lines[8].split(": ")[1]
-
-        return {
-            "recent_project_activity": recent_project_activity_value,
-            "data_availability": data_availability_value,
-            "data_analysis": data_analysis_value,
-            "monday": monday_value,
-            "tuesday": tuesday_value,
-            "wednesday": wednesday_value,
-            "thursday": thursday_value,
-            "friday": friday_value,
-            "time_of_day": time_of_day_value
-        }
-    except FileNotFoundError:
-        # If the file does not exist, use default values
-        return {
-            "recent_project_activity": True,
-            "data_availability": True,
-            "data_analysis": True,
-            "monday": True,
-            "tuesday": True,
-            "wednesday": False,
-            "thursday": False,
-            "friday": False,
-            "time_of_day": "09:00"
-        }
-
-def send_message_to_slack(messages):
-    message = '\n'.join(messages)
-
-    # Send the message to Slack
-    payload = {
-        "text": message,
-        "mrkdwn": True
-    }
-    headers = {
-        "Content-Type": "application/json"
-    }
-    
-    slack_webhook_url = st.secrets["slack_webhook_url"]
-    response = requests.post(slack_webhook_url, json=payload, headers=headers)
-    # Check the response status
-    if response.status_code != 200:
-        print(f"Failed to send message to Slack: {response.status_code} - {response.text}")
-        return
-    else:
-        print(f"Message sent to Slack: {message}") # Debugging
-        print(f"Response from Slack: {response.text}") # Debugging
-
-def write_to_log(message: str) -> None:
-    # This function writes a message to a log file 
-    try:
-        with open('front_end\slack_message_log.txt', 'a') as log_file:
-            log_file.write(f'{message}\n')
-    except Exception as e:
-        print(f'Error writing to log file: {e}')
+from dashboards.slack_config import generate_message, get_next_message_time, read_config_file, write_to_log, send_message_to_slack
 
 ### Main function to run the script
 
@@ -111,6 +33,8 @@ tuesday_value = config["tuesday"]
 wednesday_value = config["wednesday"]
 thursday_value = config["thursday"]
 friday_value = config["friday"]
+saturday_value = config["saturday"]
+sunday_value = config["sunday"]
 time_of_day_value = config["time_of_day"]
 
 day_bools = {
@@ -118,7 +42,9 @@ day_bools = {
     "Tuesday": tuesday_value,
     "Wednesday": wednesday_value,
     "Thursday": thursday_value,
-    "Friday": friday_value
+    "Friday": friday_value,
+    "Saturday": saturday_value,
+    "Sunday": sunday_value
 }
 
 day_index_bools = {
@@ -126,7 +52,9 @@ day_index_bools = {
     1: tuesday_value,
     2: wednesday_value,
     3: thursday_value,
-    4: friday_value
+    4: friday_value,
+    5: saturday_value,
+    6: sunday_value
 }
 
 # check_interval = 30  # seconds for testing
@@ -137,18 +65,27 @@ while True:
     # Get the current date and time in UTC
     now = datetime.datetime.now(datetime.timezone.utc)
 
+
     if first_run:
+        print()
+        print('----------------------')
+        print()
         # Send a message to Slack that the bot is running
-        send_message_to_slack(messages=[f'Hyper A Slack Bot is starting up at {now.strftime("%Y-%m-%d %H:%M:%S")}.'])
+        send_message_to_slack(messages=[f'Hyper A Slack Bot is starting up at {now.strftime("%Y-%m-%d %H:%M:%S")} timezone: {now.tzinfo}'])
         first_run = False
 
-    next_message_time = get_next_message_time(day_bools, time_of_day_value)
-    print(f"Next message time: {next_message_time}")
-    # os.write(1, f'Next message time: {next_message_time}')
-    send_message_to_slack(messages=[f'Next message time: {next_message_time}'])
+        # next_message_time = get_next_message_time(day_bools, time_of_day_value)
+        # For testing set the next message time to soon from now
+        # next_message_time = now + datetime.timedelta(seconds=4)
+        
+        print(f"Next message time: {next_message_time} timezone: {next_message_time.tzinfo}")
+        send_message_to_slack(messages=[f'Next message time: {next_message_time} timezone: {next_message_time.tzinfo}'])
 
     # Check if the current time is after the next message time
+    print(f'now >= next_message_time: {now >= next_message_time}')
     if now >= next_message_time:
+        print(f"Current time: {now.strftime('%Y-%m-%d %H:%M:%S')} timezone: {now.tzinfo}")
+        # send_message_to_slack('Message Incoming...')
         # Send the message
         messages = generate_message(
             recent_project_activity_value,
@@ -157,16 +94,22 @@ while True:
             day_bools=day_bools,
             time_of_day_value=time_of_day_value,
         )
+        print(f"Messages: {messages}")
         send_message_to_slack(messages=messages)
         last_message_time = now  # Update the last message time
 
+        # Update the next message time
+        next_message_time = get_next_message_time(day_bools, time_of_day_value)
+
+        send_message_to_slack(messages=[f'Next message time: {next_message_time} timezone: {next_message_time.tzinfo}'])
+
+
     else:
         # Wait for the next message time
-        time_to_wait = (next_message_time - now).total_seconds()
-        print(f"Waiting for {time_to_wait} seconds...")
-        # os.write(1, f'Waiting for {time_to_wait} seconds...')
-        print(f'Until next message: {next_message_time.strftime("%Y-%m-%d %H:%M:%S")}')
-        # os.write(1, f'Until next message: {next_message_time.strftime("%Y-%m-%d %H:%M:%S")}')
+        # time_to_wait = (next_message_time - now).total_seconds()
+        time_to_wait = 2  # seconds for testing
+        print(f"Waiting for {time_to_wait} seconds... Current time: {now.strftime("%Y-%m-%d %H:%M:%S")} timezone: {now.tzinfo}")
+        print(f'Until next message: {next_message_time.strftime("%Y-%m-%d %H:%M:%S")} timezone: {next_message_time.tzinfo}')
         time.sleep(time_to_wait)
 
     # # # Send a test message every 30 seconds

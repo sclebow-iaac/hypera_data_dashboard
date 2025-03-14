@@ -6,4 +6,6 @@ Tuesday: 1
 Wednesday: 1
 Thursday: 1
 Friday: 1
-Time of Day: 1:45:00
+Saturday: 1
+Sunday: 1
+Time of Day: 9:00:00
