@@ -33,7 +33,7 @@ import signal
 #--------------------------
 st.set_page_config(
     page_title="Hyperbuilding_A Dashboard",
-    page_icon="📊",
+    page_icon="front_end/assets/logo.jpg",
     layout="wide"  # Makes the dashboard use full screen width
 )
 
@@ -223,15 +223,15 @@ if selected_dashboard == "Main":
         """, unsafe_allow_html=True)
         
         # Add slideshow
-        st.markdown("### Project Gallery")
+        st.markdown("### Ensō Hyperb﻿uilding (円相)")
         
         # List of images for slideshow
         images = [
-            {"path": "assets/facade.png", "caption": "Facade"},
-            {"path": "assets/residential.png", "caption": "Residential"},
-            {"path": "assets/service.png", "caption": "Service"},
-            {"path": "assets/structure.png", "caption": "Structure"},
-            {"path": "assets/industrial.png", "caption": "Industrial"}
+            {"path": "front_end/assets/Enso/02/ensolr.gif", "caption": "Complete Circle of Life"},
+            {"path": "front_end/assets/Enso/02/enso02.jpg", "caption": "Absolute Enlightenment"},
+            {"path": "front_end/assets/Enso/02/enso03.jpg", "caption": "Strength in Imperfection"},
+            {"path": "front_end/assets/Enso/02/enso05.jpg", "caption": "Cyclical Nature of Existence"},
+            {"path": "front_end/assets/Enso/02/enso05.jpg", "caption": "Unity of Opposites"}
         ]
         
         # Create columns for slideshow navigation
