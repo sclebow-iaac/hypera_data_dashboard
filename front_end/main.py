@@ -217,8 +217,8 @@ if selected_dashboard == "Main":
   with header:
     # First, get all images for the slideshow
     images = [
-        {"path": "front_end/assets/Enso/02/ensolr.gif", "caption": "Unity of Opposites", 
-         "description": "The Hyperbuilding balances contrasting elements—technology and nature, community and privacy, structure and"},
+        {"path": "front_end/assets/Enso/02/ensolr.gif", "caption": "The Essence of Ensō", 
+         "description": "Ensō, the Zen circle, represents one of the most fundamental principles in Japanese aesthetics and philosophy. Traditionally drawn in a single, fluid brush stroke, it symbolizes absolute enlightenment, strength in imperfection, and the cyclical nature of existence"},
         # Add other images as needed
     ]
     
