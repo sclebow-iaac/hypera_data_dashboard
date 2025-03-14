@@ -22,8 +22,6 @@ import project_statistics as statistics
 # import attribute extraction
 import attribute_extraction
 
-import html_viewer
-
 import subprocess
 import datetime
 
