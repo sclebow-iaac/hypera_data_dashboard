@@ -376,94 +376,104 @@ if selected_dashboard == "Main":
         </div>
         """, unsafe_allow_html=True)
 
-    # Disciplines section after the unified vision
+    # Add Disciplines section after the unified vision
     disciplines_container = st.container()
     with disciplines_container:
-        # Spacing before each disciplines section
+        # Add spacing before the disciplines section
         st.markdown("<div style='margin-top: 60px;'></div>", unsafe_allow_html=True)
         
-        # Bullet points for each discipline
+        # Define discipline data with properly formatted markdown
         disciplines = [
             {
                 "name": "Service",
                 "gif_path": "front_end/assets/Service/01/serviceLR.gif",
-                "points": [
-                    "Human-scale design approach in expansive spaces",
-                    "Dynamic social network creation between neighborhoods",
-                    "Flexible space exchange systems",
-                    "Fluid and engaging circulation experiences",
-                    "Proximity-based function organization",
-                    "Balance between energy-demanding and energy-producing systems"
-                ],
+                "markdown_content": """
+## Service
+
+* **Human-scale design** approach in expansive spaces
+* Dynamic social network creation between neighborhoods
+* *Flexible* space exchange systems
+* Fluid and engaging circulation experiences
+* Proximity-based function organization
+* Balance between energy-demanding and energy-producing systems
+                """,
                 "image_on_left": True
             },
             {
                 "name": "Structure",
                 "gif_path": "front_end/assets/Structure/01/structureLR.gif",
-                "points": [
-                    "Integration of three primary flows (forces, people, water)",
-                    "Dynamic and varied structural elements",
-                    "Flexible space creation",
-                    "Water management through mass damping",
-                    "Flow-based spatial organization",
-                    "Adaptive spatial qualities"
-                ],
+                "markdown_content": """
+## Structure
+
+* Integration of three primary flows (forces, people, water)
+* Dynamic and varied structural elements
+* Flexible space creation
+* Water management through mass damping
+* Flow-based spatial organization
+* Adaptive spatial qualities
+                """,
                 "image_on_left": False
             },
             {
                 "name": "Residential",
                 "gif_path": "front_end/assets/Residential/01/residentialLR.gif",
-                "points": [
-                    "Connection to public spaces",
-                    "Efficiency in Unit Clustering",
-                    "Efficiency in Unit Layout"
-                ],
+                "markdown_content": """
+## Residential
+
+* Connection to public spaces
+* Efficiency in Unit Clustering
+* Efficiency in Unit Layout
+                """,
                 "image_on_left": True
             },
             {
                 "name": "Industrial",
                 "gif_path": "front_end/assets/Industrial/01/industrialLR.gif",
-                "points": [
-                    "Clean energy production and management",
-                    "Waste-to-resource transformation systems",
-                    "On-site food production integration",
-                    "Prosumer energy sharing framework",
-                    "Zero-waste implementation strategies",
-                    "Nature-based solutions (NBS) integration",
-                    "Regenerative system development"
-                ],
+                "markdown_content": """
+## Industrial
+
+* Clean energy production and management
+* Waste-to-resource transformation systems
+* On-site food production integration
+* Prosumer energy sharing framework
+* Zero-waste implementation strategies
+* Nature-based solutions (NBS) integration
+* Regenerative system development
+                """,
                 "image_on_left": False
             },
             {
                 "name": "Facade",
                 "gif_path": "front_end/assets/Facade/01/facadeLR.gif",
-                "points": [
-                    "Adaptive origami-inspired design systems",
-                    "Integration of wood and glass materials",
-                    "Real-time environmental response capabilities",
-                    "Smart shading and view optimization",
-                    "Data-driven comfort management",
-                    "Modular design approach"
-                ],
+                "markdown_content": """
+## Facade
+
+* Adaptive origami-inspired design systems
+* Integration of wood and glass materials
+* Real-time environmental response capabilities
+* Smart shading and view optimization
+* Data-driven comfort management
+* Modular design approach
+                """,
                 "image_on_left": True
             }
         ]
         
-        # Unified Vision Bulletpoints Gallery
         # Create container for each discipline
         for discipline in disciplines:
             # Create a container with padding
             discipline_container = st.container()
             
-            # Container Styling
+            # Add styling for the container
             st.markdown("""
             <style>
             .discipline-container {
-                border: 0px solid #000000;
+                border: 1px solid #ffffff;
                 border-radius: 0px;
                 padding: 20px;
-                margin: 20px 0;
+                margin: 0 0 2px 0;
                 background-color: #ffffff;
+                width: 100%;
             }
             </style>
             """, unsafe_allow_html=True)
@@ -477,23 +487,21 @@ if selected_dashboard == "Main":
             else:
                 text_col, img_col = st.columns(2)
             
-            # Image to image column
+            # Add image to image column
             with img_col:
                 st.image(discipline["gif_path"], use_container_width=True)
             
-            # Text to text column
+            # Add text to text column - using st.markdown to preserve full markdown formatting
             with text_col:
-                # Discipline title
-                st.markdown(f"<h3>{discipline['name']}</h3>", unsafe_allow_html=True)
-                
-                # Bullet points
-                for point in discipline["points"]:
-                    st.markdown(f"• {point}")
+                st.markdown(discipline["markdown_content"])
             
             # End the styled container
             st.markdown('</div>', unsafe_allow_html=True)
             
             # st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+
+
+
 
 
 
