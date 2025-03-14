@@ -214,7 +214,7 @@ st.markdown("""
 # selected_dashboard = st.sidebar.radio("Select Dashboard", dashboard_options)
 
 
-selected_dashboard = create_top_menu(["Main", "Residential", "Service", "Structure", "Industrial", "Facade", "Data", "Slack Configuration"])
+selected_dashboard = create_top_menu(["Main", "Residential", "Service", "Structure", "Industrial", "Facade", "Data", "SlackBot"])
 
 # Create a placeholder for the dashboard content
 dashboard_placeholder = st.empty()
@@ -377,7 +377,7 @@ else:
         display_facade_dashboard()
     elif selected_dashboard == "Data":
         data_dashboard.run()
-    elif selected_dashboard == "Slack Configuration":
+    elif selected_dashboard == "SlackBot":
         slack_config.run()
 
 #--------------------------

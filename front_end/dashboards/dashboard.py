@@ -463,7 +463,7 @@ def display_tape_diagram(container, metric: Metric) -> None:
 
 
 def create_top_menu(teams: list[str]) -> str:
-    """Create a horizontal menu at the top of the page."""
+    # Create a horizontal menu at the top of the page.
     st.markdown("""
         <style>
         .top-menu {
@@ -476,9 +476,9 @@ def create_top_menu(teams: list[str]) -> str:
         }
         div.stButton > button {
             background-color: transparent;
-            border: none;
-            padding: 10px 20px;
-            font-size: 40px;  /* Change this value to adjust font size */
+            border: 1px solid #000000;
+            padding: 0;
+            font-size: 8px;  /* Change this value to adjust font size */
         }
         div.stButton > button:hover {
             background-color: #ffffff;
@@ -492,6 +492,10 @@ def create_top_menu(teams: list[str]) -> str:
         div.stButton > button[data-selected="true"]:hover {
             background-color: transparent;
         }
+        div.stColumn {
+            margin: 0 0px;  /* Adjust the margin between buttons */\
+            padding: 0;
+        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -499,49 +503,68 @@ def create_top_menu(teams: list[str]) -> str:
     if 'current_selection' not in st.session_state:
         st.session_state.current_selection = teams[0]
     # Create a expander for the menu
-    menu_expander = st.expander("Site Navigation", expanded=False)
-    with menu_expander:
-        # Create columns for each team
-        total_buttons_var = len(teams)
-        cols_in_row = 4
-        created_rows = []
-        created_cols = []
+    # Create columns for each team
 
-        while total_buttons_var > 0:
-            columns_to_create = min(cols_in_row, total_buttons_var)
-            row = st.container()
-            cols = row.columns(columns_to_create, border=True)
-            created_rows.append(row)
-            created_cols.extend(cols)
-            total_buttons_var -= columns_to_create
+    # print(f'Created {len(created_cols)} columns for {len(teams)} teams.')
+    header = st.container()
+    # header.title("Here is a sticky header")
+    header.write("""<div class='fixed-header'/>""", unsafe_allow_html=True)
 
-        print(f'Created {len(created_cols)} columns for {len(teams)} teams.')
+    ### Custom CSS for the sticky header
+    st.markdown(
+        """
+    <style>
+        div[data-testid="stVerticalBlock"] div:has(div.fixed-header) {
+            position: sticky;
+            top: 2.875rem;
+            background-color: white;
+            z-index: 999;
+        }
+    </style>
+        """,
+        unsafe_allow_html=True
+    )
 
-        # cols = st.columns(len(teams))
-        cols = created_cols
+    with header:        
+        # cols = st.columns(8)
 
-        # Create buttons in each column and handle selection
-        selected = None
-        for col, item in zip(cols, teams):
-            with col:
-                is_selected = item == st.session_state.current_selection
-                button_html = f"""
-                    <button 
-                        data-selected="{str(is_selected).lower()}"
-                        style="width: 100%; {{
-                            'border-bottom: 2px solid #000000; border-radius: 0;' if is_selected else ''
-                        }}"
-                    >
-                        {item}
-                    </button>
-                """
-                if st.button(
-                    item,
-                    # Ensure unique key by prefixing with 'menu_'
-                    key=f"menu_{item}",
-                    use_container_width=True,
-                ):
-                    selected = item
+        st.markdown('## Hyper A Dashboard')
+        header_container = st.container()
+        with header_container:
+            total_buttons_var = len(teams)
+            cols_in_row = 8
+
+            created_rows = []
+            created_cols = []
+
+            width = header_container.width
+            print(f'Header width: {width}')  # Debugging: Print header width
+
+            while total_buttons_var > 0:
+                columns_to_create = min(cols_in_row, total_buttons_var)
+                row = st.container()
+                cols = row.columns(columns_to_create, border=True)
+                created_rows.append(row)
+                created_cols.extend(cols)
+                total_buttons_var -= columns_to_create
+
+            cols = created_cols
+
+            # widths = [len(team) for team in teams]
+            # cols = st.columns(widths, gap="small")  # Create columns for each team
+
+            # Create buttons in each column and handle selection
+            selected = None
+            for col, item in zip(cols, teams):
+                with col:
+                    is_selected = item == st.session_state.current_selection
+                    
+                    if st.button(
+                        label=item, 
+                        key=f"menu_{item}",  # Ensure unique key by prefixing with 'menu_'
+                        use_container_width=True,
+                    ):
+                        selected = item
 
         # Update selection if a new item was clicked
         if selected is not None:
@@ -689,41 +712,15 @@ def run(selected_team: str) -> None:
     st.title(f"{selected_team} Dashboard")
 
 
-def display_images(container, team_name: str, subfolder: str) -> None:
-    container.markdown('#### Concept Images')
+def display_images(container, team_name: str, subfolder: str='01', header: bool=True) -> None:
+    if header:
+        container.markdown('#### Concept Images')
 
     folder_path = f"./front_end/assets/{team_name.capitalize()}/{subfolder}"
     image_urls = [os.path.join(folder_path, file) for file in os.listdir(folder_path)
                   if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif'))]
-
+    
     if image_urls:
         # Display images in the container
         for image_url, column in zip(image_urls, container.columns(len(image_urls))):
             column.image(image_url)
-
-    # """Display a slideshow of images from a specified folder in the given container."""
-    # # Get a list of image files in the specified folder
-    # image_urls = [os.path.join(folder_path, file) for file in os.listdir(folder_path)
-    #               if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif'))]
-
-    # if image_urls:
-    #     # Create session state to keep track of current image index
-    #     if 'image_index' not in st.session_state:
-    #         st.session_state.image_index = 0
-
-    #     # Create three columns: left arrow, image, right arrow
-    #     col1, col2, col3 = container.columns([1, 10, 1])
-
-    #     # Left arrow
-    #     with col1:
-    #         if st.button('←', key=f'{slideshow_key}_prev'):  # Use unique key
-    #             st.session_state.image_index = (st.session_state.image_index - 1) % len(image_urls)
-
-    #     # Display current image in the middle column
-    #     with col2:
-    #         st.image(image_urls[st.session_state.image_index], use_container_width=True)
-
-    #     # Right arrow
-    #     with col3:
-    #         if st.button('→', key=f'{slideshow_key}_next'):  # Use unique key
-    #             st.session_state.image_index = (st.session_state.image_index + 1) % len(image_urls)

@@ -144,6 +144,8 @@ while True:
 
     next_message_time = get_next_message_time(day_bools, time_of_day_value)
     print(f"Next message time: {next_message_time}")
+    # os.write(1, f'Next message time: {next_message_time}')
+    send_message_to_slack(messages=[f'Next message time: {next_message_time}'])
 
     # Check if the current time is after the next message time
     if now >= next_message_time:
@@ -162,7 +164,9 @@ while True:
         # Wait for the next message time
         time_to_wait = (next_message_time - now).total_seconds()
         print(f"Waiting for {time_to_wait} seconds...")
-        print(f'Until next message: {next_message_time.strftime("%Y-%m-%d %H:%M:%S")}')
+        # os.write(1, f'Waiting for {time_to_wait} seconds...')
+        print(1, f'Until next message: {next_message_time.strftime("%Y-%m-%d %H:%M:%S")}')
+        # os.write(1, f'Until next message: {next_message_time.strftime("%Y-%m-%d %H:%M:%S")}')
         time.sleep(time_to_wait)
 
     # # # Send a test message every 30 seconds
