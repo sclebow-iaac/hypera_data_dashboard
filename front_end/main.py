@@ -259,13 +259,13 @@ if selected_dashboard == "Main":
             z-index: 100;
             display: flex;
             justify-content: space-between;
-            padding: 0 20px;
+            padding: 0 200px;
         }
         
         /* Style caption and description */
         .image-caption {
             text-align: center;
-            padding: 0 20px;
+            padding: 0 90px;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -294,6 +294,68 @@ if selected_dashboard == "Main":
         if st.button("→", key="next_main"):
             st.session_state.slideshow_idx = (st.session_state.slideshow_idx + 1) % len(images)
             st.experimental_rerun()
+    
+    # Add Principles section after the slideshow
+    principles_container = st.container()
+    with principles_container:
+        # Add more padding before the principles section
+        st.markdown("<div style='margin-top: 40px;'></div>", unsafe_allow_html=True)
+        
+        # Left-aligned title with more padding below
+        st.markdown("<h3 style='text-align: center; margin-bottom: 30px;'>Ensō Hyperbuilding embraces these principles through:</h3>", unsafe_allow_html=True)
+        
+        # Create three principle containers
+        for i, (title, description) in enumerate([
+            ("Completion Through Incompletion", 
+             "A design that allows for growth and adaptation, with spaces that evolve with user needs and systems that improve through iteration."),
+            ("Moment of Creation", 
+             "Integration of spontaneous and planned elements, balancing control and natural development, and creating harmony between designed and emergent patterns."),
+            ("Unity of Opposites", 
+             "Juxtaposition of traditional and modern elements, balance between public and private spaces, and harmony between technology and nature.")
+        ]):
+            # Create a container for each principle
+            principle = st.container()
+            with principle:
+                # Create two columns - one narrow for the logo, one wide for the text
+                logo_col, text_col = st.columns([1, 10])
+                
+                # Add logo with number in the left column
+                with logo_col:
+                    # Use Streamlit's native image display with number overlay
+                    # First create a container for positioning
+                    img_container = st.container()
+                    
+                    # Display the image
+                    img_container.image("front_end/assets/logo.jpg", width=50)
+                    
+                    # Add the number overlay using CSS positioning
+                    img_container.markdown(f"""
+                    <div style="
+                        position: relative;
+                        top: -60px;
+                        left: 15px;
+                        font-size: 20px;
+                        font-weight: bold;
+                        width: 20px;
+                        text-align: center;
+                        color: black;
+                    ">
+                        {i+1}
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                # Add text in the right column
+                with text_col:
+                    st.markdown(f"""
+                    <div style="margin-left: 30px;">
+                        <h4 style="margin-bottom: 10px; margin-top: 15px;">{title}</h4>
+                        <p>{description}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                # Add some space between principles
+                if i < 2:  # Don't add after the last one
+                    st.markdown("<hr style='margin: 20px 0; opacity: 0.3;'>", unsafe_allow_html=True)
     
     # Remove separator to reduce extra space
     # st.markdown("---")  # Commented out to remove separator
