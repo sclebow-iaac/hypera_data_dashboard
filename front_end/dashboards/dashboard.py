@@ -469,42 +469,6 @@ def display_tape_diagram(container, metric: Metric) -> None:
 
 
 def create_top_menu(teams: list[str]) -> str:
-    # Create a horizontal menu at the top of the page.
-    st.markdown("""
-        <style>
-        .top-menu {
-            display: flex;
-            justify-content: center;
-            padding: 10px;
-            background-color: #ffffff;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        div.stButton > button {
-            background-color: transparent;
-            border: 1px solid #000000;
-            padding: 0;
-            font-size: 8px;  /* Change this value to adjust font size */
-        }
-        div.stButton > button:hover {
-            background-color: #ffffff;
-            border-radius: 5px;
-        }
-        /* Style for selected button */
-        div.stButton > button[data-selected="true"] {
-            border-bottom: 2px solid #000000;
-            border-radius: 0;
-        }
-        div.stButton > button[data-selected="true"]:hover {
-            background-color: transparent;
-        }
-        div.stColumn {
-            margin: 0 0px;  /* Adjust the margin between buttons */\
-            padding: 0;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
     # Initialize session state if not exists
     if 'current_selection' not in st.session_state:
         st.session_state.current_selection = teams[0]
@@ -523,7 +487,7 @@ def create_top_menu(teams: list[str]) -> str:
         div[data-testid="stVerticalBlock"] div:has(div.fixed-header) {
             position: sticky;
             top: 2.875rem;
-            background-color: white;
+            background-color: black;
             z-index: 999;
         }
     </style>
@@ -532,24 +496,32 @@ def create_top_menu(teams: list[str]) -> str:
     )
 
     with header:        
-        # cols = st.columns(8)
+        # header_container = st.container()
+        # button_container = st.container()
+        
+        header_container, button_container = st.columns(2, gap="small")
 
-        st.markdown('## Hyper A Dashboard')
-        header_container = st.container()
         with header_container:
+            st.markdown('<h2 style="color: white; padding-left: 10px">Hyper A Dashboard</h2>', unsafe_allow_html=True)
+        
+        with button_container:
             total_buttons_var = len(teams)
+            button_labels = teams
             cols_in_row = 8
 
             created_rows = []
             created_cols = []
 
-            width = header_container.width
-            print(f'Header width: {width}')  # Debugging: Print header width
-
             while total_buttons_var > 0:
                 columns_to_create = min(cols_in_row, total_buttons_var)
                 row = st.container()
-                cols = row.columns(columns_to_create, border=True)
+
+                labels = button_labels[:columns_to_create]
+                button_labels = button_labels[columns_to_create:]
+
+                widths = [len(label) for label in labels]
+
+                cols = row.columns(widths, gap="small")  # Create columns for each team
                 created_rows.append(row)
                 created_cols.extend(cols)
                 total_buttons_var -= columns_to_create
@@ -571,6 +543,20 @@ def create_top_menu(teams: list[str]) -> str:
                         use_container_width=True,
                     ):
                         selected = item
+
+                    st.markdown(
+                        f"""
+                        <style>
+                            div[data-testid="stButton"] > button:first-child {{
+                                color: white;
+                                background-color: transparent;
+                            }}
+                        </style>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
+        st.markdown('')
 
         # Update selection if a new item was clicked
         if selected is not None:

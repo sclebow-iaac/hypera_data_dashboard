@@ -165,7 +165,7 @@ while True:
         time_to_wait = (next_message_time - now).total_seconds()
         print(f"Waiting for {time_to_wait} seconds...")
         # os.write(1, f'Waiting for {time_to_wait} seconds...')
-        print(1, f'Until next message: {next_message_time.strftime("%Y-%m-%d %H:%M:%S")}')
+        print(f'Until next message: {next_message_time.strftime("%Y-%m-%d %H:%M:%S")}')
         # os.write(1, f'Until next message: {next_message_time.strftime("%Y-%m-%d %H:%M:%S")}')
         time.sleep(time_to_wait)
 

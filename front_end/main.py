@@ -157,9 +157,25 @@ st.markdown("""
     }
     
     /* Buttons and selectbox */
-    .stButton>button, .stSelectbox {
-        border-radius: 0.3rem;
+    div.stButton > button {
+        background-color: transparent;
+        border: 0px solid #000000;
+        padding: 0;
+        font-size: 8px;  /* Change this value to adjust font size */
     }
+    div.stButton > button:hover {
+        background-color: #ffffff;
+        border-radius: 5px;
+    }
+    /* Style for selected button */
+    div.stButton > button[data-selected="true"] {
+        border-bottom: 2px solid #000000;
+        border-radius: 0;
+    }
+    div.stButton > button[data-selected="true"]:hover {
+        background-color: transparent;
+    }
+
     
     /* Chart containers */
     div[data-testid="stPlotlyChart"] {
@@ -168,45 +184,9 @@ st.markdown("""
         box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
 
-    /* Sidebar styling */
-    [data-testid="stSidebar"] {
-        background-color: #F5F5DC;  /* Beige color */
-        padding: 1rem;
-        border-right: 1px solid #E8E8D0;
-    }
 
-    /* Sidebar radio buttons */
-    .st-cc, .st-dk, .st-dl, .st-dm {
-        font-family: 'Roboto Mono', sans-serif !important;
-    }
-
-    /* Sidebar title */
-    [data-testid="stSidebar"] [data-testid="stMarkdown"] {
-        font-family: 'Roboto Mono', sans-serif !important;
-        padding: 0.5rem 0;
-    }
-
-    /* Radio button text */
-    .st-bq {
-        font-family: 'Roboto Mono', sans-serif !important;
-    }
-
-    /* Radio button container */
-    [data-testid="stSidebar"] .st-bw {
-        padding: 0.5rem 0;
-    }
-
-    /* Selected radio button */
-    [data-testid="stSidebar"] .st-cl {
-        background-color: #E8E8D0;  /* Slightly darker beige for selected item */
-        border-radius: 0.3rem;
-    }
-
-    /* Hover effect on radio buttons */
-    [data-testid="stSidebar"] .st-cl:hover {
-        background-color: #DFDFC5;
-    }
     </style>
+    
 """, unsafe_allow_html=True)
 
 # Sidebar for selecting dashboards
