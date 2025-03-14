@@ -227,11 +227,11 @@ if selected_dashboard == "Main":
         
         # List of images for slideshow
         images = [
-            {"path": "front_end/assets/Enso/02/ensolr.gif", "caption": "Complete Circle of Life"},
-            {"path": "front_end/assets/Enso/02/enso02.jpg", "caption": "Absolute Enlightenment"},
-            {"path": "front_end/assets/Enso/02/enso03.jpg", "caption": "Strength in Imperfection"},
-            {"path": "front_end/assets/Enso/02/enso05.jpg", "caption": "Cyclical Nature of Existence"},
-            {"path": "front_end/assets/Enso/02/enso05.jpg", "caption": "Unity of Opposites"}
+            {"path": "front_end/assets/Enso/02/ensolr.gif", "caption": "Core Principles of Ensō Hyperbuilding"},
+            # {"path": "front_end/assets/Enso/02/enso02.jpg", "caption": "Absolute Enlightenment"},
+            # {"path": "front_end/assets/Enso/02/enso03.jpg", "caption": "Strength in Imperfection"},
+            # {"path": "front_end/assets/Enso/02/enso05.jpg", "caption": "Cyclical Nature of Existence"},
+            # {"path": "front_end/assets/Enso/02/enso05.jpg", "caption": "Unity of Opposites"}
         ]
         
         # Create columns for slideshow navigation
