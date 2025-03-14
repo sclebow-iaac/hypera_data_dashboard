@@ -215,14 +215,14 @@ if selected_dashboard == "Main":
     #HEADER
     #Page Header
     with header:
-        # Center title and image using HTML/CSS
-        st.markdown("""
-            <div style="text-align: center;">
-                <h1>Welcome to Hyper Building A!</h1>
-            </div>
-        """, unsafe_allow_html=True)
+        # # Center title and image using HTML/CSS
+        # st.markdown("""
+        #     <div style="text-align: center;">
+        #         <h1>Welcome to Hyper Building A!</h1>
+        #     </div>
+        # """, unsafe_allow_html=True)
         
-        # # Add slideshow
+        # # # Add slideshow
         # st.markdown("### Ensō Hyperb﻿uilding (円相)")
         
         # List of images for slideshow
