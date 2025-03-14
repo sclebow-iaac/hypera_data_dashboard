@@ -326,14 +326,14 @@ if selected_dashboard == "Main":
                     img_container = st.container()
                     
                     # Display the image
-                    img_container.image("front_end/assets/logo.jpg", width=50)
-                    
+                    img_container.image("front_end/assets/logo.jpg", width=80)
+                  
                     # Add the number overlay using CSS positioning
                     img_container.markdown(f"""
                     <div style="
                         position: relative;
-                        top: -60px;
-                        left: 15px;
+                        top: -75px;
+                        left: 30px;
                         font-size: 20px;
                         font-weight: bold;
                         width: 20px;
@@ -358,7 +358,6 @@ if selected_dashboard == "Main":
                     st.markdown("<hr style='margin: 20px 0; opacity: 0.3;'>", unsafe_allow_html=True)
     
     # Remove separator to reduce extra space
-    # st.markdown("---")  # Commented out to remove separator
 
     with input_container:  # Use the new name here
         st.subheader("Inputs")
