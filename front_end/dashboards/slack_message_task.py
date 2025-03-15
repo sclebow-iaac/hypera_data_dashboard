@@ -74,11 +74,11 @@ while True:
         # send_message_to_slack(messages=[f'Hyper A Slack Bot is starting up at {now.strftime("%Y-%m-%d %H:%M:%S")} timezone: {now.tzinfo}'])
         first_run = False
 
-        # next_message_time = get_next_message_time(day_bools, time_of_day_value)
+        next_message_time = get_next_message_time(day_bools, time_of_day_value)
         # For testing set the next message time to soon from now
         # next_message_time = now + datetime.timedelta(seconds=4)
 
-        print(f"Next message time: {next_message_time} timezone: {next_message_time.tzinfo}")
+        # print(f"Next message time: {next_message_time} timezone: {next_message_time.tzinfo}")
         # send_message_to_slack(messages=[f'Next message time: {next_message_time} timezone: {next_message_time.tzinfo}'])
 
     # Check if the current time is after the next message time
@@ -107,7 +107,7 @@ while True:
     else:
         # Wait for the next message time
         # time_to_wait = (next_message_time - now).total_seconds()
-        time_to_wait = 2  # seconds for testing
+        time_to_wait = 60 * 60  # seconds for testing
         print(f"Waiting for {time_to_wait} seconds... Current time: {now.strftime("%Y-%m-%d %H:%M:%S")} timezone: {now.tzinfo}")
         print(f'Until next message: {next_message_time.strftime("%Y-%m-%d %H:%M:%S")} timezone: {next_message_time.tzinfo}')
         time.sleep(time_to_wait)
