@@ -353,7 +353,7 @@ def display_custom_bullet_list(container, items: list[str], bullet_image_path: s
     <style>
     .enso-list {{
         list-style: none;
-        padding-left: 0;
+        padding-left: ;
     }}
     .enso-list li {{
         padding-left: 40px;
@@ -504,7 +504,7 @@ def create_top_menu(teams: list[str]) -> str:
         # header_container, button_container = st.columns(2, gap="small")
 
         with image_container:
-            st.image ("front_end/assets/logo3.jpg")
+            st.image ("front_end/assets/logo4.jpg")
 
         with header_container:
             st.markdown('<h2 style="color: white; padding-left: 10px">Ensō Hyperb﻿uilding (円相)</h2>', unsafe_allow_html=True)

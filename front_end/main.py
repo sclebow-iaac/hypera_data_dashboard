@@ -235,7 +235,7 @@ if selected_dashboard == "Main":
     # Create an empty container to maintain consistent spacing
     empty = st.container()
     
-    # Create a full-width container for the image (with no padding)
+    # Create a full-width container for the image 
     st.markdown("""
         <style>
         /* Eliminate space between menu and image */
@@ -248,7 +248,7 @@ if selected_dashboard == "Main":
             max-width: 100%;
             width: 100%;
             padding: 0;
-            margin-top: -50px;
+            margin-top: 0px;
         }
         
         /* Display navigation buttons as an overlay */
@@ -470,10 +470,10 @@ if selected_dashboard == "Main":
             st.markdown("""
             <style>
             .discipline-container {
-                border: 1px solid #ffffff;
-                border-radius: 0px;
+                border: 10px solid #ffffff;
+                border-radius: 40px;
                 padding: 20px;
-                margin: 0 0 2px 0;
+                margin: 20px 20px 2px 20px;
                 background-color: #ffffff;
                 width: 100%;
             }
@@ -483,19 +483,43 @@ if selected_dashboard == "Main":
             # Start the styled container
             st.markdown('<div class="discipline-container">', unsafe_allow_html=True)
             
-            # Create two columns
+            # Create three columns - image, spacing, and text
             if discipline["image_on_left"]:
-                img_col, text_col = st.columns(2)
+                img_col, spacing_col, text_col = st.columns([10, 1, 10])
             else:
-                text_col, img_col = st.columns(2)
+                text_col, spacing_col, img_col = st.columns([10, 1, 10])
             
             # Add image to image column
             with img_col:
                 st.image(discipline["gif_path"], use_container_width=True)
+                
+            # Empty middle column serves as spacing
+            with spacing_col:
+                st.write("")
             
-            # Add text to text column - using st.markdown to preserve full markdown formatting
+            # Add text to text column with simple formatting
             with text_col:
-                st.markdown(discipline["markdown_content"])
+                # Add some vertical margin at the top for vertical centering
+                st.markdown("<div style='margin-top: 50px;'></div>", unsafe_allow_html=True)
+                
+                # Make the title larger
+                st.markdown(f"<h1 style='font-size: 2.5rem; margin-bottom: 30px;'>{discipline['name']}</h1>", unsafe_allow_html=True)
+                
+                # Extract bullet points from markdown content
+                bullet_points = []
+                for line in discipline["markdown_content"].split('\n'):
+                    if line.strip().startswith('*'):
+                        # Remove the '*' and any leading/trailing whitespace
+                        point = line.strip()[1:].strip()
+                        if point:  # Ensure the point is not empty
+                            bullet_points.append(point)
+                
+                # Add each bullet point with custom styling
+                for point in bullet_points:
+                    st.markdown(f"<div style='font-size: 1.2rem; margin-bottom: 15px; line-height: 1.8;'>• {point}</div>", unsafe_allow_html=True)
+                
+                # Add some vertical margin at the bottom for vertical centering
+                st.markdown("<div style='margin-bottom: 50px;'></div>", unsafe_allow_html=True)
             
             # End the styled container
             st.markdown('</div>', unsafe_allow_html=True)
