@@ -542,7 +542,7 @@ if selected_dashboard == "Main":
         """, unsafe_allow_html=True)
 
         # Display the full-width image
-        st.image("front_end/assets/Service/02/service01.png", use_container_width=True)
+        st.image("front_end/assets/Service/02/servicelr.gif", use_container_width=True)
 
 
 
