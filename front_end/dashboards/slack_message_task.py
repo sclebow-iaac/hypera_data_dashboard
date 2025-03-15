@@ -106,8 +106,10 @@ while True:
 
     else:
         # Wait for the next message time
-        # time_to_wait = (next_message_time - now).total_seconds()
-        time_to_wait = 60 * 60  # seconds for testing
+        time_to_wait = (next_message_time - now).total_seconds()
+        wake_up_time = now + datetime.timedelta(seconds=time_to_wait)
+        # time_to_wait = 60 * 60  # seconds for testing
         print(f"Waiting for {time_to_wait} seconds... Current time: {now.strftime("%Y-%m-%d %H:%M:%S")} timezone: {now.tzinfo}")
+        print(f'Wake up at {wake_up_time.strftime("%Y-%m-%d %H:%M:%S")} timezone: {wake_up_time.tzinfo}')
         print(f'Until next message: {next_message_time.strftime("%Y-%m-%d %H:%M:%S")} timezone: {next_message_time.tzinfo}')
         time.sleep(time_to_wait)
