@@ -589,7 +589,139 @@ if selected_dashboard == "Main":
         </div>
         """, unsafe_allow_html=True)
 
-
+    
+    # VERTICAL COLUMNS FOR KPI'S
+    kpi_metrics_container = st.container()
+    with kpi_metrics_container:
+    # Add spacing before KPI metrics
+        st.markdown("<div style='margin-top: 100px;'></div>", unsafe_allow_html=True)
+    
+    # Create 9 columns: 5 for content and 4 for padding
+    cols = st.columns([10, 1, 10, 1, 10, 1, 10, 1, 10])
+    
+    # Service column (index 0)
+    with cols[0]:
+        # Discipline name
+        st.markdown("<h3 style='text-align: center;'>Service</h3>", unsafe_allow_html=True)
+        
+        # Discipline image
+        st.image("front_end/assets/Service/03/service01.png")
+        
+        # Caption
+        st.markdown("<p style='text-align: center;'><strong>Service KPI</strong></p>", unsafe_allow_html=True)
+        
+        # Service KPI: Occupancy Efficiency
+        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
+        st.markdown("<p style='margin-bottom: 5px;'>Occupancy Efficiency</p>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; margin: 0;'>2.51</h2>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Structure column (index 2)
+    with cols[2]:
+        # Discipline name
+        st.markdown("<h3 style='text-align: center;'>Structure</h3>", unsafe_allow_html=True)
+        
+        # Discipline image
+        st.image("front_end/assets/Structure/03/structure01.png")
+        
+        # Caption
+        st.markdown("<p style='text-align: center;'><strong>Structure KPI</strong></p>", unsafe_allow_html=True)
+        
+        # Structure KPI 1: Column-Free Floor Area Ratio
+        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
+        st.markdown("<p style='margin-bottom: 5px;'>Column-Free Floor Area Ratio</p>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; margin: 0;'>0.98</h2>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        # Structure KPI 2: Load Capacity per Square Meter
+        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
+        st.markdown("<p style='margin-bottom: 5px;'>Load Capacity per Square Meter</p>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; margin: 0;'>2.74</h2>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Residential column (index 4)
+    with cols[4]:
+        # Discipline name
+        st.markdown("<h3 style='text-align: center;'>Residential</h3>", unsafe_allow_html=True)
+        
+        # Discipline image
+        st.image("front_end/assets/Residential/03/residential01.png")
+        
+        # Caption
+        st.markdown("<p style='text-align: center;'><strong>Residential KPI</strong></p>", unsafe_allow_html=True)
+        
+        # Residential KPI: Mixed Use Index
+        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
+        st.markdown("<p style='margin-bottom: 5px;'>Mixed Use Index</p>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; margin: 0;'>0.60</h2>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Industrial column (index 6)
+    with cols[6]:
+        # Discipline name
+        st.markdown("<h3 style='text-align: center;'>Industrial</h3>", unsafe_allow_html=True)
+        
+        # Discipline image
+        st.image("front_end/assets/Industrial/03/industrial01.png")
+        
+        # Caption
+        st.markdown("<p style='text-align: center;'><strong>Industrial KPI</strong></p>", unsafe_allow_html=True)
+        
+        # Industrial KPI 1: Energy Self-Sufficiency Ratio
+        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
+        st.markdown("<p style='margin-bottom: 5px;'>Energy Self-Sufficiency Ratio</p>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; margin: 0;'>0.75</h2>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        # Industrial KPI 2: Food Self-Sufficiency Ratio
+        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
+        st.markdown("<p style='margin-bottom: 5px;'>Food Self-Sufficiency Ratio</p>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; margin: 0;'>0.60</h2>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        # Industrial KPI 3: Water Recycling Ratio
+        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
+        st.markdown("<p style='margin-bottom: 5px;'>Water Recycling Ratio</p>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; margin: 0;'>0.80</h2>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        # Industrial KPI 4: Waste Utilization Ratio
+        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
+        st.markdown("<p style='margin-bottom: 5px;'>Waste Utilization Ratio</p>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; margin: 0;'>0.40</h2>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Facade column (index 8)
+    with cols[8]:
+        # Discipline name
+        st.markdown("<h3 style='text-align: center;'>Facade</h3>", unsafe_allow_html=True)
+        
+        # Discipline image
+        st.image("front_end/assets/Facade/03/facade01.png")
+        
+        # Caption
+        st.markdown("<p style='text-align: center;'><strong>Facade KPI</strong></p>", unsafe_allow_html=True)
+        
+        # Facade KPI 1: Primary Daylight Factor
+        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
+        st.markdown("<p style='margin-bottom: 5px;'>Primary Daylight Factor</p>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; margin: 0;'>0.05</h2>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        # Facade KPI 2: Panel Optimization
+        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
+        st.markdown("<p style='margin-bottom: 5px;'>Panel Optimization</p>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; margin: 0;'>0.50</h2>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        # Facade KPI 3: Energy Generation Ratio
+        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
+        st.markdown("<p style='margin-bottom: 5px;'>Energy Generation Ratio</p>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; margin: 0;'>1.25</h2>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+    
+        # Add spacing after KPI metrics
+        st.markdown("<div style='margin-bottom: 100px;'></div>", unsafe_allow_html=True)
 
 
 
