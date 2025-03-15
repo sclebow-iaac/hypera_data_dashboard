@@ -811,21 +811,21 @@ if selected_dashboard == "Main":
 
 
 
-else:
-    # Display only the selected dashboard
-    if selected_dashboard == "Residential":
-        display_residential_dashboard()
-    elif selected_dashboard == "Service":
-        display_service_dashboard()
-    elif selected_dashboard == "Structure":
-        display_structure_dashboard()
-    elif selected_dashboard == "Industrial":
-        display_industrial_dashboard()
-    elif selected_dashboard == "Facade":
-        display_facade_dashboard()
-    elif selected_dashboard == "Data":
-        data_dashboard.run()
-    elif selected_dashboard == "SlackBot":
-        slack_config.run()
+        else:
+            # Display only the selected dashboard
+            if selected_dashboard == "Residential":
+                display_residential_dashboard()
+            elif selected_dashboard == "Service":
+                display_service_dashboard()
+            elif selected_dashboard == "Structure":
+                display_structure_dashboard()
+            elif selected_dashboard == "Industrial":
+                display_industrial_dashboard()
+            elif selected_dashboard == "Facade":
+                display_facade_dashboard()
+            elif selected_dashboard == "Data":
+                data_dashboard.run()
+            elif selected_dashboard == "SlackBot":
+                slack_config.run()
 
-#--------------------------
+        #--------------------------
