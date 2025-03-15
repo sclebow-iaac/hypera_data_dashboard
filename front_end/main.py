@@ -389,73 +389,99 @@ if selected_dashboard == "Main":
             {
                 "name": "Service",
                 "gif_path": "front_end/assets/Service/01/serviceLR.gif",
-                "markdown_content": """
-# Service
+                "description": """
+    At the heart of the concept lies a human-scale approach, where even expansive spaces become a canvas for community life. By interweaving distinct neighborhoods into a dynamic social network, the design fosters connection and interaction. The principle of space exchange enables spaces to transform seamlessly unlocking layers of openness within the building.
 
-* **Human-scale** design approach in expansive spaces
-* Dynamic social network creation between neighborhoods
-* Flexible space exchange systems
-* Fluid and engaging circulation experiences
-* Proximity-based function organization
-* Balance between energy-demanding and energy-producing systems
+    Circulation is envisioned as an experience — fluid, engaging, and deeply attuned to the proximities that link people and functions. This vision is supported by innovative movement systems, spatial proximity tailored to community needs, and a sustainable balance between energy-demanding, energy-neutral, and energy-producing systems.
+                """,
+                "markdown_content": """
+    # Service
+
+    * Human-scale design approach in expansive spaces
+    * Dynamic social network creation between neighborhoods
+    * Flexible space exchange systems
+    * Fluid and engaging circulation experiences
+    * Proximity-based function organization
+    * Balance between energy-demanding and energy-producing systems
                 """,
                 "image_on_left": True
             },
             {
                 "name": "Structure",
                 "gif_path": "front_end/assets/Structure/01/structureLR.gif",
-                "markdown_content": """
-# Structure
+                "description": """
+    Service﻿ Team Vision
+    At the heart of the concept lies a human-scale approach, where even expansive spaces become a canvas for community life. By interweaving distinct neighborhoods into a dynamic social network, the design fosters connection and interaction. The principle of space exchange enables spaces to transform seamlessly unlocking layers of openness within the building.
 
-* Integration of three **primary flows** (forces, people, water)
-* Dynamic and varied structural elements
-* Flexible space creation
-* Water management through mass damping
-* Flow-based spatial organization
-* Adaptive spatial qualities
+    Circulation is envisioned as an experience — fluid, engaging, and deeply attuned to the proximities that link people and functions. This vision is supported by innovative movement systems, spatial proximity tailored to community needs, and a sustainable balance between energy-demanding, energy-neutral, and energy-producing systems.
+                """,
+                "markdown_content": """
+    # Structure
+
+    * Integration of three primary flows (forces, people, water)
+    * Dynamic and varied structural elements
+    * Flexible space creation
+    * Water management through mass damping
+    * Flow-based spatial organization
+    * Adaptive spatial qualities
                 """,
                 "image_on_left": False
             },
             {
                 "name": "Residential",
                 "gif_path": "front_end/assets/Residential/01/residentialLR.gif",
-                "markdown_content": """
-# Residential
+                "description": """
+    Our vision is to create a vibrant and integrated vertical living experience that fosters community connection, sustainability, and accessibility. By designing mixed-use spaces within a hyperbuilding, we aim to balance XL and XS residential offerings, providing diverse and adaptable living options.
 
-* Connection to public spaces
-* Efficiency in **Unit Clustering**
-* Efficiency in Unit Layout
+    Our focus is on enhancing environmental impact, user experience, and fast circulation within and between neighborhoods, all while creating a machine-like city concept inside a hyperbuilding.
+                """,
+                "markdown_content": """
+    # Residential
+
+    * Connection to public spaces
+    * Efficiency in Unit Clustering
+    * Efficiency in Unit Layout
                 """,
                 "image_on_left": True
             },
             {
                 "name": "Industrial",
                 "gif_path": "front_end/assets/Industrial/01/industrialLR.gif",
-                "markdown_content": """
-# Industrial
+                "description": """
+    A building that breathes life into the city —a vibrant ecosystem that produces its own clean energy, transforms waste into resources, and nurtures fresh food right where you live. It's a prosumer powerhouse, generating and sharing renewable energy while creating harmony between humans and the environment.
 
-* Clean energy production and management
-* **Waste-to-resource** transformation systems
-* On-site food production integration
-* Prosumer energy sharing framework
-* **Zero-waste** implementation strategies
-* Nature-based solutions (NBS) integration
-* Regenerative system development
+    Here, every design choice embodies zero-waste principles, turning challenges into opportunities, and every space is alive with nature-based solutions that blur the line between the built and natural worlds. This is more than a building; it's a bold step toward a regenerative future where sustainability is not just a goal but a way of life.
+                """,
+                "markdown_content": """
+    # Industrial
+
+    * Clean energy production and management
+    * Waste-to-resource transformation systems
+    * On-site food production integration
+    * Prosumer energy sharing framework
+    * Zero-waste implementation strategies
+    * Nature-based solutions (NBS) integration
+    * Regenerative system development
                 """,
                 "image_on_left": False
             },
             {
                 "name": "Facade",
                 "gif_path": "front_end/assets/Facade/01/facadeLR.gif",
-                "markdown_content": """
-# Facade
+                "description": """
+    A hyperbuilding with an adaptive origami-inspired wood and glass facade balances shading, views, and energy efficiency.
 
-* Adaptive origami-inspired design systems
-* Integration of wood and glass materials
-* Real-time environmental response capabilities
-* Smart shading and view optimization
-* **Data-driven** comfort management
-* Modular design approach
+    Modular and data-driven, it adjusts in real-time for optimal light, thermal performance, and occupant comfort, creating a sustainable, intelligent architectural system.
+                """,
+                "markdown_content": """
+    # Facade
+
+    * Adaptive origami-inspired design systems
+    * Integration of wood and glass materials
+    * Real-time environmental response capabilities
+    * Smart shading and view optimization
+    * Data-driven comfort management
+    * Modular design approach
                 """,
                 "image_on_left": True
             }
@@ -505,6 +531,17 @@ if selected_dashboard == "Main":
                 # Make the title larger
                 st.markdown(f"<h1 style='font-size: 2.5rem; margin-bottom: 30px;'>{discipline['name']}</h1>", unsafe_allow_html=True)
                 
+                # Add description paragraph if available
+                if "description" in discipline and discipline["description"]:
+                    # Split paragraphs and format each
+                    paragraphs = discipline["description"].strip().split("\n\n")
+                    for paragraph in paragraphs:
+                        if paragraph.strip():  # Only process non-empty paragraphs
+                            st.markdown(f"<p style='font-size: 1.1rem; line-height: 1.6; margin-bottom: 20px;'>{paragraph.strip()}</p>", unsafe_allow_html=True)
+                    
+                    # Add spacing between description and bullet points
+                    st.markdown("<div style='margin-top: 30px;'></div>", unsafe_allow_html=True)
+                
                 # Extract bullet points from markdown content
                 bullet_points = []
                 for line in discipline["markdown_content"].split('\n'):
@@ -523,9 +560,6 @@ if selected_dashboard == "Main":
             
             # End the styled container
             st.markdown('</div>', unsafe_allow_html=True)
-            
-            # st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
-
 
     # KPI's SLIDESHOW SECTION
     vision_container = st.container()
