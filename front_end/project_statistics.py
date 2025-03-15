@@ -1,6 +1,39 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
+import networkx as nx
+
+from dashboards.dashboard import *
+
+def get_project_data(models, client, project_id):
+    # Create a dictionary to store the project data
+    project_data = {}
+    project_tree = {}
+    
+    # Get the versions of all models in the project
+    for model in models:
+        id = model.id
+        long_name = model.name
+        short_name = model.name.split("/")[-1]
+        parent = model.name.split("/")[-2]
+        versions = client.version.get_versions(model_id=model.id, project_id=project_id, limit=100).items
+        # Get the number of versions
+        version_count = len(versions)
+
+        print(f'id: {id}, long_name: {long_name}, short_name: {short_name}, parent: {parent}, version_count: {version_count}') 
+        
+
+def build_network_diagram(models):
+    pass
+
+def run():
+    # Setup speckle connection
+    models, client, project_id = setup_speckle_connection()
+
+    # Get the project data
+    project_data = get_project_data(models, client, project_id)
+
 
 def show(container, client, project, models, versions, verbose=False):
     with container:
