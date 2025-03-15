@@ -372,7 +372,7 @@ if selected_dashboard == "Main":
         
         # Add centered title and text
         st.markdown("""
-        <div style="text-align: center; margin-top: 100px; margin-bottom: 100px;">
+        <div style="text-align: center; margin-top: 0px; margin-bottom: 0px;">
             <h2>Our Unified Vision</h2>
             <p>The Ensō Hyperbuilding is brought to life through six specialized teams, each contributing to our circular philosophy of completeness through continuous cycles.</p>
         </div>
@@ -382,7 +382,7 @@ if selected_dashboard == "Main":
     disciplines_container = st.container()
     with disciplines_container:
         # Add spacing before the disciplines section
-        st.markdown("<div style='margin-top: 60px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-top: 0px;'></div>", unsafe_allow_html=True)
         
         # Define discipline data with properly formatted markdown
         disciplines = [
@@ -497,9 +497,9 @@ if selected_dashboard == "Main":
             <style>
             .discipline-container {
                 border: 10px solid #ffffff;
-                border-radius: 40px;
-                padding: 20px;
-                margin: 20px 20px 2px 20px;
+                border-radius: 10px;
+                padding: 10px;
+                margin: 10px 10px 10px 10px;
                 background-color: #ffffff;
                 width: 100%;
             }
@@ -526,7 +526,7 @@ if selected_dashboard == "Main":
             # Add text to text column with simple formatting
             with text_col:
                 # Add some vertical margin at the top for vertical centering
-                st.markdown("<div style='margin-top: 50px;'></div>", unsafe_allow_html=True)
+                st.markdown("<div style='margin-top: 0px;'></div>", unsafe_allow_html=True)
                 
                 # Make the title larger
                 st.markdown(f"<h1 style='font-size: 2.5rem; margin-bottom: 30px;'>{discipline['name']}</h1>", unsafe_allow_html=True)
@@ -556,10 +556,15 @@ if selected_dashboard == "Main":
                     st.markdown(f"<div style='font-size: 1.2rem; margin-bottom: 15px; line-height: 1.8;'>• {point}</div>", unsafe_allow_html=True)
                 
                 # Add some vertical margin at the bottom for vertical centering
-                st.markdown("<div style='margin-bottom: 50px;'></div>", unsafe_allow_html=True)
+                st.markdown("<div style='margin-bottom: 0px;'></div>", unsafe_allow_html=True)
             
             # End the styled container
             st.markdown('</div>', unsafe_allow_html=True)
+
+
+
+
+
 
     # KPI's SLIDESHOW SECTION
     vision_container = st.container()
@@ -569,14 +574,23 @@ if selected_dashboard == "Main":
         
         # Add centered title and text
         st.markdown("""
-        <div style="text-align: center; margin-top: 100px; margin-bottom: 100px;">
+        <div style="text-align: center; margin-top: 50px; margin-bottom: 50px;">
             <h1>KPI's Definitions & Performance</h1>
-            <p>Distinct Intertwined neighborhoods create a dynamic social network fostering connections and interactions. The principle of space exchange enables spaces to transform seamlessly unlocking layers of openness within the building.</p>
-        </div>
         """, unsafe_allow_html=True)
 
         # Display the full-width image
         st.image("front_end/assets/Service/02/servicelr.gif", use_container_width=True)
+
+        # Add centered caption text
+        st.markdown("""
+        <div style="text-align: center; margin-top: 5px; margin-bottom: 100px;">
+            <h1>Service Design Strategy Integration</h1>
+            <p>Distinct Intertwined neighborhoods create a dynamic social network fostering connections and interactions. The principle of space exchange enables spaces to transform seamlessly unlocking layers of openness within the building.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+
+
 
 
 
