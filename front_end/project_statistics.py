@@ -57,7 +57,7 @@ def create_network_graph(project_tree):
         mode='markers+text',
         hoverinfo='text',
         marker=dict(
-            showscale=True,
+            showscale=False,
             colorscale='YlGnBu',
             size=10,
             line_width=2,
@@ -89,7 +89,7 @@ def create_network_graph(project_tree):
     node_trace.marker.line.color = 'rgb(0, 0, 0)'
     node_trace.text = node_text
 
-    marker_sizes = [10 + 20 * (d / max_distance) for d in node_distances] # Marker size based on distance, larger for nodes closer to the root
+    marker_sizes = [10 + 30 * (d / max_distance) for d in node_distances] # Marker size based on distance, larger for nodes closer to the root
     node_trace.marker.size = marker_sizes
 
     text_sizes = [5 + 10 * (d / max_distance) for d in node_distances] # Text size based on distance, smaller for nodes further away
@@ -97,24 +97,24 @@ def create_network_graph(project_tree):
 
     fig = go.Figure(data=[edge_trace, node_trace],
                     layout=go.Layout(
-                        title='<br>Speckle Model Network',
-                        titlefont_size=16,
                         showlegend=False,
                         hovermode='closest',
                         margin=dict(b=0,l=0,r=0,t=0),
-                        height=800,  # Set the figure height here
+                        height=700,  # Set the figure height here
                         xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
                         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
                     )
                     )
         
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True) 
 
     return None
 
-
-def get_project_data(models, client, project_id):
+@st.cache_data
+def get_project_data():
     print(f'get_project_data(models, client, project_id)')
+    
+    models, client, project_id = setup_speckle_connection()
 
     # Create a dictionary to store the project data
     project_data = {}
@@ -204,10 +204,10 @@ def create_test_tree():
 
 def run():
     # Setup speckle connection
-    models, client, project_id = setup_speckle_connection()
+    
 
     # Get the project data
-    project_tree = get_project_data(models, client, project_id)
+    project_tree = get_project_data()
     # Create the network diagram
     # project_tree = create_test_tree() # for testing
     network_diagram = create_network_graph(project_tree)
