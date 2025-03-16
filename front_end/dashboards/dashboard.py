@@ -353,7 +353,7 @@ def display_custom_bullet_list(container, items: list[str], bullet_image_path: s
     <style>
     .enso-list {{
         list-style: none;
-        padding-left: 0;
+        padding-left: ;
     }}
     .enso-list li {{
         padding-left: 40px;
@@ -496,13 +496,18 @@ def create_top_menu(teams: list[str]) -> str:
     )
 
     with header:        
+        # image_container = st.container()
         # header_container = st.container()
         # button_container = st.container()
-        
-        header_container, button_container = st.columns([1, 1.5], gap="small")
+
+        image_container, header_container, button_container = st.columns([1, 5, 7], gap="small")
+        # header_container, button_container = st.columns(2, gap="small")
+
+        with image_container:
+            st.image ("front_end/assets/logo4.jpg")
 
         with header_container:
-            st.markdown('<h2 style="color: white; padding-left: 10px">Hyper A Dashboard</h2>', unsafe_allow_html=True)
+            st.markdown('<h2 style="color: white; padding-left: 10px">Ensō Hyperb﻿uilding (円相)</h2>', unsafe_allow_html=True)
         
         with button_container:
             total_buttons_var = len(teams)

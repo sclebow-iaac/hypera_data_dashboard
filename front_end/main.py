@@ -33,7 +33,7 @@ import signal
 #--------------------------
 st.set_page_config(
     page_title="Hyperbuilding_A Dashboard",
-    page_icon="📊",
+    page_icon="front_end/assets/logo.jpg",
     layout="wide"  # Makes the dashboard use full screen width
 )
 
@@ -183,53 +183,521 @@ graphs = st.container()
 if selected_dashboard == "Main":
     #HEADER
     #Page Header
-    with header:
-        # Center title and image using HTML/CSS
-        st.markdown("""
-            <div style="text-align: center;">
-                <h1>Welcome to Hyper Building A!</h1>
-            </div>
+  with header:
+    # First, get all images for the slideshow
+    images = [
+        {"path": "front_end/assets/Enso/02/ensolr.gif", "caption": "The Essence of Ensō", 
+         "description": "Ensō, the Zen circle, represents one of the most fundamental principles in Japanese aesthetics and philosophy. Traditionally drawn in a single, fluid brush stroke, it symbolizes absolute enlightenment, strength in imperfection, and the cyclical nature of existence"},
+        # Add other images as needed
+    ]
+    
+    # Initialize slideshow index in session state if not exists
+    if 'slideshow_idx' not in st.session_state:
+        st.session_state.slideshow_idx = 0
+    
+    # Get current image
+    current_image = images[st.session_state.slideshow_idx]
+    
+    # Use the same container structure as the top menu bar
+    # Reference from dashboard.py: image_container, header_container, button_container = st.columns([1, 5, 7], gap="small")
+    
+    # Create an empty container to maintain consistent spacing
+    empty = st.container()
+    
+    # Create a full-width container for the image 
+    st.markdown("""
+        <style>
+        /* Eliminate space between menu and image */
+        section.main > div.block-container {
+            padding-top: 0;
+        }
+        
+        /* Make the image container match the top menu width */
+        div.element-container:has(img) {
+            max-width: 100%;
+            width: 100%;
+            padding: 0;
+            margin-top: 0px;
+        }
+        
+        /* Display navigation buttons as an overlay */
+        .nav-buttons {
+            position: absolute;
+            top: 50%;
+            width: 100%;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 200px;
+        }
+        
+        /* Style caption and description */
+        .image-caption {
+            text-align: center;
+            padding: 0 90px;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    # Display the image with use_container_width=True to fill the space
+    st.image(current_image["path"], use_container_width=True)
+    
+    # Add navigation buttons as a row below the image
+    nav_left, nav_center, nav_right = st.columns([1, 10, 1])
+    
+    with nav_left:
+        if st.button("←", key="prev_main"):
+            st.session_state.slideshow_idx = (st.session_state.slideshow_idx - 1) % len(images)
+            st.experimental_rerun()
+            
+    with nav_center:
+        st.markdown(f"""
+        <div class="image-caption">
+            <h2>{current_image.get('caption', '')}</h2>
+            <p>{current_image.get('description', '')}</p>
+            <p class="caption-small">Core Principles of Ensō Hyperbuilding</p>
+        </div>
         """, unsafe_allow_html=True)
+            
+    with nav_right:
+        if st.button("→", key="next_main"):
+            st.session_state.slideshow_idx = (st.session_state.slideshow_idx + 1) % len(images)
+            st.experimental_rerun()
+    
+
+
+    # PRINCIPLES SECTION
+    principles_container = st.container()
+    with principles_container:
+        # Add more padding before the principles section
+        st.markdown("<div style='margin-top: 40px;'></div>", unsafe_allow_html=True)
         
-        # Add slideshow
-        st.markdown("### Project Gallery")
+        # Left-aligned title with more padding below
+        st.markdown("<h3 style='text-align: center; margin-bottom: 30px;'>Ensō Hyperbuilding embraces these principles through:</h3>", unsafe_allow_html=True)
         
-        # List of images for slideshow
-        images = [
-            {"path": "assets/facade.png", "caption": "Facade"},
-            {"path": "assets/residential.png", "caption": "Residential"},
-            {"path": "assets/service.png", "caption": "Service"},
-            {"path": "assets/structure.png", "caption": "Structure"},
-            {"path": "assets/industrial.png", "caption": "Industrial"}
+        # Create three principle containers
+        for i, (title, description) in enumerate([
+            ("Completion Through Incompletion", 
+             "A design that allows for growth and adaptation, with spaces that evolve with user needs and systems that improve through iteration."),
+            ("Moment of Creation", 
+             "Integration of spontaneous and planned elements, balancing control and natural development, and creating harmony between designed and emergent patterns."),
+            ("Unity of Opposites", 
+             "Juxtaposition of traditional and modern elements, balance between public and private spaces, and harmony between technology and nature.")
+        ]):
+            # Create a container for each principle
+            principle = st.container()
+            with principle:
+                # Create two columns - one narrow for the logo, one wide for the text
+                logo_col, text_col = st.columns([1, 10])
+                
+                # Add logo with number in the left column
+                with logo_col:
+                    # Use Streamlit's native image display with number overlay
+                    # First create a container for positioning
+                    img_container = st.container()
+                    
+                    # Display the image
+                    img_container.image("front_end/assets/logo.jpg", width=80)
+                  
+                    # Add the number overlay using CSS positioning
+                    img_container.markdown(f"""
+                    <div style="
+                        position: relative;
+                        top: -75px;
+                        left: 30px;
+                        font-size: 20px;
+                        font-weight: bold;
+                        width: 20px;
+                        text-align: center;
+                        color: black;
+                    ">
+                        {i+1}
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                # Add text in the right column
+                with text_col:
+                    st.markdown(f"""
+                    <div style="margin-left: 30px;">
+                        <h4 style="margin-bottom: 10px; margin-top: 15px;">{title}</h4>
+                        <p>{description}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                # Add some space between principles
+                if i < 2:  # Don't add after the last one
+                    st.markdown("<hr style='margin: 20px 0; opacity: 0.3;'>", unsafe_allow_html=True)
+
+
+
+    # VISON SECTION
+    vision_container = st.container()
+    with vision_container:
+        # Add spacing before the vision section
+        st.markdown("<div style='margin-top: 100px;'></div>", unsafe_allow_html=True)
+        
+        # Display the full-width image
+        st.image("front_end/assets/vision.png", use_container_width=True)
+        
+        # Add centered title and text
+        st.markdown("""
+        <div style="text-align: center; margin-top: 0px; margin-bottom: 0px;">
+            <h2>Our Unified Vision</h2>
+            <p>The Ensō Hyperbuilding is brought to life through six specialized teams, each contributing to our circular philosophy of completeness through continuous cycles.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # DISCIPLINES SECTION
+    disciplines_container = st.container()
+    with disciplines_container:
+        # Add spacing before the disciplines section
+        st.markdown("<div style='margin-top: 0px;'></div>", unsafe_allow_html=True)
+        
+        # Define discipline data with properly formatted markdown
+        disciplines = [
+            {
+                "name": "Service",
+                "gif_path": "front_end/assets/Service/01/serviceLR.gif",
+                "description": """
+    At the heart of the concept lies a human-scale approach, where even expansive spaces become a canvas for community life. By interweaving distinct neighborhoods into a dynamic social network, the design fosters connection and interaction. The principle of space exchange enables spaces to transform seamlessly unlocking layers of openness within the building.
+
+    Circulation is envisioned as an experience — fluid, engaging, and deeply attuned to the proximities that link people and functions. This vision is supported by innovative movement systems, spatial proximity tailored to community needs, and a sustainable balance between energy-demanding, energy-neutral, and energy-producing systems.
+                """,
+                "markdown_content": """
+    # Service
+
+    * Human-scale design approach in expansive spaces
+    * Dynamic social network creation between neighborhoods
+    * Flexible space exchange systems
+    * Fluid and engaging circulation experiences
+    * Proximity-based function organization
+    * Balance between energy-demanding and energy-producing systems
+                """,
+                "image_on_left": True
+            },
+            {
+                "name": "Structure",
+                "gif_path": "front_end/assets/Structure/01/structureLR.gif",
+                "description": """
+    Service﻿ Team Vision
+    At the heart of the concept lies a human-scale approach, where even expansive spaces become a canvas for community life. By interweaving distinct neighborhoods into a dynamic social network, the design fosters connection and interaction. The principle of space exchange enables spaces to transform seamlessly unlocking layers of openness within the building.
+
+    Circulation is envisioned as an experience — fluid, engaging, and deeply attuned to the proximities that link people and functions. This vision is supported by innovative movement systems, spatial proximity tailored to community needs, and a sustainable balance between energy-demanding, energy-neutral, and energy-producing systems.
+                """,
+                "markdown_content": """
+    # Structure
+
+    * Integration of three primary flows (forces, people, water)
+    * Dynamic and varied structural elements
+    * Flexible space creation
+    * Water management through mass damping
+    * Flow-based spatial organization
+    * Adaptive spatial qualities
+                """,
+                "image_on_left": False
+            },
+            {
+                "name": "Residential",
+                "gif_path": "front_end/assets/Residential/01/residentialLR.gif",
+                "description": """
+    Our vision is to create a vibrant and integrated vertical living experience that fosters community connection, sustainability, and accessibility. By designing mixed-use spaces within a hyperbuilding, we aim to balance XL and XS residential offerings, providing diverse and adaptable living options.
+
+    Our focus is on enhancing environmental impact, user experience, and fast circulation within and between neighborhoods, all while creating a machine-like city concept inside a hyperbuilding.
+                """,
+                "markdown_content": """
+    # Residential
+
+    * Connection to public spaces
+    * Efficiency in Unit Clustering
+    * Efficiency in Unit Layout
+                """,
+                "image_on_left": True
+            },
+            {
+                "name": "Industrial",
+                "gif_path": "front_end/assets/Industrial/01/industrialLR.gif",
+                "description": """
+    A building that breathes life into the city —a vibrant ecosystem that produces its own clean energy, transforms waste into resources, and nurtures fresh food right where you live. It's a prosumer powerhouse, generating and sharing renewable energy while creating harmony between humans and the environment.
+
+    Here, every design choice embodies zero-waste principles, turning challenges into opportunities, and every space is alive with nature-based solutions that blur the line between the built and natural worlds. This is more than a building; it's a bold step toward a regenerative future where sustainability is not just a goal but a way of life.
+                """,
+                "markdown_content": """
+    # Industrial
+
+    * Clean energy production and management
+    * Waste-to-resource transformation systems
+    * On-site food production integration
+    * Prosumer energy sharing framework
+    * Zero-waste implementation strategies
+    * Nature-based solutions (NBS) integration
+    * Regenerative system development
+                """,
+                "image_on_left": False
+            },
+            {
+                "name": "Facade",
+                "gif_path": "front_end/assets/Facade/01/facadeLR.gif",
+                "description": """
+    A hyperbuilding with an adaptive origami-inspired wood and glass facade balances shading, views, and energy efficiency.
+
+    Modular and data-driven, it adjusts in real-time for optimal light, thermal performance, and occupant comfort, creating a sustainable, intelligent architectural system.
+                """,
+                "markdown_content": """
+    # Facade
+
+    * Adaptive origami-inspired design systems
+    * Integration of wood and glass materials
+    * Real-time environmental response capabilities
+    * Smart shading and view optimization
+    * Data-driven comfort management
+    * Modular design approach
+                """,
+                "image_on_left": True
+            }
         ]
         
-        # Create columns for slideshow navigation
-        prev_col, img_col, next_col = st.columns([1, 10, 1])
-        
-        # Initialize slideshow index in session state if not exists
-        if 'slideshow_idx' not in st.session_state:
-            st.session_state.slideshow_idx = 0
-        
-        # Navigation buttons
-        with prev_col:
-            if st.button("←", key="prev_main"):
-                st.session_state.slideshow_idx = (st.session_state.slideshow_idx - 1) % len(images)
-        with next_col:
-            if st.button("→", key="next_main"):
-                st.session_state.slideshow_idx = (st.session_state.slideshow_idx + 1) % len(images)
-        
-        # Display current image
-        with img_col:
-            current_image = images[st.session_state.slideshow_idx]
-            try:
-                st.image(current_image["path"], 
-                        caption=current_image["caption"], 
-                        use_container_width=True)
-            except FileNotFoundError:
-                st.warning(f"Please add the image {current_image['path']} to your assets folder")
-        
-        st.markdown("---")  # Add a separator
+        # Create container for each discipline
+        for discipline in disciplines:
+            # Create a container with padding
+            discipline_container = st.container()
+            
+            # Add styling for the container
+            st.markdown("""
+            <style>
+            .discipline-container {
+                border: 10px solid #ffffff;
+                border-radius: 10px;
+                padding: 10px;
+                margin: 10px 10px 10px 10px;
+                background-color: #ffffff;
+                width: 100%;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            
+            # Start the styled container
+            st.markdown('<div class="discipline-container">', unsafe_allow_html=True)
+            
+            # Create three columns - image, spacing, and text
+            if discipline["image_on_left"]:
+                img_col, spacing_col, text_col = st.columns([10, 1, 10])
+            else:
+                text_col, spacing_col, img_col = st.columns([10, 1, 10])
+            
+            # Add image to image column
+            with img_col:
+                st.image(discipline["gif_path"], use_container_width=True)
+                
+            # Empty middle column serves as spacing
+            with spacing_col:
+                st.write("")
+            
+            # Add text to text column with simple formatting
+            with text_col:
+                # Add some vertical margin at the top for vertical centering
+                st.markdown("<div style='margin-top: 0px;'></div>", unsafe_allow_html=True)
+                
+                # Make the title larger
+                st.markdown(f"<h1 style='font-size: 2.5rem; margin-bottom: 30px;'>{discipline['name']}</h1>", unsafe_allow_html=True)
+                
+                # Add description paragraph if available
+                if "description" in discipline and discipline["description"]:
+                    # Split paragraphs and format each
+                    paragraphs = discipline["description"].strip().split("\n\n")
+                    for paragraph in paragraphs:
+                        if paragraph.strip():  # Only process non-empty paragraphs
+                            st.markdown(f"<p style='font-size: 1.1rem; line-height: 1.6; margin-bottom: 20px;'>{paragraph.strip()}</p>", unsafe_allow_html=True)
+                    
+                    # Add spacing between description and bullet points
+                    st.markdown("<div style='margin-top: 30px;'></div>", unsafe_allow_html=True)
+                
+                # Extract bullet points from markdown content
+                bullet_points = []
+                for line in discipline["markdown_content"].split('\n'):
+                    if line.strip().startswith('*'):
+                        # Remove the '*' and any leading/trailing whitespace
+                        point = line.strip()[1:].strip()
+                        if point:  # Ensure the point is not empty
+                            bullet_points.append(point)
+                
+                # Add each bullet point with custom styling
+                for point in bullet_points:
+                    st.markdown(f"<div style='font-size: 1.2rem; margin-bottom: 15px; line-height: 1.8;'>• {point}</div>", unsafe_allow_html=True)
+                
+                # Add some vertical margin at the bottom for vertical centering
+                st.markdown("<div style='margin-bottom: 0px;'></div>", unsafe_allow_html=True)
+            
+            # End the styled container
+            st.markdown('</div>', unsafe_allow_html=True)
 
+
+
+
+
+
+    # KPI's SLIDESHOW SECTION
+    vision_container = st.container()
+    with vision_container:
+        # Add spacing before the vision section
+        st.markdown("<div style='margin-top: 200px;'></div>", unsafe_allow_html=True)
+        
+        # Add centered title and text
+        st.markdown("""
+        <div style="text-align: center; margin-top: 50px; margin-bottom: 50px;">
+            <h1>KPI's Definitions & Performance</h1>
+        """, unsafe_allow_html=True)
+
+        # Display the full-width image
+        st.image("front_end/assets/Service/02/servicelr.gif", use_container_width=True)
+
+        # Add centered caption text
+        st.markdown("""
+        <div style="text-align: center; margin-top: 5px; margin-bottom: 100px;">
+            <h1>Service Design Strategy Integration</h1>
+            <p>Distinct Intertwined neighborhoods create a dynamic social network fostering connections and interactions. The principle of space exchange enables spaces to transform seamlessly unlocking layers of openness within the building.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    
+    # VERTICAL COLUMNS FOR KPI'S
+    kpi_metrics_container = st.container()
+    with kpi_metrics_container:
+    # Add spacing before KPI metrics
+        st.markdown("<div style='margin-top: 100px;'></div>", unsafe_allow_html=True)
+    
+    # Create 9 columns: 5 for content and 4 for padding
+    cols = st.columns([10, 1, 10, 1, 10, 1, 10, 1, 10])
+    
+    # Service column (index 0)
+    with cols[0]:
+        # Discipline name
+        st.markdown("<h3 style='text-align: center;'>Service</h3>", unsafe_allow_html=True)
+        
+        # Discipline image
+        st.image("front_end/assets/Service/03/service01.png")
+        
+        # Caption
+        st.markdown("<p style='text-align: center;'><strong>Service KPI</strong></p>", unsafe_allow_html=True)
+        
+        # Service KPI: Occupancy Efficiency
+        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
+        st.markdown("<p style='margin-bottom: 5px;'>Occupancy Efficiency</p>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; margin: 0;'>2.51</h2>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Structure column (index 2)
+    with cols[2]:
+        # Discipline name
+        st.markdown("<h3 style='text-align: center;'>Structure</h3>", unsafe_allow_html=True)
+        
+        # Discipline image
+        st.image("front_end/assets/Structure/03/structure01.png")
+        
+        # Caption
+        st.markdown("<p style='text-align: center;'><strong>Structure KPI</strong></p>", unsafe_allow_html=True)
+        
+        # Structure KPI 1: Column-Free Floor Area Ratio
+        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
+        st.markdown("<p style='margin-bottom: 5px;'>Column-Free Floor Area Ratio</p>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; margin: 0;'>0.98</h2>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        # Structure KPI 2: Load Capacity per Square Meter
+        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
+        st.markdown("<p style='margin-bottom: 5px;'>Load Capacity per Square Meter</p>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; margin: 0;'>2.74</h2>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Residential column (index 4)
+    with cols[4]:
+        # Discipline name
+        st.markdown("<h3 style='text-align: center;'>Residential</h3>", unsafe_allow_html=True)
+        
+        # Discipline image
+        st.image("front_end/assets/Residential/03/residential01.png")
+        
+        # Caption
+        st.markdown("<p style='text-align: center;'><strong>Residential KPI</strong></p>", unsafe_allow_html=True)
+        
+        # Residential KPI: Mixed Use Index
+        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
+        st.markdown("<p style='margin-bottom: 5px;'>Mixed Use Index</p>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; margin: 0;'>0.60</h2>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Industrial column (index 6)
+    with cols[6]:
+        # Discipline name
+        st.markdown("<h3 style='text-align: center;'>Industrial</h3>", unsafe_allow_html=True)
+        
+        # Discipline image
+        st.image("front_end/assets/Industrial/03/industrial01.png")
+        
+        # Caption
+        st.markdown("<p style='text-align: center;'><strong>Industrial KPI</strong></p>", unsafe_allow_html=True)
+        
+        # Industrial KPI 1: Energy Self-Sufficiency Ratio
+        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
+        st.markdown("<p style='margin-bottom: 5px;'>Energy Self-Sufficiency Ratio</p>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; margin: 0;'>0.75</h2>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        # Industrial KPI 2: Food Self-Sufficiency Ratio
+        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
+        st.markdown("<p style='margin-bottom: 5px;'>Food Self-Sufficiency Ratio</p>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; margin: 0;'>0.60</h2>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        # Industrial KPI 3: Water Recycling Ratio
+        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
+        st.markdown("<p style='margin-bottom: 5px;'>Water Recycling Ratio</p>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; margin: 0;'>0.80</h2>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        # Industrial KPI 4: Waste Utilization Ratio
+        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
+        st.markdown("<p style='margin-bottom: 5px;'>Waste Utilization Ratio</p>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; margin: 0;'>0.40</h2>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Facade column (index 8)
+    with cols[8]:
+        # Discipline name
+        st.markdown("<h3 style='text-align: center;'>Facade</h3>", unsafe_allow_html=True)
+        
+        # Discipline image
+        st.image("front_end/assets/Facade/03/facade01.png")
+        
+        # Caption
+        st.markdown("<p style='text-align: center;'><strong>Facade KPI</strong></p>", unsafe_allow_html=True)
+        
+        # Facade KPI 1: Primary Daylight Factor
+        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
+        st.markdown("<p style='margin-bottom: 5px;'>Primary Daylight Factor</p>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; margin: 0;'>0.05</h2>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        # Facade KPI 2: Panel Optimization
+        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
+        st.markdown("<p style='margin-bottom: 5px;'>Panel Optimization</p>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; margin: 0;'>0.50</h2>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        # Facade KPI 3: Energy Generation Ratio
+        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
+        st.markdown("<p style='margin-bottom: 5px;'>Energy Generation Ratio</p>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; margin: 0;'>1.25</h2>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+    
+        # Add spacing after KPI metrics
+        st.markdown("<div style='margin-bottom: 100px;'></div>", unsafe_allow_html=True)
+
+
+
+
+
+
+    # Add speckle inputs selection menu
     with input_container:  # Use the new name here
         st.subheader("Inputs")
         viewer_toggle, statistics_toggle = st.columns(2)
@@ -332,4 +800,4 @@ else:
         elif selected_dashboard == 'ProjectStats':
             statistics.run()
 
-#--------------------------
+        #--------------------------
