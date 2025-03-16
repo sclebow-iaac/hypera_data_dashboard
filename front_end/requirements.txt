@@ -5,3 +5,5 @@ colour
 pythreejs
 tabulate
 streamlit
+networkx
+scipy

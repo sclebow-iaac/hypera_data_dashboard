@@ -512,7 +512,7 @@ def create_top_menu(teams: list[str]) -> str:
         with button_container:
             total_buttons_var = len(teams)
             button_labels = teams
-            cols_in_row = 8
+            cols_in_row = len(teams)
 
             created_rows = []
             created_cols = []
