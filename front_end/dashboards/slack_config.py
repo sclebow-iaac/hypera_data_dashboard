@@ -522,6 +522,9 @@ def run():
         with time_of_day_container:
             st.header("Time of Day")
             # Add a time picker for selecting the time of day
+            # print(f'time_of_day_value: {time_of_day_value}') # Debugging
+            time_of_day_value = datetime.datetime.strptime(time_of_day_value, "%H:%M:%S").time()
+            # print(f'time_of_day_value: {time_of_day_value}') # Debugging
             time_of_day = st.time_input("Select Time of Day (GMT)", value=time_of_day_value, key="time of day picker")
         
         if st.button("Save Configuration", use_container_width=True):
