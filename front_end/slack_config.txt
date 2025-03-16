@@ -8,4 +8,4 @@ Thursday: 1
 Friday: 1
 Saturday: 1
 Sunday: 1
-Time of Day: 9:00:00
+Time of Day: 09:00:00
