@@ -19,8 +19,10 @@ def create_network_graph(project_tree):
         if value["parent"] is not None:
             G.add_edge(key, value["parent"])
 
-    k = 1 / math.sqrt(len(G.nodes())) * 2 # optimal distance between nodes
-    pos = nx.spring_layout(G, k=k)  # positions for all nodes
+    # k = 1 / math.sqrt(len(G.nodes())) * 3 # optimal distance between nodes
+    # pos = nx.spring_layout(G, k=k, seed=0)  # positions for all nodes
+
+    pos = nx.kamada_kawai_layout(G)  # positions for all nodes
 
     edge_x = []
     edge_y = []
@@ -57,27 +59,51 @@ def create_network_graph(project_tree):
         marker=dict(
             showscale=True,
             colorscale='YlGnBu',
-            size=50,
-            colorbar=dict(thickness=15, title='Node Connections', xanchor='left', titleside='right'),
-            line_width=2
-        )
+            size=10,
+            colorbar=dict(thickness=15, title='Distance From HyperA', xanchor='left', titleside='right'),
+            line_width=2,
+        ),
+        textfont=dict(
+            family='Arial',
+            size=16,
+            color='#000000'
+        ),
+        textposition='top center',
     )
-    node_adjacencies = []
-    node_text = []
-    for node, adjacencies in enumerate(G.adjacency()):
-        node_adjacencies.append(len(adjacencies[1]))
-        node_text.append(f'{adjacencies[0]}')
 
-    node_trace.marker.color = node_adjacencies
+    node_distances = []
+    node_text = []
+    for node in G.nodes():
+        distance = 0
+        current_node = node
+        while project_tree[current_node]["parent"] is not None:
+            distance += 1
+            current_node = project_tree[current_node]["parent"]
+        node_distances.append(distance)
+        node_text.append(f'{node}')
+
+    max_distance = max(node_distances)
+    # Reverse the distances to get the distance from the root node
+    node_distances = [max_distance - d for d in node_distances]
+
+    node_trace.marker.color = node_distances
+    node_trace.marker.line.color = 'rgb(0, 0, 0)'
     node_trace.text = node_text
+
+    marker_sizes = [10 + 20 * (d / max_distance) for d in node_distances] # Marker size based on distance, larger for nodes closer to the root
+    node_trace.marker.size = marker_sizes
+
+    text_sizes = [5 + 10 * (d / max_distance) for d in node_distances] # Text size based on distance, smaller for nodes further away
+    node_trace.textfont.size = text_sizes
 
     fig = go.Figure(data=[edge_trace, node_trace],
                     layout=go.Layout(
-                        title='<br>Network graph made with Python',
+                        title='<br>Speckle Model Network',
                         titlefont_size=16,
                         showlegend=False,
                         hovermode='closest',
                         margin=dict(b=0,l=0,r=0,t=0),
+                        height=800,  # Set the figure height here
                         xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
                         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
                     )
@@ -182,9 +208,9 @@ def run():
     models, client, project_id = setup_speckle_connection()
 
     # Get the project data
-    # project_tree = get_project_data(models, client, project_id)
+    project_tree = get_project_data(models, client, project_id)
     # Create the network diagram
-    project_tree = create_test_tree() # for testing
+    # project_tree = create_test_tree() # for testing
     network_diagram = create_network_graph(project_tree)
     # Display the network diagram
     # st.plotly_chart(network_diagram, use_container_width=True)
