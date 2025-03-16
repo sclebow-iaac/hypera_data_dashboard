@@ -60,7 +60,6 @@ def create_network_graph(project_tree):
             showscale=True,
             colorscale='YlGnBu',
             size=10,
-            colorbar=dict(thickness=15, title='Distance From HyperA', xanchor='left', titleside='right'),
             line_width=2,
         ),
         textfont=dict(
