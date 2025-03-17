@@ -8,7 +8,10 @@ from pprint import pprint
 from dashboards.dashboard import *
 
 def create_network_graph(project_tree):
-    print(f'create_network_graph(project_tree)')
+    # print(f'create_network_graph(project_tree)')
+
+    # Create a subheader for the network diagram
+    st.subheader("Project Network Diagram")
 
     # with st.spinner("Creating network graph..."):
     G = nx.Graph() # Create a new graph
@@ -100,7 +103,7 @@ def create_network_graph(project_tree):
                         showlegend=False,
                         hovermode='closest',
                         margin=dict(b=0,l=0,r=0,t=0),
-                        height=700,  # Set the figure height here
+                        height=800,  # Set the figure height here
                         xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
                         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
                     )
@@ -202,17 +205,16 @@ def create_test_tree():
 
     return test_project_tree
 
-def run():
-    # Setup speckle connection
-    
+def run(container=None):
+    if container is None:
+        container = st.container()
 
-    # Get the project data
-    project_tree = get_project_data()
-    # Create the network diagram
-    # project_tree = create_test_tree() # for testing
-    network_diagram = create_network_graph(project_tree)
-    # Display the network diagram
-    # st.plotly_chart(network_diagram, use_container_width=True)
+    with container:
+        # Get the project data
+        project_tree = get_project_data()
+
+        # Create the network diagram
+        network_diagram = create_network_graph(project_tree)
 
 def show(container, client, project, models, versions, verbose=False):
     with container:
