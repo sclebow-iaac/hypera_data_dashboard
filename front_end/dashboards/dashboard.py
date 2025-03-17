@@ -97,7 +97,6 @@ class Metric:
             delta=f"{delta_percent:.2f}%",
         )
 
-
 def generate_dashboard(selected_team: str, metrics: list[Metric], project_id: str, team_members: list[dict], team_extractor, extracted_data, text_dict: list[dict], presentation_model_id) -> None:
     # Display the images
     header_image_container = st.container(border=True)
@@ -146,7 +145,6 @@ def generate_dashboard(selected_team: str, metrics: list[Metric], project_id: st
 
     pass
 
-
 def display_text(container, text_dict: list[dict]) -> None:
     design_overview_container = container.container()
     display_design_overview(design_overview_container, text_dict)
@@ -155,11 +153,9 @@ def display_text(container, text_dict: list[dict]) -> None:
     display_custom_bullet_list(
         container, text_dict['bullet_items'], bullet_image_path=None)
 
-
 def display_design_overview(container, text_dict: list[dict]) -> None:
     container.markdown('#### Design Overview')
     container.markdown(text_dict['design_overview'])
-
 
 def display_team_members(container, team_members: list[dict]) -> None:
     container.markdown('')  # Add some space
@@ -189,7 +185,6 @@ def display_team_members(container, team_members: list[dict]) -> None:
     """, unsafe_allow_html=True)
     container.markdown('')  # Add some space
 
-
 def display_interactive_calculators(container, metrics: list[Metric], grid: bool = True):
     container.markdown("""
     <h2 style='text-align: center;'>Interactive Sustainability Calculators</h3>
@@ -216,7 +211,6 @@ def display_interactive_calculators(container, metrics: list[Metric], grid: bool
         metric.display_interactive_calculator(
             interactive_container, columns=not (grid))
 
-
 def setup_speckle_connection(models_limit=100):
     speckle_server = "macad.speckle.xyz"
     speckle_token = "61c9dd1efb887a27eb3d52d0144f1e7a4a23f962d7"
@@ -231,7 +225,6 @@ def setup_speckle_connection(models_limit=100):
     models = project.models.items
 
     return models, client, project_id
-
 
 def display_speckle_viewer(container, project_id, model_id, is_transparent=False, hide_controls=False, hide_selection_info=False, no_scroll=False, height=400, include_site=False):
     container.markdown('#### Representational Model')
@@ -265,7 +258,6 @@ def display_speckle_viewer(container, project_id, model_id, is_transparent=False
 
     return speckle_model_url
 
-
 def display_page_title(team_name: str) -> None:
     st.markdown(f'''
         <div style="text-align: center;">
@@ -273,14 +265,12 @@ def display_page_title(team_name: str) -> None:
         </div>
     ''', unsafe_allow_html=True)
 
-
 def display_formula_section_header(team_name: str) -> None:
     st.markdown(f'''
         <div style="text-align: center;">
             <h2>{team_name.capitalize()} Team Metrics</h2>
         </div>
     ''', unsafe_allow_html=True)
-
 
 def display_st_metric_values(container, metrics, use_columns=True):
     container.markdown('#### Key Performance Indicators')
@@ -311,7 +301,6 @@ def display_metric_visualizations(container, metrics, add_text=True):
             # Add a horizontal line between metrics
             vis_container.markdown("---")
 
-
 def display_text_section(container, text: str) -> None:
     """Display a text section in the given container."""
     container.markdown(f"""
@@ -328,7 +317,6 @@ def display_text_section(container, text: str) -> None:
         </div>
         <hr style="border: 1px solid white;"/>  <!-- Add a horizontal line -->
     """, unsafe_allow_html=True)
-
 
 def display_custom_bullet_list(container, items: list[str], bullet_image_path: str = None) -> None:
     """Display a list with custom bullet points using an image."""
@@ -375,7 +363,6 @@ def display_custom_bullet_list(container, items: list[str], bullet_image_path: s
     bullet_list += "</ul>"
 
     container.markdown(bullet_style + bullet_list, unsafe_allow_html=True)
-
 
 def display_metric(container, metric: Metric, add_text=True) -> None:
     # Display a metric in the specified container.
@@ -428,7 +415,6 @@ def display_metric(container, metric: Metric, add_text=True) -> None:
     #     for _ in range(5):
     #         st.markdown("")
 
-
 def display_tape_diagram(container, metric: Metric) -> None:
     fig = go.Figure(go.Indicator(
         mode="number+gauge+delta",
@@ -466,7 +452,6 @@ def display_tape_diagram(container, metric: Metric) -> None:
         plot_bgcolor='rgba(0, 0, 0, 0)',
     )
     container.plotly_chart(fig)
-
 
 def create_top_menu(teams: list[str]) -> str:
     # Initialize session state if not exists
@@ -569,7 +554,6 @@ def create_top_menu(teams: list[str]) -> str:
 
         # Return the current selection
         return st.session_state.current_selection
-
 
 def display_metric_circles_and_tape(container, metric: Metric) -> None:
     """Display input values for metrics in circles and a tape diagram showing progress using the Metric class."""
@@ -704,10 +688,8 @@ def display_metric_circles_and_tape(container, metric: Metric) -> None:
         </script>
     """, unsafe_allow_html=True)
 
-
 def run(selected_team: str) -> None:
     st.title(f"{selected_team} Dashboard")
-
 
 def display_images(container, team_name: str, subfolder: str='01', header: bool=True) -> None:
     if header:
