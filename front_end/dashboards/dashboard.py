@@ -485,7 +485,7 @@ def create_top_menu(teams: list[str]) -> str:
         # header_container = st.container()
         # button_container = st.container()
 
-        image_container, header_container, button_container = st.columns([1, 5, 7], gap="small")
+        image_container, header_container, button_container = st.columns([0.7, 5, 7], gap="small")
         # header_container, button_container = st.columns(2, gap="small")
 
         with image_container:

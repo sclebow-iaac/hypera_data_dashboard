@@ -61,7 +61,7 @@ def create_network_graph(project_tree):
         hoverinfo='text',
         marker=dict(
             showscale=False,
-            colorscale='YlGnBu',
+            colorscale='ice',
             size=10,
             line_width=2,
         ),
@@ -95,7 +95,7 @@ def create_network_graph(project_tree):
     marker_sizes = [10 + 30 * (d / max_distance) for d in node_distances] # Marker size based on distance, larger for nodes closer to the root
     node_trace.marker.size = marker_sizes
 
-    text_sizes = [5 + 10 * (d / max_distance) for d in node_distances] # Text size based on distance, smaller for nodes further away
+    text_sizes = [8 + 10 * (d / max_distance) for d in node_distances] # Text size based on distance, smaller for nodes further away
     node_trace.textfont.size = text_sizes
 
     fig = go.Figure(data=[edge_trace, node_trace],
