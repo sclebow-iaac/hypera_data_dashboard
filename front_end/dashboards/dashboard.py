@@ -272,8 +272,9 @@ def display_formula_section_header(team_name: str) -> None:
         </div>
     ''', unsafe_allow_html=True)
 
-def display_st_metric_values(container, metrics, use_columns=True):
-    container.markdown('#### Key Performance Indicators')
+def display_st_metric_values(container, metrics, use_columns=True, include_header=True):
+    if include_header:
+        container.markdown('#### Key Performance Indicators')
 
     if use_columns:
         column_containers = container.columns(len(metrics))

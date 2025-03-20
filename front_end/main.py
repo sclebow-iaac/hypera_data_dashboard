@@ -16,6 +16,14 @@ import dashboards.facade_dashboard as facade_dashboard
 import dashboards.data_dashboard as data_dashboard
 import dashboards.slack_config as slack_config
 
+# import data extraction
+import data_extraction.residential_extractor as residential_extractor
+import data_extraction.service_extractor as service_extractor
+import data_extraction.structure_extractor as structure_extractor
+import data_extraction.industrial_extractor as industrial_extractor
+import data_extraction.facade_extractor as facade_extractor
+import data_extraction.data_extractor as data_extractor
+
 # import statistics
 import project_statistics as statistics
 
@@ -568,23 +576,24 @@ if selected_dashboard == "Main":
     # Create 9 columns: 5 for content and 4 for padding
     cols = st.columns([10, 1, 10, 1, 10, 1, 10, 1, 10])
     
+    models, client, project_id = setup_speckle_connection()
+
     # Service column (index 0)
     with cols[0]:
         # Discipline name
         st.markdown("<h3 style='text-align: center;'>Service</h3>", unsafe_allow_html=True)
-        
+
         # Discipline image
         st.image("front_end/assets/Service/03/service01.png")
-        
+
         # Caption
         st.markdown("<p style='text-align: center;'><strong>Service KPI</strong></p>", unsafe_allow_html=True)
         
-        # Service KPI: Occupancy Efficiency
-        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
-        st.markdown("<p style='margin-bottom: 5px;'>Occupancy Efficiency</p>", unsafe_allow_html=True)
-        st.markdown("<h2 style='text-align: center; margin: 0;'>2.51</h2>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-    
+        # Call the service dashboard to get the metrics
+        verified, team_data = service_extractor.extract(models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
+        service_metrics = service_dashboard.generate_metrics(verified, team_data)
+        display_st_metric_values(container=cols[0], metrics=service_metrics, use_columns=False, include_header=False)
+        
     # Structure column (index 2)
     with cols[2]:
         # Discipline name
@@ -596,17 +605,9 @@ if selected_dashboard == "Main":
         # Caption
         st.markdown("<p style='text-align: center;'><strong>Structure KPI</strong></p>", unsafe_allow_html=True)
         
-        # Structure KPI 1: Column-Free Floor Area Ratio
-        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
-        st.markdown("<p style='margin-bottom: 5px;'>Column-Free Floor Area Ratio</p>", unsafe_allow_html=True)
-        st.markdown("<h2 style='text-align: center; margin: 0;'>0.98</h2>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-        # Structure KPI 2: Load Capacity per Square Meter
-        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
-        st.markdown("<p style='margin-bottom: 5px;'>Load Capacity per Square Meter</p>", unsafe_allow_html=True)
-        st.markdown("<h2 style='text-align: center; margin: 0;'>2.74</h2>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+        verified, team_data = structure_extractor.extract(models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
+        structure_metrics = structure_dashboard.generate_metrics(verified, team_data)
+        display_st_metric_values(container=cols[2], metrics=structure_metrics, use_columns=False, include_header=False)
     
     # Residential column (index 4)
     with cols[4]:
@@ -619,11 +620,9 @@ if selected_dashboard == "Main":
         # Caption
         st.markdown("<p style='text-align: center;'><strong>Residential KPI</strong></p>", unsafe_allow_html=True)
         
-        # Residential KPI: Mixed Use Index
-        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
-        st.markdown("<p style='margin-bottom: 5px;'>Mixed Use Index</p>", unsafe_allow_html=True)
-        st.markdown("<h2 style='text-align: center; margin: 0;'>0.60</h2>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+        verified, team_data = residential_extractor.extract(models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
+        residential_metrics = residential_dashboard.generate_metrics(verified, team_data)
+        display_st_metric_values(container=cols[4], metrics=residential_metrics, use_columns=False, include_header=False)
     
     # Industrial column (index 6)
     with cols[6]:
@@ -636,30 +635,10 @@ if selected_dashboard == "Main":
         # Caption
         st.markdown("<p style='text-align: center;'><strong>Industrial KPI</strong></p>", unsafe_allow_html=True)
         
-        # Industrial KPI 1: Energy Self-Sufficiency Ratio
-        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
-        st.markdown("<p style='margin-bottom: 5px;'>Energy Self-Sufficiency Ratio</p>", unsafe_allow_html=True)
-        st.markdown("<h2 style='text-align: center; margin: 0;'>0.75</h2>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-        # Industrial KPI 2: Food Self-Sufficiency Ratio
-        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
-        st.markdown("<p style='margin-bottom: 5px;'>Food Self-Sufficiency Ratio</p>", unsafe_allow_html=True)
-        st.markdown("<h2 style='text-align: center; margin: 0;'>0.60</h2>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-        # Industrial KPI 3: Water Recycling Ratio
-        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
-        st.markdown("<p style='margin-bottom: 5px;'>Water Recycling Ratio</p>", unsafe_allow_html=True)
-        st.markdown("<h2 style='text-align: center; margin: 0;'>0.80</h2>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-        # Industrial KPI 4: Waste Utilization Ratio
-        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
-        st.markdown("<p style='margin-bottom: 5px;'>Waste Utilization Ratio</p>", unsafe_allow_html=True)
-        st.markdown("<h2 style='text-align: center; margin: 0;'>0.40</h2>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-    
+        verified, team_data = industrial_extractor.extract(models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
+        industrial_metrics = industrial_dashboard.generate_metrics(verified, team_data)
+        display_st_metric_values(container=cols[6], metrics=industrial_metrics, use_columns=False, include_header=False)
+
     # Facade column (index 8)
     with cols[8]:
         # Discipline name
@@ -671,31 +650,9 @@ if selected_dashboard == "Main":
         # Caption
         st.markdown("<p style='text-align: center;'><strong>Facade KPI</strong></p>", unsafe_allow_html=True)
         
-        # Facade KPI 1: Primary Daylight Factor
-        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
-        st.markdown("<p style='margin-bottom: 5px;'>Primary Daylight Factor</p>", unsafe_allow_html=True)
-        st.markdown("<h2 style='text-align: center; margin: 0;'>0.05</h2>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-        # Facade KPI 2: Panel Optimization
-        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
-        st.markdown("<p style='margin-bottom: 5px;'>Panel Optimization</p>", unsafe_allow_html=True)
-        st.markdown("<h2 style='text-align: center; margin: 0;'>0.50</h2>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-        # Facade KPI 3: Energy Generation Ratio
-        st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
-        st.markdown("<p style='margin-bottom: 5px;'>Energy Generation Ratio</p>", unsafe_allow_html=True)
-        st.markdown("<h2 style='text-align: center; margin: 0;'>1.25</h2>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-    
-        # Add spacing after KPI metrics
-        st.markdown("<div style='margin-bottom: 100px;'></div>", unsafe_allow_html=True)
-
-
-
-
-
+        verified, team_data = facade_extractor.extract(models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
+        facade_metrics = facade_dashboard.generate_metrics(verified, team_data)
+        display_st_metric_values(container=cols[8], metrics=facade_metrics, use_columns=False, include_header=False)
 
     # Add speckle inputs selection menu
     with input_container:  # Use the new name here
