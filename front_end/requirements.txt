@@ -8,3 +8,4 @@ streamlit
 networkx
 scipy
 streamlit_extras
+streamlit-browser-engine
