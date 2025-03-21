@@ -102,7 +102,7 @@ def generate_metrics(verified, team_data) -> list[Metric]:
 def run(selected_team: str) -> None:
     # Extract data
     models, client, project_id = setup_speckle_connection()
-    verified, team_data = team_extractor.extract(models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
+    verified, team_data = team_extractor.extract(header=False, table=False, gauge=False, attribute_display=False)
 
     metrics = generate_metrics(verified, team_data)
 

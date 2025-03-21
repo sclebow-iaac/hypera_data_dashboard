@@ -13,8 +13,6 @@ import data_extraction.industrial_extractor as industrial_extractor
 import dashboards.dashboard as dashboard
 
 def run(selected_team: str = "") -> None:
-    models, client, project_id = dashboard.setup_speckle_connection()
-
     st.title("Data Dashboard")
     st.markdown(
         "This dashboard is used to aggregate data from the metric models in the project")
@@ -43,36 +41,55 @@ def run(selected_team: str = "") -> None:
         structure_container = st.container()
         industrial_container = st.container()
 
-    facade_container.markdown("## Facade Team")
-    facade_extractor.extract(models=models, client=client, project_id=project_id,
-                             header=header, table=table, gauge=gauge, attribute_display=False, container=facade_container)
-    if not display_grid:
-        facade_container.markdown("------")
-        facade_container.markdown("------")
+    extractors = {
+        "Facade": facade_extractor,
+        "Residential": residential_extractor,
+        "Service": service_extractor,
+        "Structure": structure_extractor,
+        "Industrial": industrial_extractor
+    }
 
-    residential_container.markdown("## Residential Team")
-    residential_extractor.extract(models=models, client=client, project_id=project_id,
-                                  header=header, table=table, gauge=gauge, attribute_display=False, container=residential_container)
-    if not display_grid:
-        residential_container.markdown("------")
-        residential_container.markdown("------")
+    containers = [
+        facade_container,
+        residential_container,
+        service_container,
+        structure_container,
+        industrial_container
+    ]
+    for team_name, extractor, container in zip(extractors.keys(), extractors.values(), containers):
+        with container:
+            st.markdown(f"## {team_name} Team")
+            extractor.extract(header=header, table=table, gauge=gauge, attribute_display=False)
+            if not display_grid:
+                st.markdown("------")
+                st.markdown("------")
+        
 
-    service_container.markdown("## Service Team")
-    service_extractor.extract(models=models, client=client, project_id=project_id,
-                              header=header, table=table, gauge=gauge, attribute_display=False, container=service_container)
-    if not display_grid:
-        service_container.markdown("------")
-        service_container.markdown("------")
+    # facade_container.markdown("## Facade Team")
+    # facade_extractor.extract(header=header, table=table, gauge=gauge, attribute_display=False)
+    # if not display_grid:
+    #     facade_container.markdown("------")
+    #     facade_container.markdown("------")
 
-    structure_container.markdown("## Structure Team")
-    structure_extractor.extract(models=models, client=client, project_id=project_id,
-                                header=header, table=table, gauge=gauge, attribute_display=False, container=structure_container)
-    if not display_grid:
-        structure_container.markdown("------")
-        structure_container.markdown("------")
+    # residential_container.markdown("## Residential Team")
+    # residential_extractor.extract(header=header, table=table, gauge=gauge, attribute_display=False)
+    # if not display_grid:
+    #     residential_container.markdown("------")
+    #     residential_container.markdown("------")
 
-    industrial_container.markdown("## Industrial Team")
-    industrial_extractor.extract(models=models, client=client, project_id=project_id,
-                                 header=header, table=table, gauge=gauge, attribute_display=False, container=industrial_container)
+    # service_container.markdown("## Service Team")
+    # service_extractor.extract(header=header, table=table, gauge=gauge, attribute_display=False)
+    # if not display_grid:
+    #     service_container.markdown("------")
+    #     service_container.markdown("------")
+
+    # structure_container.markdown("## Structure Team")
+    # structure_extractor.extract(header=header, table=table, gauge=gauge, attribute_display=False)
+    # if not display_grid:
+    #     structure_container.markdown("------")
+    #     structure_container.markdown("------")
+
+    # industrial_container.markdown("## Industrial Team")
+    # industrial_extractor.extract(header=header, table=table, gauge=gauge, attribute_display=False)
 
     return None

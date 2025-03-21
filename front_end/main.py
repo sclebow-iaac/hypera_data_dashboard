@@ -587,10 +587,10 @@ if selected_dashboard == "Main":
         st.image("front_end/assets/Service/03/service01.png")
 
         # Caption
-        st.markdown("<p style='text-align: center;'><strong>Service KPI</strong></p>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center;'><strong>Service KPIs</strong></p>", unsafe_allow_html=True)
         
         # Call the service dashboard to get the metrics
-        verified, team_data = service_extractor.extract(models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
+        verified, team_data = service_extractor.extract(header=False, table=False, gauge=False, attribute_display=False)
         service_metrics = service_dashboard.generate_metrics(verified, team_data)
         display_st_metric_values(container=cols[0], metrics=service_metrics, use_columns=False, include_header=False)
         
@@ -603,9 +603,9 @@ if selected_dashboard == "Main":
         st.image("front_end/assets/Structure/03/structure01.png")
         
         # Caption
-        st.markdown("<p style='text-align: center;'><strong>Structure KPI</strong></p>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center;'><strong>Structure KPIs</strong></p>", unsafe_allow_html=True)
         
-        verified, team_data = structure_extractor.extract(models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
+        verified, team_data = structure_extractor.extract(header=False, table=False, gauge=False, attribute_display=False)
         structure_metrics = structure_dashboard.generate_metrics(verified, team_data)
         display_st_metric_values(container=cols[2], metrics=structure_metrics, use_columns=False, include_header=False)
     
@@ -618,9 +618,9 @@ if selected_dashboard == "Main":
         st.image("front_end/assets/Residential/03/residential01.png")
         
         # Caption
-        st.markdown("<p style='text-align: center;'><strong>Residential KPI</strong></p>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center;'><strong>Residential KPIs</strong></p>", unsafe_allow_html=True)
         
-        verified, team_data = residential_extractor.extract(models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
+        verified, team_data = residential_extractor.extract(header=False, table=False, gauge=False, attribute_display=False)
         residential_metrics = residential_dashboard.generate_metrics(verified, team_data)
         display_st_metric_values(container=cols[4], metrics=residential_metrics, use_columns=False, include_header=False)
     
@@ -633,9 +633,9 @@ if selected_dashboard == "Main":
         st.image("front_end/assets/Industrial/03/industrial01.png")
         
         # Caption
-        st.markdown("<p style='text-align: center;'><strong>Industrial KPI</strong></p>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center;'><strong>Industrial KPIs</strong></p>", unsafe_allow_html=True)
         
-        verified, team_data = industrial_extractor.extract(models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
+        verified, team_data = industrial_extractor.extract(header=False, table=False, gauge=False, attribute_display=False)
         industrial_metrics = industrial_dashboard.generate_metrics(verified, team_data)
         display_st_metric_values(container=cols[6], metrics=industrial_metrics, use_columns=False, include_header=False)
 
@@ -648,9 +648,9 @@ if selected_dashboard == "Main":
         st.image("front_end/assets/Facade/03/facade01.png")
         
         # Caption
-        st.markdown("<p style='text-align: center;'><strong>Facade KPI</strong></p>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center;'><strong>Facade KPIs</strong></p>", unsafe_allow_html=True)
         
-        verified, team_data = facade_extractor.extract(models, client, project_id, header=False, table=False, gauge=False, attribute_display=False)
+        verified, team_data = facade_extractor.extract(header=False, table=False, gauge=False, attribute_display=False)
         facade_metrics = facade_dashboard.generate_metrics(verified, team_data)
         display_st_metric_values(container=cols[8], metrics=facade_metrics, use_columns=False, include_header=False)
 

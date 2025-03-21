@@ -14,6 +14,7 @@ import colour  # For color conversion
 
 import attribute_extraction
 
+from dashboards.dashboard import setup_speckle_connection
 
 def get_geometry_data(selected_version, client, project, verbose=True):
     objHash = selected_version.referencedObject
@@ -110,14 +111,15 @@ def search_for_attribute(base_data: Base, attribute: str, depth=0, single=True, 
 
     return found, output
 
-
-def extract(data, model_name, models, client, project_id, verbose=True, header=True, table=True, gauge=True, attribute_display=True, container=None):
+@st.cache_data(ttl='0.5days', show_spinner='Updating Cached Model Data')
+def extract(data, model_name, verbose=True, header=True, table=True, gauge=True, attribute_display=True, container=None):
 
     # if verbose:
         # print(f'Model name: {model_name}')  # Debugging
         # print(f'data: {data}')  # Debugging
 
         # print(f'data.keys(): {data.keys()}')  # Debugging
+    models, client, project_id = setup_speckle_connection()
 
     extracted_data = {}
     selected_model = None
