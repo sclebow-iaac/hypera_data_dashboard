@@ -1,4 +1,6 @@
 import streamlit as st
+from streamlit_extras.stylable_container import stylable_container
+
 import datetime
 
 from dashboards.dashboard import *
@@ -470,141 +472,154 @@ def write_to_log(message: str) -> None:
         print(f'Error writing to log file: {e}')
 
 def run():
-    print() # Debugging
+    with stylable_container(
+        key="save_config_container",
+        css_styles='''
+        div.stButton > button {
+            color: black;
+            border: 1px solid lightgray;
+        }
+        div.stButton > button:hover {
+            border: 1px solid black;
+        ''',
+    ):
 
-    st.title("Slack Automatic Message Generator")
+        print() # Debugging
 
-    # Read the configuration file
-    config = read_config_file()
-    recent_project_activity_value = config["recent_project_activity"]
-    data_availability_value = config["data_availability"]
-    data_analysis_value = config["data_analysis"]
-    monday_value = config["monday"]
-    tuesday_value = config["tuesday"]
-    wednesday_value = config["wednesday"]
-    thursday_value = config["thursday"]
-    friday_value = config["friday"]
-    time_of_day_value = config["time_of_day"]
-    
-    with st.expander("## Configuration"):
-        message_options_container, day_of_week_container, time_of_day_container = st.columns(3)
-        with message_options_container:
-            st.header("Message Options")
-            # Add radio buttons for selecting the Slack configuration
-            recent_project_activity_bool = st.toggle("Include Recent Project Activity", value=recent_project_activity_value)
-            data_availability_bool = st.toggle("Include Data Availability", value=data_availability_value)
-            data_analysis_bool = st.toggle("Include Data Analysis", value=data_analysis_value)
+        st.title("Slack Automatic Message Generator")
 
-        # day_of_week_container = st.container()
-        with day_of_week_container:
-            st.header("Day of Week")
-
-            # Add radio buttons for selecting the day of the week
-            monday_bool = st.toggle("Monday", value=monday_value, key="monday toggle")
-            tuesday_bool = st.toggle("Tuesday", value=tuesday_value, key="tuesday toggle")
-            wednesday_bool = st.toggle("Wednesday", value=wednesday_value, key="wednesday toggle")
-            thursday_bool = st.toggle("Thursday", value=thursday_value, key="thursday toggle")
-            friday_bool = st.toggle("Friday", value=friday_value, key="friday toggle")
-            saturday_bool = st.toggle("Saturday", value=False, key="saturday toggle")
-            sunday_bool = st.toggle("Sunday", value=False, key="sunday toggle")
-
-            day_bools = {
-                "Monday": monday_bool,
-                "Tuesday": tuesday_bool,
-                "Wednesday": wednesday_bool,
-                "Thursday": thursday_bool,
-                "Friday": friday_bool,
-                "Saturday": saturday_bool,
-                "Sunday": sunday_bool
-            }
-
-        # time_of_day_container = st.container()
-        with time_of_day_container:
-            st.header("Time of Day")
-            # Add a time picker for selecting the time of day
-            # print(f'time_of_day_value: {time_of_day_value}') # Debugging
-            time_of_day_value = datetime.datetime.strptime(time_of_day_value, "%H:%M:%S").time()
-            # print(f'time_of_day_value: {time_of_day_value}') # Debugging
-            time_of_day = st.time_input("Select Time of Day (GMT)", value=time_of_day_value, key="time of day picker")
+        # Read the configuration file
+        config = read_config_file()
+        recent_project_activity_value = config["recent_project_activity"]
+        data_availability_value = config["data_availability"]
+        data_analysis_value = config["data_analysis"]
+        monday_value = config["monday"]
+        tuesday_value = config["tuesday"]
+        wednesday_value = config["wednesday"]
+        thursday_value = config["thursday"]
+        friday_value = config["friday"]
+        time_of_day_value = config["time_of_day"]
         
-        if st.button("Save Configuration", use_container_width=True):
-            # Save the configuration to a file or database
-            # Write to a file
-            config_file_path = "front_end/slack_config.txt"
-            with open(config_file_path, "w") as f:
-                f.write(f"Recent Project Activity: {int(recent_project_activity_bool)}\n")
-                f.write(f"Data Availability: {int(data_availability_bool)}\n")
-                f.write(f"Data Analysis: {int(data_analysis_bool)}\n")
-                f.write(f"Monday: {int(monday_bool)}\n")
-                f.write(f"Tuesday: {int(tuesday_bool)}\n")
-                f.write(f"Wednesday: {int(wednesday_bool)}\n")
-                f.write(f"Thursday: {int(thursday_bool)}\n")
-                f.write(f"Friday: {int(friday_bool)}\n")
-                f.write(f"Saturday: {int(saturday_bool)}\n")
-                f.write(f"Sunday: {int(sunday_bool)}\n")
-                f.write(f"Time of Day: {time_of_day}\n")
-                
-            st.success("Configuration saved successfully! Reload Page to see changes.")
+        with st.expander("## Configuration"):
+            message_options_container, day_of_week_container, time_of_day_container = st.columns(3)
+            with message_options_container:
+                st.header("Message Options")
+                # Add radio buttons for selecting the Slack configuration
+                recent_project_activity_bool = st.toggle("Include Recent Project Activity", value=recent_project_activity_value)
+                data_availability_bool = st.toggle("Include Data Availability", value=data_availability_value)
+                data_analysis_bool = st.toggle("Include Data Analysis", value=data_analysis_value)
 
-    message_generated = False # A flag to check if the message has been generated at least once
+            # day_of_week_container = st.container()
+            with day_of_week_container:
+                st.header("Day of Week")
 
-    # Add a button that triggers the message generation
-    generate_message_trigger = False # A flag to check if the button has been clicked
-    if st.button("Generate Message Preview", use_container_width=True):
-        generate_message_trigger = True
+                # Add radio buttons for selecting the day of the week
+                monday_bool = st.toggle("Monday", value=monday_value, key="monday toggle")
+                tuesday_bool = st.toggle("Tuesday", value=tuesday_value, key="tuesday toggle")
+                wednesday_bool = st.toggle("Wednesday", value=wednesday_value, key="wednesday toggle")
+                thursday_bool = st.toggle("Thursday", value=thursday_value, key="thursday toggle")
+                friday_bool = st.toggle("Friday", value=friday_value, key="friday toggle")
+                saturday_bool = st.toggle("Saturday", value=False, key="saturday toggle")
+                sunday_bool = st.toggle("Sunday", value=False, key="sunday toggle")
 
-    # Add a button that sends the message to Slack
-    send_message_trigger = False
-    if st.button("Send Message to Slack", use_container_width=True):
-        send_message_trigger = True
+                day_bools = {
+                    "Monday": monday_bool,
+                    "Tuesday": tuesday_bool,
+                    "Wednesday": wednesday_bool,
+                    "Thursday": thursday_bool,
+                    "Friday": friday_bool,
+                    "Saturday": saturday_bool,
+                    "Sunday": sunday_bool
+                }
 
-    # If the button is clicked, generate the message
-    if generate_message_trigger:
-        st.subheader('Preview of the Next Message:')
+            # time_of_day_container = st.container()
+            with time_of_day_container:
+                st.header("Time of Day")
+                # Add a time picker for selecting the time of day
+                # print(f'time_of_day_value: {time_of_day_value}') # Debugging
+                time_of_day_value = datetime.datetime.strptime(time_of_day_value, "%H:%M:%S").time()
+                # print(f'time_of_day_value: {time_of_day_value}') # Debugging
+                time_of_day = st.time_input("Select Time of Day (UTC)", value=time_of_day_value, key="time of day picker")
 
-        # Generate the message
-        messages = generate_message(recent_project_activity_bool, data_availability_bool, data_analysis_bool, day_bools, time_of_day_value)            
+            if st.button("Save Configuration", use_container_width=True):
+                # Save the configuration to a file or database
+                # Write to a file
+                config_file_path = "front_end/slack_config.txt"
+                with open(config_file_path, "w") as f:
+                    f.write(f"Recent Project Activity: {int(recent_project_activity_bool)}\n")
+                    f.write(f"Data Availability: {int(data_availability_bool)}\n")
+                    f.write(f"Data Analysis: {int(data_analysis_bool)}\n")
+                    f.write(f"Monday: {int(monday_bool)}\n")
+                    f.write(f"Tuesday: {int(tuesday_bool)}\n")
+                    f.write(f"Wednesday: {int(wednesday_bool)}\n")
+                    f.write(f"Thursday: {int(thursday_bool)}\n")
+                    f.write(f"Friday: {int(friday_bool)}\n")
+                    f.write(f"Saturday: {int(saturday_bool)}\n")
+                    f.write(f"Sunday: {int(sunday_bool)}\n")
+                    f.write(f"Time of Day: {time_of_day}\n")
+                    
+                st.success("Configuration saved successfully! Reload Page to see changes.")
 
-        # # Display the generated message
-        # for message in messages:
-        #     # print(message) # Debugging
-        #     # If message is between a single asterisk at the beginning and end, make it bold by adding another asterisk
-        #     if message.startswith("*") and message.endswith("*"):
-        #         message = message.replace("*", "**")
-            # st.markdown(message, unsafe_allow_html=True)
+        message_generated = False # A flag to check if the message has been generated at least once
 
-        message_generated = True # Set the flag to True if the message has been generated
+        # Add a button that triggers the message generation
+        generate_message_trigger = False # A flag to check if the button has been clicked
+        if st.button("Generate Message Preview", use_container_width=True):
+            generate_message_trigger = True
 
-    if send_message_trigger:
-        # Check if the message has been generated
-        st.subheader('Sending Message to Slack:')
-        if message_generated:
-            message = '\n'.join(messages)
-        else:
-            with st.spinner("Generating message..."):
-                messages = generate_message(recent_project_activity_value, data_availability_value, data_analysis_value, day_bools, time_of_day_value)
+        # Add a button that sends the message to Slack
+        send_message_trigger = False
+        if st.button("Send Message to Slack", use_container_width=True):
+            send_message_trigger = True
+
+        # If the button is clicked, generate the message
+        if generate_message_trigger:
+            st.subheader('Preview of the Next Message:')
+
+            # Generate the message
+            time_of_day_value = time_of_day.strftime("%H:%M:%S")
+            messages = generate_message(recent_project_activity_bool, data_availability_bool, data_analysis_bool, day_bools, time_of_day_value)            
+
+            # # Display the generated message
+            # for message in messages:
+            #     # print(message) # Debugging
+            #     # If message is between a single asterisk at the beginning and end, make it bold by adding another asterisk
+            #     if message.startswith("*") and message.endswith("*"):
+            #         message = message.replace("*", "**")
+                # st.markdown(message, unsafe_allow_html=True)
+
+            message_generated = True # Set the flag to True if the message has been generated
+
+        if send_message_trigger:
+            # Check if the message has been generated
+            st.subheader('Sending Message to Slack:')
+            if message_generated:
                 message = '\n'.join(messages)
+            else:
+                with st.spinner("Generating message..."):
+                    messages = generate_message(recent_project_activity_value, data_availability_value, data_analysis_value, day_bools, time_of_day_value)
+                    message = '\n'.join(messages)
 
-        # Send the message to Slack
-        slack_webhook_url = "https://hooks.slack.com/services/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"
-        payload = {
-            "text": message,
-            "mrkdwn": True
-        }
-        headers = {
-            "Content-Type": "application/json"
-        }
-        response = requests.post(slack_webhook_url, json=payload, headers=headers)
-        # Check the response status
-        if response.status_code != 200:
-            st.error(f"Failed to send message to Slack: {response.status_code} - {response.text}")
-            return
-        else:
-            # If the message was sent successfully, display a success message
+            # Send the message to Slack
+            slack_webhook_url = "https://hooks.slack.com/services/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"
+            payload = {
+                "text": message,
+                "mrkdwn": True
+            }
+            headers = {
+                "Content-Type": "application/json"
+            }
+            response = requests.post(slack_webhook_url, json=payload, headers=headers)
+            # Check the response status
+            if response.status_code != 200:
+                st.error(f"Failed to send message to Slack: {response.status_code} - {response.text}")
+                return
+            else:
+                # If the message was sent successfully, display a success message
+                st.success("Message sent to Slack successfully!")
+                
+                print(f"Message sent to Slack: {message}") # Debugging
+                print(f"Response from Slack: {response.text}") # Debugging
+                
+
             st.success("Message sent to Slack successfully!")
-            
-            print(f"Message sent to Slack: {message}") # Debugging
-            print(f"Response from Slack: {response.text}") # Debugging
-            
-
-        st.success("Message sent to Slack successfully!")
