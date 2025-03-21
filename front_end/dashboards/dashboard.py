@@ -10,6 +10,8 @@ import os
 import time
 import math
 
+from browser_detection import browser_detection_engine
+
 content_container_width = 8  # Adjust this value to set the width of the content container
 
 class Metric:
@@ -466,6 +468,10 @@ def display_tape_diagram(container, metric: Metric) -> None:
     container.plotly_chart(fig)
 
 def create_top_menu(teams: list[str]) -> str:
+    browser_data = browser_detection_engine()
+    print("Browser Data: ", browser_data)  # Debugging: Print browser data
+    is_mobile = browser_data['isMobile']
+
     # Initialize session state if not exists
     if 'current_selection' not in st.session_state:
         st.session_state.current_selection = teams[0]
@@ -474,23 +480,25 @@ def create_top_menu(teams: list[str]) -> str:
 
     # print(f'Created {len(created_cols)} columns for {len(teams)} teams.')
     header = st.container()
-    # header.title("Here is a sticky header")
-    header.write("""<div class='fixed-header'/>""", unsafe_allow_html=True)
+    
+    if not is_mobile:
+        # header.title("Here is a sticky header")
+        header.write("""<div class='fixed-header'/>""", unsafe_allow_html=True)
 
-    ### Custom CSS for the sticky header
-    st.markdown(
-        """
-    <style>
-        div[data-testid="stVerticalBlock"] div:has(div.fixed-header) {
-            position: sticky;
-            top: 2.875rem;
-            background-color: black;
-            z-index: 999;
-        }
-    </style>
-        """,
-        unsafe_allow_html=True
-    )
+        ### Custom CSS for the sticky header
+        st.markdown(
+            """
+        <style>
+            div[data-testid="stVerticalBlock"] div:has(div.fixed-header) {
+                position: sticky;
+                top: 2.875rem;
+                background-color: black;
+                z-index: 999;
+            }
+        </style>
+            """,
+            unsafe_allow_html=True
+        )
 
     with header:        
         # image_container = st.container()
