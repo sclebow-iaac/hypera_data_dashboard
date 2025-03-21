@@ -206,15 +206,17 @@ def create_test_tree():
     return test_project_tree
 
 def run(container=None):
-    if container is None:
-        container = st.container()
+    left_margin, content_container, right_margin = get_content_container_columns()
+    with content_container:
+        if container is None:
+            container = st.container()
 
-    with container:
-        # Get the project data
-        project_tree = get_project_data()
+        with container:
+            # Get the project data
+            project_tree = get_project_data()
 
-        # Create the network diagram
-        network_diagram = create_network_graph(project_tree)
+            # Create the network diagram
+            network_diagram = create_network_graph(project_tree)
 
 def show(container, client, project, models, versions, verbose=False):
     with container:

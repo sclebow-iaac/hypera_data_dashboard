@@ -10,6 +10,8 @@ import os
 import time
 import math
 
+content_container_width = 8  # Adjust this value to set the width of the content container
+
 class Metric:
     # def __init__(self, title: str, formula_markdown: str, description: str, interactive_calculator_func, calculation_func, image_path: str, inputs: list, min_value: float, max_value: float, ideal_value: float):
     def __init__(self, title: str, formula_markdown: str, description: str, calculation_func, image_path: str, inputs: list, min_value: float, max_value: float, ideal_value: float):
@@ -97,53 +99,62 @@ class Metric:
             delta=f"{delta_percent:.2f}%",
         )
 
+def get_content_container_columns():
+    # Create three columns with specified widths
+    left_margin, content_container, right_margin = st.columns(
+        [1, content_container_width, 1], gap="small")
+    
+    return left_margin, content_container, right_margin
+
 def generate_dashboard(selected_team: str, metrics: list[Metric], project_id: str, team_members: list[dict], team_extractor, extracted_data, text_dict: list[dict], presentation_model_id) -> None:
-    # Display the images
-    header_image_container = st.container(border=True)
-    display_images(header_image_container, selected_team, "02")
+    left_margin, content_container, right_margin = st.columns([1, content_container_width, 1], gap="small")
+    with content_container:
+        # Display the images
+        header_image_container = st.container(border=True)
+        display_images(header_image_container, selected_team, "02")
 
-    # Display the page title
-    display_page_title(selected_team)
+        # Display the page title
+        display_page_title(selected_team)
 
-    # Display the Team Members
-    team_members_container = st.container()
-    display_team_members(team_members_container, team_members)
+        # Display the Team Members
+        team_members_container = st.container()
+        display_team_members(team_members_container, team_members)
 
-    # Display the Speckle viewer
-    viewer_height = 400
-    speckle_container = st.container(border=True)
-    display_speckle_viewer(speckle_container, project_id, presentation_model_id, is_transparent=True,
-                           hide_controls=True, hide_selection_info=True, no_scroll=False, height=viewer_height, include_site=True)
+        # Display the Speckle viewer
+        viewer_height = 400
+        speckle_container = st.container(border=True)
+        display_speckle_viewer(speckle_container, project_id, presentation_model_id, is_transparent=True,
+                            hide_controls=True, hide_selection_info=True, no_scroll=False, height=viewer_height, include_site=True)
 
-    # Display the images
-    images_container = st.container(border=True)
-    display_images(images_container, selected_team, "01")
+        # Display the images
+        images_container = st.container(border=True)
+        display_images(images_container, selected_team, "01")
 
-    # Display the text section
-    text_container = st.container(border=True)
-    display_text(text_container, text_dict)
+        # Display the text section
+        text_container = st.container(border=True)
+        display_text(text_container, text_dict)
 
-    # Display the extracted data
-    extracted_data_container = st.container(border=True)
-    team_extractor.display_data(extracted_data=extracted_data, header=True, show_table=True,
-                                gauge=False, simple_table=True, container=extracted_data_container)
+        # Display the extracted data
+        extracted_data_container = st.container(border=True)
+        team_extractor.display_data(extracted_data=extracted_data, header=True, show_table=True,
+                                    gauge=False, simple_table=True, container=extracted_data_container)
 
-    # Display the KPI section
-    kpi_container = st.container(border=True)
-    display_st_metric_values(kpi_container, metrics, use_columns=True)
+        # Display the KPI section
+        kpi_container = st.container(border=True)
+        display_st_metric_values(kpi_container, metrics, use_columns=True)
 
-    # Display the detailed metrics
-    detailed_metrics_container = st.container(border=True)
-    display_metric_visualizations(
-        detailed_metrics_container, metrics, add_text=True)
+        # Display the detailed metrics
+        detailed_metrics_container = st.container(border=True)
+        display_metric_visualizations(
+            detailed_metrics_container, metrics, add_text=True)
 
-    # Display the interactive calculators
-    interactive_calculator_container = st.container(border=True)
-    grid = True if len(metrics) > 2 else False
-    display_interactive_calculators(
-        interactive_calculator_container, metrics, grid=grid)
+        # Display the interactive calculators
+        interactive_calculator_container = st.container(border=True)
+        grid = True if len(metrics) > 2 else False
+        display_interactive_calculators(
+            interactive_calculator_container, metrics, grid=grid)
 
-    pass
+        pass
 
 def display_text(container, text_dict: list[dict]) -> None:
     design_overview_container = container.container()

@@ -10,36 +10,43 @@ import data_extraction.service_extractor as service_extractor
 import data_extraction.structure_extractor as structure_extractor
 import data_extraction.industrial_extractor as industrial_extractor
 
-import dashboards.dashboard as dashboard
+from dashboards.dashboard import get_content_container_columns, content_container_width
 
 def run(selected_team: str = "") -> None:
-    st.title("Data Dashboard")
-    st.markdown(
-        "This dashboard is used to aggregate data from the metric models in the project")
-    st.markdown("------")
+    left_margin, content_container, right_margin = get_content_container_columns()
+    with content_container:
+        st.title("Data Dashboard")
+        st.markdown(
+            "This dashboard is used to aggregate data from the metric models in the project")
+        st.markdown("------")
 
-    st.markdown('Visibility toggles')
-    # Add columns for the visibility toggles
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        header = st.checkbox("Header", value=True)
-    with col2:
-        table = st.checkbox("Table", value=False)
-    with col3:
-        gauge = st.checkbox("Gauge", value=True)
-    with col4:
-        display_grid = st.checkbox("Display as Grid", value=True)
+        st.markdown('Visibility toggles')
+        # Add columns for the visibility toggles
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            header = st.checkbox("Header", value=True)
+        with col2:
+            table = st.checkbox("Table", value=False)
+        with col3:
+            gauge = st.checkbox("Gauge", value=True)
+        with col4:
+            display_grid = st.checkbox("Display as Grid", value=True)
 
     if display_grid:
-        facade_container, residential_container = st.columns(2, border=True)
-        service_container, structure_container = st.columns(2, border=True)
-        industrial_container = st.container(border=True)
+        l_0, facade_container, residential_container, r_0 = st.columns([1, content_container_width / 2, content_container_width / 2, 1], border=False)
+        l_1, service_container, structure_container, r_1 = st.columns([1, content_container_width / 2, content_container_width / 2, 1], border=False)
+        l_2, industrial_container, r_2 = st.columns([1, content_container_width, 1], border=False)
+        for c in [facade_container, residential_container, service_container, structure_container, industrial_container]:
+            c.border = True
     else:
-        facade_container = st.container()
-        residential_container = st.container()
-        service_container = st.container()
-        structure_container = st.container()
-        industrial_container = st.container()
+
+        with content_container:
+
+            facade_container = st.container()
+            residential_container = st.container()
+            service_container = st.container()
+            structure_container = st.container()
+            industrial_container = st.container()
 
     extractors = {
         "Facade": facade_extractor,
