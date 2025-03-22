@@ -388,16 +388,19 @@ def display_data(data, extracted_data, model_name, verbose=True, header=True, sh
             st.dataframe(df.style.set_properties(
                 **{'font-family': 'Roboto Mono', 'font-size': '18px'}), hide_index=True, use_container_width=True)
             # st.markdown('---')
-
-        # Add a button to download the table as a CSV file
-        csv = df.to_csv(index=False)
-        container.download_button(
-            label="Download data as CSV",
-            data=csv,
-            file_name=f'{model_name}_extracted_data.csv',
-            mime='text/csv',
-            key=f'{model_name}_csv_download'
-        )
+        try:
+            # Add a button to download the table as a CSV file
+            csv = df.to_csv(index=False)
+            container.download_button(
+                label="Download data as CSV",
+                data=csv,
+                file_name=f'{model_name}_extracted_data.csv',
+                mime='text/csv',
+                key=f'{model_name}_csv_download'
+            )
+        except:
+            print('Error creating CSV download button')
+            pass
 
     if gauge:
         # Display a percentage of the data found compared to the total data expected
