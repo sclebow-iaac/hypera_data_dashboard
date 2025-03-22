@@ -54,7 +54,7 @@ def run_slack_process():
 
     return process
 
-run_slack_process()
+# run_slack_process() # Commented out to avoid running the process at startup
 
 def display_federated_speckle_viewer(container, project_id, height):
     # Function to create a federated Speckle viewer
