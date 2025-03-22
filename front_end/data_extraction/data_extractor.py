@@ -212,8 +212,8 @@ def extract(data, model_name, verbose=True, header=True, table=True, gauge=True,
                 #         # print(f'Attribute {name} not found.')
                 #         extracted_data[data_name] = None
 
-    display_data(data, extracted_data, model_name, verbose=False,
-                 header=header, show_table=table, gauge=gauge, container=container)
+    # display_data(data, extracted_data, model_name, verbose=False,
+    #              header=header, show_table=table, gauge=gauge, container=container)
 
     try:
         if attribute_display:

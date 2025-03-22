@@ -66,7 +66,11 @@ def run(selected_team: str = "") -> None:
     for team_name, extractor, container in zip(extractors.keys(), extractors.values(), containers):
         with container:
             st.markdown(f"## {team_name} Team")
-            extractor.extract(header=header, table=table, gauge=gauge, attribute_display=False)
+            verified, extracted_data = extractor.extract(header=False, table=False, gauge=False, attribute_display=False)
+            extracted_data_container = st.container()
+            extractor.display_data(extracted_data=extracted_data, header=header, show_table=table,
+                                    gauge=gauge, simple_table=False, container=extracted_data_container)
+            
             if not display_grid:
                 st.markdown("------")
                 st.markdown("------")
