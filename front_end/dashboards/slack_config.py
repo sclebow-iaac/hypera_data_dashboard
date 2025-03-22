@@ -32,60 +32,96 @@ import pandas as pd
 def format_time(dt):
     return dt.strftime("%d/%m %H:%M") + " GMT"
 
-def get_next_message_time(day_bools, time_of_day) -> datetime.datetime:
+def get_next_message_time(day_bools, time_of_day: datetime.datetime) -> datetime.datetime:
     # Get the current time in GMT timezone
     now = datetime.datetime.now(datetime.timezone.utc)
+    print(f'now: {now} timezone: {now.tzinfo}') # Debugging
 
-    # Get the current day of the week (0=Monday, 6=Sunday)
-    current_day = now.weekday()
+    if type(time_of_day) == str:
+        # If time_of_day is a string, convert it to a datetime object
+        time_of_day = datetime.datetime.strptime(time_of_day, "%H:%M:%S").time()
 
-    next_scheduled_day = None
-    day_delta = None
-    for day, is_scheduled in day_bools.items():
-        if is_scheduled: # If the day is scheduled
-            day_number = list(day_bools.keys()).index(day)
+    tod_hours, tod_minutes, tod_seconds = time_of_day.hour, time_of_day.minute, time_of_day.second
 
-            if day_number > current_day:
-                # If the scheduled day is in the future, look at the current week
-                delta = day_number - current_day
-            else:
-                # If the scheduled day is in the past, look at the next week
-                delta = day_number - current_day + 7
-            
-            if delta == 0: # If it's the same day
-                # Check if the time has passed
-                scheduled_time = datetime.datetime.strptime(time_of_day, "%H:%M:%S").time()
-                current_time = now.time()
-                if current_time < scheduled_time:
-                    # If the scheduled time is in the future, it's the next scheduled time
-                    next_scheduled_day = day_number
-                    day_delta = delta
-                    break
-                else:
-                    # If the scheduled time is in the past, skip it
-                    continue
-
-            if day_delta is None:
-                # If this is the first scheduled time, set it as the next scheduled time
-                next_scheduled_day = day_number
-                day_delta = delta
-                continue
-            elif delta < day_delta:
-                # If the delta is smaller than the previous one, update the next scheduled time
-                next_scheduled_day = day_number
-                day_delta = delta
-                continue
-            else:
-                # If the delta is larger, skip it
-                continue
-    # If no scheduled time is found, return None
-    if next_scheduled_day is None:
-        return None
+    day_indices = [0, 1, 2, 3, 4, 5, 6] # Monday to Sunday
     
-    # Get the next scheduled time on the next scheduled day
-    next_scheduled_time = now.replace(hour=int(time_of_day.split(":")[0]), minute=int(time_of_day.split(":")[1]), second=0, microsecond=0)
-    next_scheduled_time = next_scheduled_time + datetime.timedelta(days=(next_scheduled_day - current_day) % 7)
-    return next_scheduled_time
+    scheduled_times = []
+
+    for day_index, is_scheduled in zip(day_indices, day_bools.values()):
+        if is_scheduled:
+            # Calculate the scheduled time for the day
+            scheduled_time = now.replace(hour=tod_hours, minute=tod_minutes, second=tod_seconds, microsecond=0)
+            scheduled_time = scheduled_time + datetime.timedelta(days=(day_index - now.weekday()) % 7)
+            scheduled_times.append(scheduled_time)
+
+    smallest_time_delta = None
+    next_message_time = None
+    for scheduled_time in scheduled_times:
+        # Calculate the time delta between now and the scheduled time
+        time_delta = scheduled_time - now
+        if time_delta.total_seconds() > 0:
+            if smallest_time_delta is None or time_delta < smallest_time_delta:
+                smallest_time_delta = time_delta
+                next_message_time = scheduled_time
+
+    # If no scheduled time is found, return None
+    if next_message_time is None:
+        print("No scheduled time found")
+        return None
+
+    print(f"next_message_time: {next_message_time}") # Debugging
+    return next_message_time
+        
+    # # Get the current day of the week (0=Monday, 6=Sunday)
+    # current_day = now.weekday()
+
+    # next_scheduled_day = None
+    # day_delta = None
+    # for day, is_scheduled in day_bools.items():
+    #     if is_scheduled: # If the day is scheduled
+    #         day_number = list(day_bools.keys()).index(day)
+
+    #         if day_number > current_day:
+    #             # If the scheduled day is in the future, look at the current week
+    #             delta = day_number - current_day
+    #         else:
+    #             # If the scheduled day is in the past, look at the next week
+    #             delta = day_number - current_day + 7
+            
+    #         if delta == 0: # If it's the same day
+    #             # Check if the time has passed
+    #             scheduled_time = datetime.datetime.strptime(time_of_day, "%H:%M:%S").time()
+    #             current_time = now.time()
+    #             if current_time < scheduled_time:
+    #                 # If the scheduled time is in the future, it's the next scheduled time
+    #                 next_scheduled_day = day_number
+    #                 day_delta = delta
+    #                 break
+    #             else:
+    #                 # If the scheduled time is in the past, skip it
+    #                 continue
+
+    #         if day_delta is None:
+    #             # If this is the first scheduled time, set it as the next scheduled time
+    #             next_scheduled_day = day_number
+    #             day_delta = delta
+    #             continue
+    #         elif delta < day_delta:
+    #             # If the delta is smaller than the previous one, update the next scheduled time
+    #             next_scheduled_day = day_number
+    #             day_delta = delta
+    #             continue
+    #         else:
+    #             # If the delta is larger, skip it
+    #             continue
+    # # If no scheduled time is found, return None
+    # if next_scheduled_day is None:
+    #     return None
+    
+    # # Get the next scheduled time on the next scheduled day
+    # next_scheduled_time = now.replace(hour=int(time_of_day.split(":")[0]), minute=int(time_of_day.split(":")[1]), second=0, microsecond=0)
+    # next_scheduled_time = next_scheduled_time + datetime.timedelta(days=(next_scheduled_day - current_day) % 7)
+    # return next_scheduled_time
 
 def get_last_message_time(day_bools, time_of_day) -> datetime.datetime:
     # Get the current time in GMT timezone
@@ -257,17 +293,11 @@ def generate_data_availability_message() -> list[str]:
         "Industrial": industrial_extractor
     }
 
-    # Setup Speckle connection
-    models, client, project_id = setup_speckle_connection()
-
     # for extractor in all_extractors:
     for team_name, extractor in all_extractors.items():
         # Extract data using the extractor
         # Placeholder for actual data extraction
         fully_verified, extracted_data = extractor.extract(
-            models=models,
-            client=client,
-            project_id=project_id,
             header=False,
             table=False,
             gauge=False,
@@ -316,15 +346,9 @@ def generate_data_analysis_message() -> list[str]:
         "Industrial": industrial_extractor
     }
 
-    # Setup Speckle connection
-    models, client, project_id = setup_speckle_connection()
-
     for team_name, dashboard, extractor in zip(dashboards.keys(), dashboards.values(), extractors.values()):
         # Extract data using the extractor
         fully_verified, extracted_data = extractor.extract(
-            models=models,
-            client=client,
-            project_id=project_id,
             header=False,
             table=False,
             gauge=False,
@@ -577,6 +601,8 @@ def run():
 
             # If the button is clicked, generate the message
             if generate_message_trigger:
+                get_next_message_time(day_bools, time_of_day_value) # Debugging
+
                 st.subheader('Preview of the Next Message:')
 
                 # Generate the message
