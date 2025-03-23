@@ -64,7 +64,7 @@ def create_network_graph(project_tree, height=800):
     edge_trace = go.Scatter(
         x=edge_x,
         y=edge_y,
-        line=dict(width=0.5, color='#888'),
+        line=dict(width=2, color='lightgrey'),
         hoverinfo='none',
         mode='lines'
     )
