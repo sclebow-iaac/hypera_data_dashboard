@@ -413,7 +413,8 @@ def run(container=None):
                     #             break
                     # selected_node_children = cleaned_node_children
 
-                    selected_analysis_mode = 'Analyze a Single Child Model'
+                    selected_analysis_mode = 'Analyze all Child Models Combined'
+                    default_analysis_index = 1
                     if len(selected_node_children) > 0:
                         st.write(f'There are {len(selected_node_children)} child models of {selected_model_name}')
                         # Add a radio button to select a Child Model or View a Combined Model of all children
@@ -421,7 +422,7 @@ def run(container=None):
                             "Select Analysis Mode",
                             ("Analyze a Single Child Model", 
                             "Analyze all Child Models Combined"),
-                            index=0
+                            index=default_analysis_index
                         )
 
                     if selected_analysis_mode == "Analyze a Single Child Model":
