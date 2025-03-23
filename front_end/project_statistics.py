@@ -146,7 +146,7 @@ def create_network_graph(project_tree, height=800):
                     showlegend=False,
                     hovermode='closest',
                     margin=dict(b=0,l=0,r=0,t=0),
-                    height=800,
+                    height=height,
                     xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
                     yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
                     clickmode='event+select'
@@ -170,32 +170,6 @@ def create_network_graph(project_tree, height=800):
         st.session_state.highlighted_node = None
     
     selected_model_name = None
-    selected_node_children = set()
-
-    # Function to recursively get all children
-    def get_all_children(node, parent_path="", visited=None):
-        if visited is None:
-            visited = set()
-        
-        if node in visited:
-            return []
-        
-        visited.add(node)
-        results = []
-        
-        if node in project_tree and "children" in project_tree[node]:
-            current_path = f"{parent_path}/{node}" if parent_path else node
-            
-            # If this node has no children, it's a leaf node
-            if not project_tree[node]["children"]:
-                return [current_path]
-                
-            # Otherwise, get children of each child
-            for child in project_tree[node]["children"]:
-                child_results = get_all_children(child, current_path, visited)
-                results.extend(child_results)
-                
-        return results
 
     # Handle highlighted node from previous interaction
     if st.session_state.highlighted_node and st.session_state.highlighted_node in project_tree:
@@ -209,15 +183,6 @@ def create_network_graph(project_tree, height=800):
             current = project_tree[current]["parent"]
         
         selected_model_name = selected_node
-        
-        # Get all descendants of the selected node
-        if "children" in project_tree[selected_node]:
-            direct_children = project_tree[selected_node]["children"]
-            
-            # Get recursive children for each direct child
-            for child in direct_children:
-                child_paths = get_all_children(child, "", None)
-                selected_node_children.update(child_paths)
         
         # Update the info display
         display_path = '/'.join([project_tree[node].get("short_name", node.split("/")[-1]) for node in reversed(path_nodes)])
@@ -276,7 +241,7 @@ def create_network_graph(project_tree, height=800):
     
     # Use Streamlit's plotly_events to handle click interactions
     with chart_container:
-        selected_points = plotly_events(display_fig, click_event=True, override_height=800)
+        selected_points = plotly_events(display_fig, click_event=True, override_height=height)
     
     # Process new clicks
     if selected_points:
@@ -287,8 +252,13 @@ def create_network_graph(project_tree, height=800):
             st.session_state.highlighted_node = node_names[point_index]
             st.rerun()
     
-    # Convert selected_node_children from set to list
-    selected_node_children = list(selected_node_children)
+    # Get direct children of the selected model - your new implementation
+    selected_node_children = []
+    if selected_model_name:
+        for key, value in project_tree.items():
+            if value['parent'] is not None:
+                if selected_model_name in value['parent']:
+                    selected_node_children.append(key)
 
     return selected_model_name, selected_node_children
 
@@ -353,7 +323,7 @@ def get_project_data():
                 "version_data": {},
                 "long_name": parent_name,
                 "short_name": parent_name.split("/")[-1] if "/" in parent_name else parent_name,
-                "team_name": parent_name.split("/")[1].capitalize() if len(parent_name.split("/")) > 1 else "Root"
+                "team_name": parent_name.split("/")[1].capitalize() if len(parent_name) > 1 else "Root"
             }
         
         # Add this node as a child to its parent
@@ -432,44 +402,6 @@ def get_project_data():
 
     return project_tree, project_id
 
-def create_test_tree():
-    test_project_tree = {}
-
-    test_project_tree['project'] = {
-        "parent": None,
-        "children": ['team_0', 'team_1', 'team_2']
-    }
-    test_project_tree['team_0'] = {
-        "parent": 'project',
-        "children": ['model_0', 'model_1']
-    }
-    test_project_tree['team_1'] = {
-        "parent": 'project',
-        "children": ['model_2']
-    }
-    test_project_tree['team_2'] = {
-        "parent": 'project',
-        "children": ['model_3']
-    }
-    test_project_tree['model_0'] = {
-        "parent": 'team_0',
-        "children": []
-    }
-    test_project_tree['model_1'] = {
-        "parent": 'team_0',
-        "children": []
-    }
-    test_project_tree['model_2'] = {
-        "parent": 'team_1',
-        "children": []
-    }
-    test_project_tree['model_3'] = {
-        "parent": 'team_2',
-        "children": []
-    }
-
-    return test_project_tree
-
 def run(container=None):
     # Get the project data
     project_tree, project_id = get_project_data()
@@ -499,40 +431,40 @@ def run(container=None):
                 # Create the network diagram
                 selected_model_name, selected_node_children = create_network_graph(project_tree)
 
-            #     if selected_model_name is None:
-            #         st.write("No model selected.")
-            #     else:
-            #         # cleaned_node_children = []
-            #         # # Remove selected_model_name that are not in the project tree long names
-            #         # all_long_names = [value["long_name"] for value in project_tree.values()]
-            #         # for name in selected_node_children:
-            #         #     if name in all_long_names:
-            #         #         cleaned_node_children.append(name)
-            #         # selected_node_children = cleaned_node_children
+                if selected_model_name is None:
+                    st.write("No model selected.")
+                else:
+                    # cleaned_node_children = []
+                    # # Remove selected_model_name that are not in the project tree long names
+                    # all_long_names = [value["long_name"] for value in project_tree.values()]
+                    # for name in selected_node_children:
+                    #     if name in all_long_names:
+                    #         cleaned_node_children.append(name)
+                    # selected_node_children = cleaned_node_children
 
-            #         # cleaned_node_children = []
-            #         # # Remove any selected_node_children that have no versions
-            #         # for name in selected_node_children:
-            #         #     # Get the project tree entry for the long name
-            #         #     for key, value in project_tree.items():
-            #         #         if value["long_name"] == name:
-            #         #             # Check if the version count is greater than 0
-            #         #             if value["version_count"] > 0:
-            #         #                 cleaned_node_children.append(name)
-            #         #             break
-            #         # selected_node_children = cleaned_node_children
+                    # cleaned_node_children = []
+                    # # Remove any selected_node_children that have no versions
+                    # for name in selected_node_children:
+                    #     # Get the project tree entry for the long name
+                    #     for key, value in project_tree.items():
+                    #         if value["long_name"] == name:
+                    #             # Check if the version count is greater than 0
+                    #             if value["version_count"] > 0:
+                    #                 cleaned_node_children.append(name)
+                    #             break
+                    # selected_node_children = cleaned_node_children
 
-            #         selected_analysis_mode = 'Analyze all Child Models Combined'
-            #         default_analysis_index = 1
-            #         if len(selected_node_children) > 0:
-            #             st.write(f'There are {len(selected_node_children)} child models of {selected_model_name}')
-            #             # Add a radio button to select a Child Model or View a Combined Model of all children
-            #             selected_analysis_mode = st.radio(
-            #                 "Select Analysis Mode",
-            #                 ("Analyze a Single Child Model", 
-            #                 "Analyze all Child Models Combined"),
-            #                 index=default_analysis_index
-            #             )
+                    selected_analysis_mode = 'Analyze all Child Models Combined'
+                    default_analysis_index = 1
+                    if len(selected_node_children) > 0:
+                        st.write(f'There are {len(selected_node_children)} child models of {selected_model_name}')
+                        # Add a radio button to select a Child Model or View a Combined Model of all children
+                        selected_analysis_mode = st.radio(
+                            "Select Analysis Mode",
+                            ("Analyze a Single Child Model", 
+                            "Analyze all Child Models Combined"), 
+                            index=default_analysis_index
+                        )
 
             #         if selected_analysis_mode == "Analyze a Single Child Model":
             #             # Create a dropdown to select a model from the children
