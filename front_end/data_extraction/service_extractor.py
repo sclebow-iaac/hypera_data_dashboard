@@ -37,8 +37,8 @@ data_units = [
 data = dict(zip(data_names, zip(data_types, data_units)))
 
 
-def extract(header=True, table=True, gauge=True, attribute_display=True, container=None):
-    return data_extractor.extract(data, model_name, header=header, table=table, gauge=gauge, attribute_display=attribute_display, container=container)
+def extract(attribute_display=True, container=None):
+    return data_extractor.extract(data, model_name, attribute_display=attribute_display, container=container)
 
 
 def display_data(extracted_data, verbose=True, header=True, show_table=True, gauge=True, simple_table=False, container=None):
