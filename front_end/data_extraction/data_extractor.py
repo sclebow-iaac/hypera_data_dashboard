@@ -111,7 +111,7 @@ def search_for_attribute(base_data: Base, attribute: str, depth=0, single=True, 
 
     return found, output
 
-@st.cache_data(ttl='10m', show_spinner='Updating Cached Model Data')
+@st.cache_data(show_spinner='Updating Cached Model Data')
 def extract(data, model_name, verbose=True, attribute_display=True, container=None):
 
     # if verbose:

@@ -7,6 +7,7 @@ from pprint import pprint
 from streamlit_plotly_events import plotly_events
 
 from dashboards.dashboard import *
+import attribute_extraction
 
 def create_network_graph(project_tree, height=800):
     st.subheader("Project Network Diagram")
@@ -264,7 +265,7 @@ def create_network_graph(project_tree, height=800):
 
     return selected_model_name, selected_node_children
 
-@st.cache_data(ttl='60minutes')
+@st.cache_data()
 def get_project_data():
     print(f'get_project_data(models, client, project_id)')
     
