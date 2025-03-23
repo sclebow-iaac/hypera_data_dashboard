@@ -455,34 +455,6 @@ def run(container=None):
                         st.markdown(f"**Source Application:** {source_application}")
 
                     st.header("Selected Model Data:")
-                    # Create a timeline of the version data
-                    st.subheader(f'Timeline for {len(version_data)} version(s)')
-                    # Create a dataframe from the version data
-                    version_data_df = pd.DataFrame.from_dict(version_data, orient='index')
-                    # Convert the createdAt column to datetime
-                    version_data_df['createdAt'] = pd.to_datetime(version_data_df['createdAt'])
-                    # Sort the dataframe by createdAt
-                    version_data_df = version_data_df.sort_values(by='createdAt')
-
-                    # Create a version_count column that's just sequential numbering
-                    version_data_df['version_number'] = range(1, len(version_data_df) + 1)
-
-                    # Create a line chart of the version data
-                    fig = px.line(version_data_df, x='createdAt', y='version_number', markers=True)
-                    fig.update_layout(
-                        showlegend=False,
-                        margin=dict(l=1, r=1, t=1, b=1),
-                        height=200,
-                        paper_bgcolor='rgba(0,0,0,0)',  # Add transparent background
-                        plot_bgcolor='rgba(0,0,0,0)',   # Add transparent plot background
-                        font_family="Roboto Mono",
-                        font_color="#2c3e50"
-                    )
-                    fig.update_traces(line_color="red")
-                    fig.update_yaxes(title_text="Version Number")
-                    fig.update_xaxes(title_text="Created Date")
-                    # Show the chart
-                    st.plotly_chart(fig, use_container_width=True)
 
                     # Create a pie chart of the contributors in a column
                     # Create a pie chart of the Source Applications in a column
