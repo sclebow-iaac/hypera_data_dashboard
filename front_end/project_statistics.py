@@ -265,7 +265,7 @@ def create_network_graph(project_tree, height=800):
 
     return selected_model_name, selected_node_children
 
-@st.cache_data()
+@st.cache_data(ttl='5minutes')
 def get_project_data():
     print(f'get_project_data(models, client, project_id)')
     
