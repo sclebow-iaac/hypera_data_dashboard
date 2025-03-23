@@ -622,7 +622,7 @@ def run(container=None):
                             # Create a Speckle Viewer
                             st.subheader("Speckle Viewer")
                             speckle_model_id = combined_model_id
-                            height = 200 * len(child_model_ids)
+                            height = max(200 * len(child_model_ids), 400)
                             display_speckle_viewer(
                                                     container=viewer_col, 
                                                     project_id=project_id, 
