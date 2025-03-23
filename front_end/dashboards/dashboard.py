@@ -240,8 +240,8 @@ def setup_speckle_connection(models_limit=100):
 
     return models, client, project_id
 
-def display_speckle_viewer(container, project_id, model_id, is_transparent=False, hide_controls=False, hide_selection_info=False, no_scroll=False, height=400, include_site=False):
-    container.markdown('#### Representational Model')
+def display_speckle_viewer(container, project_id, model_id, is_transparent=False, hide_controls=False, hide_selection_info=False, no_scroll=False, height=400, include_site=False, header_text='Representational Model'):
+    container.markdown(f'#### {header_text}')
 
     speckle_model_url = f'https://macad.speckle.xyz/projects/{project_id}/models/{model_id}'
 

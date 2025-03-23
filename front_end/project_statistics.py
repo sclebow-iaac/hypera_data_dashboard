@@ -139,6 +139,33 @@ def create_network_graph(project_tree):
     chart_container = st.container()
     
     selected_model_name = None
+    selected_node_children = set()  # Using a set instead of a list
+
+    # Function to recursively get all children
+    def get_all_children(node, parent_path="", visited=None):
+        if visited is None:
+            visited = set()
+        
+        # Protect against circular references
+        if node in visited:
+            return []
+        
+        visited.add(node)
+        results = []
+        
+        if node in project_tree and "children" in project_tree[node]:
+            current_path = f"{parent_path}/{node}" if parent_path else node
+            
+            # If this node has no children, it's a leaf node
+            if not project_tree[node]["children"]:
+                return [current_path]
+                
+            # Otherwise, get children of each child
+            for child in project_tree[node]["children"]:
+                child_results = get_all_children(child, current_path, visited)
+                results.extend(child_results)
+                
+        return results
 
     # Check if there's a highlighted node from previous interaction
     if st.session_state.highlighted_node and st.session_state.highlighted_node in project_tree:
@@ -153,10 +180,24 @@ def create_network_graph(project_tree):
             current = project_tree[current]["parent"]
         
         selected_model_name = '/'.join(reversed(path_nodes))
+        
+        # Get all descendants of the selected node
+        if "children" in project_tree[selected_node]:
+            direct_children = project_tree[selected_node]["children"]
+            
+            # Get recursive children for each direct child
+            for child in direct_children:
+                child_paths = get_all_children(child, "", None)
+                # Use update instead of extend for sets
+                selected_node_children.update(child_paths)
+        
         # Update the info display
         highlight_container.markdown(f"""
         **Selected Model**  
         {selected_model_name}
+        
+        **Children Count**
+        {len(selected_node_children)}
         """)
         
         # Create highlighted path elements
@@ -221,7 +262,13 @@ def create_network_graph(project_tree):
             # Force a rerun to display the updated chart
             st.rerun()
     
-    return selected_model_name
+    selected_node_children = list(selected_node_children)
+
+    # Append the selected model name to the names in the list of children
+    for i in range(len(selected_node_children)):
+        selected_node_children[i] = f"{selected_model_name}/{selected_node_children[i]}"
+
+    return selected_model_name, selected_node_children
 
 @st.cache_data
 def get_project_data():
@@ -244,9 +291,14 @@ def get_project_data():
         # Get the number of versions
         version_count = len(versions)
 
-        # print(f'id: {id}, long_name: {long_name}, short_name: {short_name}, parent: {parent}, version_count: {version_count}') 
+        version_data = {}
 
-        # print(long_name.split('/'))
+        for version in versions:
+            version_data[version.id] = {
+                "createdAt": version.createdAt,
+                "authorUser": version.authorUser,
+                "sourceApplication": version.sourceApplication,
+            }
 
         for index, node_name in enumerate(long_name.split('/')):
             # print(f'node_name: {node_name}, index: {index}')
@@ -259,7 +311,12 @@ def get_project_data():
             if node_name not in project_tree:
                 project_tree[node_name] = {
                     "parent": parent,
-                    "children": []
+                    "children": [],
+                    "id": id,
+                    "version_count": version_count,
+                    "version_data": version_data,
+                    "long_name": long_name,
+                    "short_name": short_name,
                 }
             
             # Add the child node to the parent node
@@ -268,14 +325,16 @@ def get_project_data():
             else:
                 project_tree[parent] = {
                     "parent": None,
-                    "children": [node_name]
+                    "children": [node_name],
+                    "id": id,
+                    "version_count": version_count,
+                    "version_data": version_data,
+                    "long_name": long_name,
+                    "short_name": short_name,
                 }
 
 
-    return project_tree
-
-def build_network_diagram(models):
-    pass
+    return project_tree, project_id
 
 def create_test_tree():
     test_project_tree = {}
@@ -323,11 +382,50 @@ def run(container=None):
 
         with container:
             # Get the project data
-            project_tree = get_project_data()
+            project_tree, project_id = get_project_data()
 
             # Create the network diagram
-            network_diagram = create_network_graph(project_tree)
+            selected_model_name, selected_node_children = create_network_graph(project_tree)
 
+            if len(selected_node_children) > 0:
+                # Create a dropdown to select a model from the children
+                selected_child_name = st.selectbox(f'**Select a child model to analyze, there is/are {len(selected_node_children)}**', selected_node_children)
+                selected_model_name = selected_child_name
+
+            st.markdown(f"**Selected Model:** {selected_model_name}")
+
+            # Get the model ID from the selected model name
+            # Check the long name of the model
+            selected_model_id = None
+            version_data = None
+            for key, value in project_tree.items():
+                if value["long_name"] == selected_model_name:
+                    selected_model_id = value["id"]
+                    version_data = value["version_data"]
+                    break
+
+            # Create a dropdown to select a version from the selected model
+            selected_version_id = st.selectbox("Select a version", list(version_data.keys()), format_func=lambda x: version_data[x]["createdAt"])
+            
+            # Create two columns for the speckle viewer and the version data
+            viewer_col, version_data_col = st.columns([1, 1])
+            with viewer_col:
+                # Create a Speckle Viewer
+                st.subheader("Speckle Viewer")
+                speckle_model_id = selected_model_id + '@' + selected_version_id
+                display_speckle_viewer(container=viewer_col, project_id=project_id, model_id=speckle_model_id, header_text='Selected Model')
+
+            with version_data_col:
+                # Display the version data
+                st.subheader("Version Data")
+
+                creator = version_data[selected_version_id]["authorUser"]
+                created_at = version_data[selected_version_id]["createdAt"]
+                source_application = version_data[selected_version_id]["sourceApplication"]
+                st.markdown(f"**Created By:** {creator.name}")
+                st.markdown(f"**Created At:** {created_at.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+                st.markdown(f"**Source Application:** {source_application}")
+            
 def show(container, client, project, models, versions, verbose=False):
     with container:
         st.subheader("Statistics")
