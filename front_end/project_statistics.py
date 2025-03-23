@@ -275,9 +275,8 @@ def get_project_data():
     models, client, project_id = setup_speckle_connection()
 
     # Create a dictionary to store the project data
-    project_data = {}
     project_tree = {}
-        
+
     # Get the versions of all models in the project
     for model in models:
         print(f'model: {model.name}')
