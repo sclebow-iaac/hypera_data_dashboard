@@ -231,8 +231,8 @@ def extract(data, model_name, verbose=True, attribute_display=True, container=No
         'model_id': selected_model.id,
         'version_id': latest_version.id,
         'version_author': latest_version.authorUser.name,
-        'version_created_at': latest_version.createdAt.strftime("%Y-%m-%d %H:%M:%S"),
-        'model_data': extracted_data
+        'version_created_at': latest_version.createdAt.strftime("%Y-%m-%d %H:%M:%S %Z"),
+        'extracted_data': extracted_data
     }
 
     return fully_verified, extracted_data, model_data
@@ -355,7 +355,10 @@ def process_extracted_data(data, extracted_data, verbose=True, simple_table=Fals
     return table, type_matched_bools
 
 # Display the extracted data
-def display_data(data, extracted_data, model_name, verbose=True, header=True, show_table=True, gauge=True, simple_table=False, container=None):
+def display_data(data, extracted_data, model_data, verbose=True, header=True, show_table=True, gauge=True, simple_table=False, container=None):
+    model_name = model_data['model_name']
+    version_created_at = model_data['version_created_at']
+
     if header:
         if not container:
             header_container = st.container()
@@ -365,7 +368,7 @@ def display_data(data, extracted_data, model_name, verbose=True, header=True, sh
         if model_name is not None and model_name != "":
             # header_container.markdown(f'### Speckle Model Name:')
             # header_container.markdown(f'#### {model_name}')
-            header_container.markdown(f'#### Data Extracted from {model_name}')
+            header_container.markdown(f'#### Data Extracted from {model_name} at {version_created_at}')
         else:
             header_container.markdown(f'### Speckle Model: ')
             header_container.markdown(f'#### {model_name} not found.')
