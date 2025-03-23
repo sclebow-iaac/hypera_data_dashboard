@@ -104,7 +104,7 @@ def generate_metrics(verified, team_data) -> list[Metric]:
         ],
         min_value = 0,
         max_value = 150,
-        ideal_value = 100
+        ideal_value = 1
     )
     print("APPENDING METRIC", energy_ratio_metric.inputs)
     metrics.append(energy_ratio_metric)

@@ -434,22 +434,33 @@ def display_data(data, extracted_data, model_data, verbose=True, header=True, sh
         column1.markdown(f'{data_found} / {total_data}')
         # Display the percentage of data found
         column1.progress(percentage_found)
-        column1.markdown(f'### Data Type Verified')
+        column2.markdown(f'### Data Type Verified')
         # Display the percentage of data type matched
-        column1.markdown(
-            f'{sum(type_matched_bools)} / {len(type_matched_bools)}')
-        column1.progress(percentage_type_matched)
-
-        column2.markdown('### Data Not Found')
-        # Display the number of data not found
-        column2.markdown(f'{data_not_found} / {total_data}')
-        # Display the percentage of data not found
-        column2.progress(1 - percentage_found)
-        column2.markdown(f'### Data Type Not Verified')
-        # Display the percentage of data type not matched
         column2.markdown(
-            f'{len(type_matched_bools) - sum(type_matched_bools)} / {len(type_matched_bools)}')
-        column2.progress(1 - percentage_type_matched)
+            f'{sum(type_matched_bools)} / {len(type_matched_bools)}')
+        column2.progress(percentage_type_matched)
+
+        # column1.markdown('### Data Found')
+        # # Display the number of data found
+        # column1.markdown(f'{data_found} / {total_data}')
+        # # Display the percentage of data found
+        # column1.progress(percentage_found)
+        # column1.markdown(f'### Data Type Verified')
+        # # Display the percentage of data type matched
+        # column1.markdown(
+        #     f'{sum(type_matched_bools)} / {len(type_matched_bools)}')
+        # column1.progress(percentage_type_matched)
+
+        # column2.markdown('### Data Not Found')
+        # # Display the number of data not found
+        # column2.markdown(f'{data_not_found} / {total_data}')
+        # # Display the percentage of data not found
+        # column2.progress(1 - percentage_found)
+        # column2.markdown(f'### Data Type Not Verified')
+        # # Display the percentage of data type not matched
+        # column2.markdown(
+        #     f'{len(type_matched_bools) - sum(type_matched_bools)} / {len(type_matched_bools)}')
+        # column2.progress(1 - percentage_type_matched)
 
         # To debug make a slider to change the percentage found
         # Make a toggle to show the debug slider
