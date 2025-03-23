@@ -406,6 +406,8 @@ def get_project_data():
     return project_tree, project_id
 
 def run(container=None):
+    default_speckle_viewer_height = 600
+
     # Get the project data
     project_tree, project_id = get_project_data()
 
@@ -478,7 +480,7 @@ def run(container=None):
                             # Create a Speckle Viewer
                             st.subheader("Speckle Viewer")
                             speckle_model_id = selected_model_id + '@' + selected_version_id
-                            display_speckle_viewer(container=viewer_col, project_id=project_id, model_id=speckle_model_id, header_text='Selected Model')
+                            display_speckle_viewer(container=viewer_col, project_id=project_id, model_id=speckle_model_id, header_text='Selected Model', height=default_speckle_viewer_height)
 
                         with version_data_col:
                             # Display the version data
@@ -630,7 +632,7 @@ def run(container=None):
                                 # Create a Speckle Viewer
                                 st.subheader("Speckle Viewer")
                                 speckle_model_id = combined_model_id
-                                height = max(200 * len(child_model_ids), 400)
+                                height = max(200 * len(child_model_ids), default_speckle_viewer_height)
                                 display_speckle_viewer(
                                                         container=viewer_col, 
                                                         project_id=project_id, 
