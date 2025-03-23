@@ -441,19 +441,13 @@ def run(container=None):
                 if selected_model_name is None:
                     st.write("No model selected.")
                 else:
-                    selected_analysis_mode = 'Analyze all Child Models Combined'
-                    default_analysis_index = 1
-                    if len(selected_node_children) > 0:
-                        st.write(f'There are {len(selected_node_children)} child models of {selected_model_name}')
-                        # Add a radio button to select a Child Model or View a Combined Model of all children
-                        selected_analysis_mode = st.radio(
-                            "Select Analysis Mode",
-                            ("Analyze a Single Child Model", 
-                            "Analyze all Child Models Combined"), 
-                            index=default_analysis_index
-                        )
+                    combined_tab, single_tab = st.tabs([
+                        "Analyze all Child Models Combined", 
+                        "Analyze a Single Child Model"
+                    ])
 
-                    if selected_analysis_mode == "Analyze a Single Child Model":
+
+                    with single_tab:
                         # Create a dropdown to select a model from the children
                         selected_child_name = st.selectbox(f'**Select a child model to analyze, there is/are {len(selected_node_children)}**', selected_node_children)
                         selected_model_name = selected_child_name
@@ -599,7 +593,7 @@ def run(container=None):
                         else:
                             metrics_col3.metric("Most Active Day", "No data")
 
-                    elif selected_analysis_mode == "Analyze all Child Models Combined":
+                    with combined_tab:
                         viewer_col, version_data_col = st.columns([1, 1])
                         # Combine all child model ids for the speckle viewer
                         child_model_ids = []

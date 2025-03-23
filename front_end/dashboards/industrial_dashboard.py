@@ -77,7 +77,7 @@ def metric_calc_recycled_water_ratio(recycled_water, wastewater_production):
     return recycled_water / wastewater_production
 
 def metric_calc_waste_utilization_ratio(recycled_solid_waste, solid_waste_production):
-    return 1 - (recycled_solid_waste / solid_waste_production)
+    return recycled_solid_waste / solid_waste_production
 
 def generate_metrics(verified, team_data) -> list[Metric]:
     energy_generation, energy_demand, food_production, food_demand, recycled_solid_waste, solid_waste_production, recycled_water, wastewater_production = process_data(verified, team_data)
