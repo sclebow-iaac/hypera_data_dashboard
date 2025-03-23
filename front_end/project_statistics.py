@@ -462,6 +462,51 @@ def run(container=None):
                     # Sort the dataframe by createdAt
                     version_data_df = version_data_df.sort_values(by='createdAt')
 
+                    # Add timeline for single model versions
+                    st.subheader(f'Timeline for {len(version_data)} version(s)')
+                    
+                    # Prepare data for timeline
+                    timeline_df = version_data_df.copy()
+                    timeline_df['author_name'] = timeline_df['authorUser'].apply(lambda x: x.name)
+                    
+                    # Calculate appropriate height based on number of versions
+                    height = max(250, min(30 * len(timeline_df), 500))
+                    
+                    # Create a timeline showing version commits
+                    fig = px.scatter(timeline_df, 
+                                    x='createdAt', 
+                                    y=[selected_model_name.split('/')[-1]] * len(timeline_df),
+                                    color='sourceApplication',
+                                    hover_data=['sourceApplication', 'author_name'],
+                                    labels={'createdAt': 'Date', 'y': 'Model', 'author_name': 'Author'},
+                                    height=height)
+                    
+                    # Add connecting lines to visualize sequence
+                    fig.add_trace(go.Scatter(
+                        x=timeline_df['createdAt'],
+                        y=[selected_model_name.split('/')[-1]] * len(timeline_df),
+                        mode='lines',
+                        line=dict(width=1.5, dash='dot'),
+                        showlegend=False,
+                        opacity=0.7,
+                        hoverinfo='skip'
+                    ))
+                    
+                    # Improve visualization
+                    fig.update_traces(marker=dict(size=12, opacity=0.8, line=dict(width=1, color='black')))
+                    fig.update_layout(
+                        xaxis_title="Version Creation Date",
+                        yaxis_title="Model",
+                        legend_title="Source Applications",
+                        font_family="Roboto Mono",
+                        font_color="#2c3e50",
+                        plot_bgcolor='rgba(240,240,240,0.2)',
+                        hovermode='closest',
+                        showlegend=False,
+                    )
+                    
+                    # Show the chart
+                    st.plotly_chart(fig, use_container_width=True)
 
                     # Create a pie chart of the contributors in a column
                     # Create a pie chart of the Source Applications in a column
@@ -637,6 +682,44 @@ def run(container=None):
 
                     # Show the chart
                     st.plotly_chart(fig, use_container_width=True)
+
+                    # Create a pie chart of the contributors in a column
+                    # Create a pie chart of the Source Applications in a column
+                    contributor_col, source_application_col = st.columns([1, 1])
+                    with contributor_col:
+                        st.subheader("Model Contributors")
+                        # Get the contributors from the version data
+                        contributors = all_versions_df['authorUser'].apply(lambda x: x.name).value_counts().reset_index()
+                        contributors.columns = ['Contributor', 'Count']
+                        # Create a pie chart of the contributors
+                        fig = px.pie(contributors, names='Contributor', values='Count', hole=0.5)
+                        fig.update_layout(
+                            showlegend=True,
+                            margin=dict(l=1, r=1, t=1, b=1),
+                            height=200,
+                            font_family="Roboto Mono",
+                            font_color="#2c3e50"
+                        )
+                        fig.update_traces(marker=dict(line=dict(color='#000000', width=2)))
+                        # Show the chart
+                        contributor_col.plotly_chart(fig, use_container_width=True)
+                    with source_application_col:
+                        st.subheader("Model Source Applications")
+                        # Get the source applications from the version data
+                        source_applications = all_versions_df['sourceApplication'].value_counts().reset_index()
+                        source_applications.columns = ['Source Application', 'Count']
+                        # Create a pie chart of the source applications
+                        fig = px.pie(source_applications, names='Source Application', values='Count', hole=0.5)
+                        fig.update_layout(
+                            showlegend=True,
+                            margin=dict(l=1, r=1, t=1, b=1),
+                            height=200,
+                            font_family="Roboto Mono",
+                            font_color="#2c3e50"
+                        )
+                        fig.update_traces(marker=dict(line=dict(color='#000000', width=2)))
+                        # Show the chart
+                        source_application_col.plotly_chart(fig, use_container_width=True)
 
                     # Add information about version frequency
                     st.markdown("### Version Frequency Analysis")
