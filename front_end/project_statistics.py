@@ -375,56 +375,130 @@ def create_test_tree():
     return test_project_tree
 
 def run(container=None):
+    # Get the project data
+    project_tree, project_id = get_project_data()
+
     left_margin, content_container, right_margin = get_content_container_columns()
     with content_container:
         if container is None:
             container = st.container()
 
         with container:
-            # Get the project data
-            project_tree, project_id = get_project_data()
+            # Create tabs for the dashboard
+            model_inspector_tab, overall_statistics_tab = st.tabs(["Model Inspector", "Overall Project Statistics"])
 
-            # Create the network diagram
-            selected_model_name, selected_node_children = create_network_graph(project_tree)
+            with model_inspector_tab:
 
-            if len(selected_node_children) > 0:
-                # Create a dropdown to select a model from the children
-                selected_child_name = st.selectbox(f'**Select a child model to analyze, there is/are {len(selected_node_children)}**', selected_node_children)
-                selected_model_name = selected_child_name
+                # Create the network diagram
+                selected_model_name, selected_node_children = create_network_graph(project_tree)
 
-            st.markdown(f"**Selected Model:** {selected_model_name}")
+                if len(selected_node_children) > 0:
+                    # Create a dropdown to select a model from the children
+                    selected_child_name = st.selectbox(f'**Select a child model to analyze, there is/are {len(selected_node_children)}**', selected_node_children)
+                    selected_model_name = selected_child_name
 
-            # Get the model ID from the selected model name
-            # Check the long name of the model
-            selected_model_id = None
-            version_data = None
-            for key, value in project_tree.items():
-                if value["long_name"] == selected_model_name:
-                    selected_model_id = value["id"]
-                    version_data = value["version_data"]
-                    break
+                st.markdown(f"**Selected Model:** {selected_model_name}")
 
-            # Create a dropdown to select a version from the selected model
-            selected_version_id = st.selectbox("Select a version", list(version_data.keys()), format_func=lambda x: version_data[x]["createdAt"])
+                # Get the model ID from the selected model name
+                # Check the long name of the model
+                selected_model_id = None
+                version_data = None
+                for key, value in project_tree.items():
+                    if value["long_name"] == selected_model_name:
+                        selected_model_id = value["id"]
+                        version_data = value["version_data"]
+                        break
+
+                # Create a dropdown to select a version from the selected model
+                selected_version_id = st.selectbox(f"Select a version, there is/are {len(version_data)}", list(version_data.keys()), format_func=lambda x: version_data[x]["createdAt"])
+                
+                # Create two columns for the speckle viewer and the version data
+                viewer_col, version_data_col = st.columns([1, 1])
+                with viewer_col:
+                    # Create a Speckle Viewer
+                    st.subheader("Speckle Viewer")
+                    speckle_model_id = selected_model_id + '@' + selected_version_id
+                    display_speckle_viewer(container=viewer_col, project_id=project_id, model_id=speckle_model_id, header_text='Selected Model')
+
+                with version_data_col:
+                    # Display the version data
+                    st.subheader("Version Data")
+
+                    creator = version_data[selected_version_id]["authorUser"]
+                    created_at = version_data[selected_version_id]["createdAt"]
+                    source_application = version_data[selected_version_id]["sourceApplication"]
+                    st.markdown(f"**Created By:** {creator.name}")
+                    st.markdown(f"**Created At:** {created_at.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+                    st.markdown(f"**Source Application:** {source_application}")
+
+                st.header("Selected Model Data:")
+                # Create a timeline of the version data
+                st.subheader(f'Timeline for {len(version_data)} version(s)')
+                # Create a dataframe from the version data
+                version_data_df = pd.DataFrame.from_dict(version_data, orient='index')
+                # Convert the createdAt column to datetime
+                version_data_df['createdAt'] = pd.to_datetime(version_data_df['createdAt'])
+                # Sort the dataframe by createdAt
+                version_data_df = version_data_df.sort_values(by='createdAt')
+
+                # Create a version_count column that's just sequential numbering
+                version_data_df['version_number'] = range(1, len(version_data_df) + 1)
+
+                # Create a line chart of the version data
+                fig = px.line(version_data_df, x='createdAt', y='version_number', markers=True)
+                fig.update_layout(
+                    showlegend=False,
+                    margin=dict(l=1, r=1, t=1, b=1),
+                    height=200,
+                    paper_bgcolor='rgba(0,0,0,0)',  # Add transparent background
+                    plot_bgcolor='rgba(0,0,0,0)',   # Add transparent plot background
+                    font_family="Roboto Mono",
+                    font_color="#2c3e50"
+                )
+                fig.update_traces(line_color="red")
+                fig.update_yaxes(title_text="Version Number")
+                fig.update_xaxes(title_text="Created Date")
+                # Show the chart
+                st.plotly_chart(fig, use_container_width=True)
+
+                # Create a pie chart of the contributors in a column
+                # Create a pie chart of the Source Applications in a column
+                contributor_col, source_application_col = st.columns([1, 1])
+                with contributor_col:
+                    st.subheader("Model Contributors")
+                    # Get the contributors from the version data
+                    contributors = version_data_df['authorUser'].apply(lambda x: x.name).value_counts().reset_index()
+                    contributors.columns = ['Contributor', 'Count']
+                    # Create a pie chart of the contributors
+                    fig = px.pie(contributors, names='Contributor', values='Count', hole=0.5)
+                    fig.update_layout(
+                        showlegend=True,
+                        margin=dict(l=1, r=1, t=1, b=1),
+                        height=200,
+                        font_family="Roboto Mono",
+                        font_color="#2c3e50"
+                    )
+                    fig.update_traces(marker=dict(line=dict(color='#000000', width=2)))
+                    # Show the chart
+                    contributor_col.plotly_chart(fig, use_container_width=True)
+                with source_application_col:
+                    st.subheader("Model Source Applications")
+                    # Get the source applications from the version data
+                    source_applications = version_data_df['sourceApplication'].value_counts().reset_index()
+                    source_applications.columns = ['Source Application', 'Count']
+                    # Create a pie chart of the source applications
+                    fig = px.pie(source_applications, names='Source Application', values='Count', hole=0.5)
+                    fig.update_layout(
+                        showlegend=True,
+                        margin=dict(l=1, r=1, t=1, b=1),
+                        height=200,
+                        font_family="Roboto Mono",
+                        font_color="#2c3e50"
+                    )
+                    fig.update_traces(marker=dict(line=dict(color='#000000', width=2)))
+                    # Show the chart
+                    source_application_col.plotly_chart(fig, use_container_width=True)
             
-            # Create two columns for the speckle viewer and the version data
-            viewer_col, version_data_col = st.columns([1, 1])
-            with viewer_col:
-                # Create a Speckle Viewer
-                st.subheader("Speckle Viewer")
-                speckle_model_id = selected_model_id + '@' + selected_version_id
-                display_speckle_viewer(container=viewer_col, project_id=project_id, model_id=speckle_model_id, header_text='Selected Model')
-
-            with version_data_col:
-                # Display the version data
-                st.subheader("Version Data")
-
-                creator = version_data[selected_version_id]["authorUser"]
-                created_at = version_data[selected_version_id]["createdAt"]
-                source_application = version_data[selected_version_id]["sourceApplication"]
-                st.markdown(f"**Created By:** {creator.name}")
-                st.markdown(f"**Created At:** {created_at.strftime('%Y-%m-%d %H:%M:%S %Z')}")
-                st.markdown(f"**Source Application:** {source_application}")
             
 def show(container, client, project, models, versions, verbose=False):
     with container:
