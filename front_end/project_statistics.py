@@ -4,6 +4,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import networkx as nx
 from pprint import pprint
+from streamlit_plotly_events import plotly_events
 
 from dashboards.dashboard import *
 
@@ -29,6 +30,8 @@ def create_network_graph(project_tree):
 
     edge_x = []
     edge_y = []
+    edge_pairs = []  # Store edge pairs for highlighting
+    
     for edge in G.edges():
         x0, y0 = pos[edge[0]]
         x1, y1 = pos[edge[1]]
@@ -38,6 +41,7 @@ def create_network_graph(project_tree):
         edge_y.append(y0)
         edge_y.append(y1)
         edge_y.append(None)
+        edge_pairs.append((edge[0], edge[1]))
 
     edge_trace = go.Scatter(
         x=edge_x,
@@ -49,10 +53,13 @@ def create_network_graph(project_tree):
 
     node_x = []
     node_y = []
+    node_names = []  # Store node names for clickData reference
+    
     for node in G.nodes():
         x, y = pos[node]
         node_x.append(x)
         node_y.append(y)
+        node_names.append(node)
 
     node_trace = go.Scatter(
         x=node_x,
@@ -105,13 +112,116 @@ def create_network_graph(project_tree):
                         margin=dict(b=0,l=0,r=0,t=0),
                         height=800,  # Set the figure height here
                         xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
+                        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                        clickmode='event+select'  # Enable click events
                     )
                     )
-        
-    st.plotly_chart(fig, use_container_width=True) 
+    
+    # # Display the chart and capture click events
+    # chart = st.plotly_chart(fig, use_container_width=True, key="network_chart")
+    
+    # Add expander for click instructions
+    with st.expander("How to use the network diagram"):
+        st.markdown("""
+        - Click on any node to highlight it and all its parent nodes
+        - The highlighted path shows the connection from the selected node to the root
+        - Each click will update the highlighted path
+        """)
+    
+    # Create a container for the highlighted path information
+    highlight_container = st.empty()
+    
+    # Initialize session state for highlighted node if not exists
+    if 'highlighted_node' not in st.session_state:
+        st.session_state.highlighted_node = None
+    
+    # Create a container for the chart that we'll reuse
+    chart_container = st.container()
+    
+    selected_model_name = None
 
-    return None
+    # Check if there's a highlighted node from previous interaction
+    if st.session_state.highlighted_node and st.session_state.highlighted_node in project_tree:
+        # Get the selected node from session state
+        selected_node = st.session_state.highlighted_node
+        
+        # Generate highlighted path
+        path_nodes = []
+        current = selected_node
+        while current is not None:
+            path_nodes.append(current)
+            current = project_tree[current]["parent"]
+        
+        selected_model_name = '/'.join(reversed(path_nodes))
+        # Update the info display
+        highlight_container.markdown(f"""
+        **Selected Model**  
+        {selected_model_name}
+        """)
+        
+        # Create highlighted path elements
+        highlighted_edge_x = []
+        highlighted_edge_y = []
+        
+        # Generate edges for the path
+        for i in range(len(path_nodes)-1):
+            child = path_nodes[i]
+            parent = path_nodes[i+1]
+            
+            x0, y0 = pos[child]
+            x1, y1 = pos[parent]
+            highlighted_edge_x.extend([x0, x1, None])
+            highlighted_edge_y.extend([y0, y1, None])
+        
+        # Create highlighted edge trace
+        highlighted_edge_trace = go.Scatter(
+            x=highlighted_edge_x,
+            y=highlighted_edge_y,
+            line=dict(width=3, color='red'),
+            hoverinfo='none',
+            mode='lines'
+        )
+        
+        # Create highlighted node trace
+        highlighted_node_x = [pos[node][0] for node in path_nodes]
+        highlighted_node_y = [pos[node][1] for node in path_nodes]
+        
+        highlighted_node_trace = go.Scatter(
+            x=highlighted_node_x,
+            y=highlighted_node_y,
+            mode='markers',
+            hoverinfo='text',
+            marker=dict(
+                color='red',
+                size=15,
+                line=dict(width=2, color='darkred')
+            ),
+            text=path_nodes
+        )
+        
+        # Create a new figure with the original data plus highlighted elements
+        display_fig = go.Figure(data=[edge_trace, node_trace, highlighted_edge_trace, highlighted_node_trace],
+                        layout=fig.layout)
+    else:
+        # Use the original figure if no highlights
+        display_fig = fig
+    
+    # Use Streamlit's native click detection on the displayed figure
+    with chart_container:
+        selected_points = plotly_events(display_fig, click_event=True, override_height=800)
+    
+    # Process any new clicks
+    if selected_points:
+        # Get the point index from the selected point
+        point_index = selected_points[0]["pointIndex"]
+        
+        if point_index is not None and point_index < len(node_names):
+            # Update session state with the newly selected node
+            st.session_state.highlighted_node = node_names[point_index]
+            # Force a rerun to display the updated chart
+            st.rerun()
+    
+    return selected_model_name
 
 @st.cache_data
 def get_project_data():
