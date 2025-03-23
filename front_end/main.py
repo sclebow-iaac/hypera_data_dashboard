@@ -592,7 +592,7 @@ with content_container:
                 st.markdown("<p style='text-align: center;'><strong>Service KPIs</strong></p>", unsafe_allow_html=True)
                 
                 # Call the service dashboard to get the metrics
-                verified, team_data = service_extractor.extract(header=False, table=False, gauge=False, attribute_display=False)
+                verified, team_data, model_data = service_extractor.extract(attribute_display=False)
                 service_metrics = service_dashboard.generate_metrics(verified, team_data)
                 display_st_metric_values(container=cols[0], metrics=service_metrics, use_columns=False, include_header=False)
                 
@@ -607,7 +607,7 @@ with content_container:
                 # Caption
                 st.markdown("<p style='text-align: center;'><strong>Structure KPIs</strong></p>", unsafe_allow_html=True)
                 
-                verified, team_data = structure_extractor.extract(header=False, table=False, gauge=False, attribute_display=False)
+                verified, team_data, model_data = structure_extractor.extract(attribute_display=False)
                 structure_metrics = structure_dashboard.generate_metrics(verified, team_data)
                 display_st_metric_values(container=cols[2], metrics=structure_metrics, use_columns=False, include_header=False)
             
@@ -622,7 +622,7 @@ with content_container:
                 # Caption
                 st.markdown("<p style='text-align: center;'><strong>Residential KPIs</strong></p>", unsafe_allow_html=True)
                 
-                verified, team_data = residential_extractor.extract(header=False, table=False, gauge=False, attribute_display=False)
+                verified, team_data, model_data = residential_extractor.extract(attribute_display=False)
                 residential_metrics = residential_dashboard.generate_metrics(verified, team_data)
                 display_st_metric_values(container=cols[4], metrics=residential_metrics, use_columns=False, include_header=False)
             
@@ -637,7 +637,7 @@ with content_container:
                 # Caption
                 st.markdown("<p style='text-align: center;'><strong>Industrial KPIs</strong></p>", unsafe_allow_html=True)
                 
-                verified, team_data = industrial_extractor.extract(header=False, table=False, gauge=False, attribute_display=False)
+                verified, team_data, model_data = industrial_extractor.extract(attribute_display=False)
                 industrial_metrics = industrial_dashboard.generate_metrics(verified, team_data)
                 display_st_metric_values(container=cols[6], metrics=industrial_metrics, use_columns=False, include_header=False)
 
@@ -652,7 +652,7 @@ with content_container:
                 # Caption
                 st.markdown("<p style='text-align: center;'><strong>Facade KPIs</strong></p>", unsafe_allow_html=True)
                 
-                verified, team_data = facade_extractor.extract(header=False, table=False, gauge=False, attribute_display=False)
+                verified, team_data, model_data = facade_extractor.extract(attribute_display=False)
                 facade_metrics = facade_dashboard.generate_metrics(verified, team_data)
                 display_st_metric_values(container=cols[8], metrics=facade_metrics, use_columns=False, include_header=False)
 

@@ -112,7 +112,7 @@ def search_for_attribute(base_data: Base, attribute: str, depth=0, single=True, 
     return found, output
 
 @st.cache_data(ttl='10m', show_spinner='Updating Cached Model Data')
-def extract(data, model_name, verbose=True, header=True, table=True, gauge=True, attribute_display=True, container=None):
+def extract(data, model_name, verbose=True, attribute_display=True, container=None):
 
     # if verbose:
         # print(f'Model name: {model_name}')  # Debugging
@@ -212,9 +212,6 @@ def extract(data, model_name, verbose=True, header=True, table=True, gauge=True,
                 #         # print(f'Attribute {name} not found.')
                 #         extracted_data[data_name] = None
 
-    # display_data(data, extracted_data, model_name, verbose=False,
-    #              header=header, show_table=table, gauge=gauge, container=container)
-
     try:
         if attribute_display:
             # Add a separator
@@ -229,7 +226,16 @@ def extract(data, model_name, verbose=True, header=True, table=True, gauge=True,
 
     # print(f'Fully verified: {fully_verified}')
 
-    return fully_verified, extracted_data
+    model_data = {
+        'model_name': model_name,
+        'model_id': selected_model.id,
+        'version_id': latest_version.id,
+        'version_author': latest_version.authorUser.name,
+        'version_created_at': latest_version.createdAt.strftime("%Y-%m-%d %H:%M:%S %Z"),
+        'extracted_data': extracted_data
+    }
+
+    return fully_verified, extracted_data, model_data
 
 
 def verify_data(data, extracted_data):
@@ -348,9 +354,11 @@ def process_extracted_data(data, extracted_data, verbose=True, simple_table=Fals
 
     return table, type_matched_bools
 
-
 # Display the extracted data
-def display_data(data, extracted_data, model_name, verbose=True, header=True, show_table=True, gauge=True, simple_table=False, container=None):
+def display_data(data, extracted_data, model_data, verbose=True, header=True, show_table=True, gauge=True, simple_table=False, container=None):
+    model_name = model_data['model_name']
+    version_created_at = model_data['version_created_at']
+
     if header:
         if not container:
             header_container = st.container()
@@ -361,6 +369,8 @@ def display_data(data, extracted_data, model_name, verbose=True, header=True, sh
             # header_container.markdown(f'### Speckle Model Name:')
             # header_container.markdown(f'#### {model_name}')
             header_container.markdown(f'#### Data Extracted from {model_name}')
+            header_container.markdown(
+                f'##### Created At: {version_created_at}')
         else:
             header_container.markdown(f'### Speckle Model: ')
             header_container.markdown(f'#### {model_name} not found.')
