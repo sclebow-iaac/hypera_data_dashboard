@@ -196,8 +196,6 @@ def create_network_graph(project_tree):
         **Selected Model**  
         {selected_model_name}
         
-        **Children Count**
-        {len(selected_node_children)}
         """)
         
         # Create highlighted path elements
@@ -392,6 +390,22 @@ def run(container=None):
                 # Create the network diagram
                 selected_model_name, selected_node_children = create_network_graph(project_tree)
 
+                # Remove selected_model_name that are not in the project tree long names
+                all_long_names = [value["long_name"] for value in project_tree.values()]
+                for name in selected_node_children:
+                    if name not in all_long_names:
+                        selected_node_children.remove(name)
+
+                # Remove any selected_node_children that have no versions
+                for name in selected_node_children:
+                    # Get the project tree entry for the long name
+                    for key, value in project_tree.items():
+                        if value["long_name"] == name:
+                            # Check if the version data is empty
+                            if not value["version_data"]:
+                                selected_node_children.remove(name)
+                            break
+
                 selected_analysis_mode = 'Analyze a Single Child Model'
                 if len(selected_node_children) > 0:
                     st.write(f'There are {len(selected_node_children)} child models of {selected_model_name}')
@@ -508,6 +522,23 @@ def run(container=None):
                         # Show the chart
                         source_application_col.plotly_chart(fig, use_container_width=True)
 
+                    # Add information about version frequency
+                    st.markdown("### Version Frequency Analysis")
+                    versions_per_day = version_data_df.set_index('createdAt').groupby(pd.Grouper(freq='D')).size()
+                    versions_per_day = versions_per_day[versions_per_day > 0]  # Only days with versions
+
+                    active_days = len(versions_per_day)
+                    total_days = (version_data_df['createdAt'].max() - version_data_df['createdAt'].min()).days + 1
+                    avg_versions_per_active_day = versions_per_day.mean()
+
+                    metrics_col1, metrics_col2, metrics_col3 = st.columns(3)
+                    metrics_col1.metric("Active Days", f"{active_days}/{total_days} days")
+                    metrics_col2.metric("Average Versions per Active Day", f"{avg_versions_per_active_day:.2f}")
+                    if not versions_per_day.empty:
+                        metrics_col3.metric("Most Active Day", f"{versions_per_day.idxmax().strftime('%Y-%m-%d')} ({versions_per_day.max()} versions)")
+                    else:
+                        metrics_col3.metric("Most Active Day", "No data")
+
                 elif selected_analysis_mode == "Analyze all Child Models Combined":
                     viewer_col, version_data_col = st.columns([1, 1])
                     # Combine all child model ids for the speckle viewer
@@ -562,46 +593,86 @@ def run(container=None):
                             st.markdown(f"**Source Application:** {version_info['sourceApplication']}")
                             st.markdown("---")
 
-                    # Create a timeline of all version data
                     st.header("Combined Model Data:")
-                    # Create a dataframe from the version data
-                    combined_version_data = []
-                    for child, version_data in all_version_data_per_model.items():
-                        for version_id, version_info in version_data.items():
-                            combined_version_data.append({
-                                "model": child,
-                                "version_id": version_id,
-                                "createdAt": version_info["createdAt"],
-                                "authorUser": version_info["authorUser"],
-                                "sourceApplication": version_info["sourceApplication"],
-                            })
+                    
+                    # Create a timeline of all version data with a different color for each model
+                    total_version_count = sum(len(value) for value in all_version_data_per_model.values())
+                    st.subheader(f'Timeline for {total_version_count} version(s) across {len(all_version_data_per_model)} models')
 
-                    st.subheader(f'Timeline for {len(combined_version_data)} version(s)')
+                    # Create a dataframe to store all version data
+                    all_versions_df = pd.DataFrame()
 
-                    combined_version_data_df = pd.DataFrame(combined_version_data)
-                    # Convert the createdAt column to datetime
-                    combined_version_data_df['createdAt'] = pd.to_datetime(combined_version_data_df['createdAt'])
-                    # Sort the dataframe by createdAt
-                    combined_version_data_df = combined_version_data_df.sort_values(by='createdAt')
-                    # Create a version_count column that's just sequential numbering
-                    combined_version_data_df['version_number'] = range(1, len(combined_version_data_df) + 1)
-                    # Create a line chart of the version data
-                    fig = px.line(combined_version_data_df, x='createdAt', y='version_number', markers=True)
+                    # Process each model's versions and add them to the dataframe
+                    for child_model, version_data in all_version_data_per_model.items():
+                        # Create a dataframe for this model's versions
+                        model_df = pd.DataFrame.from_dict(version_data, orient='index')
+                        # Add model name column
+                        model_df['model_name'] = child_model
+                        # Convert timestamps to datetime
+                        model_df['createdAt'] = pd.to_datetime(model_df['createdAt'])
+                        # Extract author name from authorUser object
+                        model_df['author_name'] = model_df['authorUser'].apply(lambda x: x.name)
+                        # Add to the combined dataframe
+                        all_versions_df = pd.concat([all_versions_df, model_df])
+
+                    # Sort by creation date
+                    all_versions_df = all_versions_df.sort_values(by='createdAt')
+
+                    height = 30 * len(all_versions_df['model_name'].unique())
+
+                    # Create a timeline showing version commits by model
+                    fig = px.scatter(all_versions_df, 
+                                    x='createdAt', 
+                                    y='model_name',
+                                    color='model_name',
+                                    hover_data=['sourceApplication', 'author_name'],  # Use author_name instead of authorUser
+                                    labels={'createdAt': 'Date', 'model_name': 'Model Name', 'author_name': 'Author'},
+                                    height=height)
+
+                    # Improve the visualization
+                    fig.update_traces(marker=dict(size=12, opacity=0.8, line=dict(width=1, color='black')))
                     fig.update_layout(
-                        showlegend=False,
-                        margin=dict(l=1, r=1, t=1, b=1),
-                        height=200,
-                        paper_bgcolor='rgba(0,0,0,0)',  # Add transparent background
-                        plot_bgcolor='rgba(0,0,0,0)',   # Add transparent plot background
+                        xaxis_title="Version Creation Date",
+                        yaxis_title="Model",
+                        legend_title="Models",
                         font_family="Roboto Mono",
-                        font_color="#2c3e50"
+                        font_color="#2c3e50",
+                        plot_bgcolor='rgba(240,240,240,0.2)',
+                        hovermode='closest',
+                        showlegend=False,
                     )
-                    fig.update_traces(line_color="red")
-                    fig.update_yaxes(title_text="Version Number")
-                    fig.update_xaxes(title_text="Created Date")
+
+                    # Add connecting lines for each model to better visualize the sequence
+                    for model_name in all_versions_df['model_name'].unique():
+                        model_data = all_versions_df[all_versions_df['model_name'] == model_name].sort_values('createdAt')
+                        
+                        fig.add_trace(go.Scatter(
+                            x=model_data['createdAt'],
+                            y=[model_name] * len(model_data),
+                            mode='lines',
+                            line=dict(width=1.5, dash='dot'),
+                            showlegend=False,
+                            opacity=0.7,
+                            hoverinfo='skip'
+                        ))
+
                     # Show the chart
                     st.plotly_chart(fig, use_container_width=True)
-            
+
+                    # Add information about version frequency
+                    st.markdown("### Version Frequency Analysis")
+                    versions_per_day = all_versions_df.set_index('createdAt').groupby(pd.Grouper(freq='D')).size()
+                    versions_per_day = versions_per_day[versions_per_day > 0]  # Only days with versions
+
+                    active_days = len(versions_per_day)
+                    total_days = (all_versions_df['createdAt'].max() - all_versions_df['createdAt'].min()).days + 1
+                    avg_versions_per_active_day = versions_per_day.mean()
+
+                    metrics_col1, metrics_col2, metrics_col3 = st.columns(3)
+                    metrics_col1.metric("Active Days", f"{active_days}/{total_days} days")
+                    metrics_col2.metric("Average Versions per Active Day", f"{avg_versions_per_active_day:.2f}")
+                    metrics_col3.metric("Most Active Day", f"{versions_per_day.idxmax().strftime('%Y-%m-%d')} ({versions_per_day.max()} versions)")
+
 def show(container, client, project, models, versions, verbose=False):
     with container:
         st.subheader("Statistics")
@@ -709,7 +780,7 @@ def show(container, client, project, models, versions, verbose=False):
             for user in version_frame["authorUser"]:
                 # # print(f'type: {type(user)}')
                 # # print(f'user: {user.get('name')}\n')
-                version_user_names.append(user.get('name'))
+                version_user_names.append(user.name)
 
             authors = pd.DataFrame(version_user_names).value_counts().reset_index()
             #rename columns
