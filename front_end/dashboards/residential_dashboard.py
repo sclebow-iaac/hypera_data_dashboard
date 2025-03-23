@@ -113,6 +113,7 @@ def run(selected_team: str) -> None:
         team_members=team_members,
         team_extractor=team_extractor,
         extracted_data=team_data,
+        model_data=model_data,
         text_dict=text_dict,
         presentation_model_id=presentation_model_id
     )

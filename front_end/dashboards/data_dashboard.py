@@ -68,7 +68,7 @@ def run(selected_team: str = "") -> None:
             st.markdown(f"## {team_name} Team")
             verified, extracted_data, model_data = extractor.extract(attribute_display=False)
             extracted_data_container = st.container()
-            extractor.display_data(extracted_data=extracted_data, header=header, show_table=table,
+            extractor.display_data(extracted_data=extracted_data, model_data=model_data, header=header, show_table=table,
                                     gauge=gauge, simple_table=False, container=extracted_data_container)
             
             if not display_grid:

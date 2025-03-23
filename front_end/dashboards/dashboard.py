@@ -108,7 +108,7 @@ def get_content_container_columns():
     
     return left_margin, content_container, right_margin
 
-def generate_dashboard(selected_team: str, metrics: list[Metric], project_id: str, team_members: list[dict], team_extractor, extracted_data, text_dict: list[dict], presentation_model_id) -> None:
+def generate_dashboard(selected_team: str, metrics: list[Metric], project_id: str, team_members: list[dict], team_extractor, extracted_data, model_data, text_dict: list[dict], presentation_model_id) -> None:
     left_margin, content_container, right_margin = st.columns([1, content_container_width, 1], gap="small")
     with content_container:
         # Display the images
@@ -138,7 +138,8 @@ def generate_dashboard(selected_team: str, metrics: list[Metric], project_id: st
 
         # Display the extracted data
         extracted_data_container = st.container(border=True)
-        team_extractor.display_data(extracted_data=extracted_data, header=True, show_table=True,
+        team_extractor.display_data(extracted_data=extracted_data, model_data=model_data,
+                                     header=True, show_table=True,
                                     gauge=False, simple_table=True, container=extracted_data_container)
 
         # Display the KPI section

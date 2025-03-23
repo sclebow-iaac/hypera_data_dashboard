@@ -368,7 +368,9 @@ def display_data(data, extracted_data, model_data, verbose=True, header=True, sh
         if model_name is not None and model_name != "":
             # header_container.markdown(f'### Speckle Model Name:')
             # header_container.markdown(f'#### {model_name}')
-            header_container.markdown(f'#### Data Extracted from {model_name} at {version_created_at}')
+            header_container.markdown(f'#### Data Extracted from {model_name}')
+            header_container.markdown(
+                f'##### Created At: {version_created_at}')
         else:
             header_container.markdown(f'### Speckle Model: ')
             header_container.markdown(f'#### {model_name} not found.')

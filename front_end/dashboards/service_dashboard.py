@@ -123,11 +123,12 @@ def generate_metrics(verified, team_data) -> list[Metric]:
     metrics.append(occupancy_efficiency_metric)
     return metrics
 
+# Define the function to run the dashboard
 def run(selected_team: str) -> None:
     # Extract data
     models, client, project_id = setup_speckle_connection()
     verified, team_data, model_data = team_extractor.extract(attribute_display=False)
-    
+
     metrics = generate_metrics(verified, team_data)
 
     generate_dashboard(
@@ -137,6 +138,7 @@ def run(selected_team: str) -> None:
         team_members=team_members,
         team_extractor=team_extractor,
         extracted_data=team_data,
+        model_data=model_data,
         text_dict=text_dict,
         presentation_model_id=presentation_model_id
     )
