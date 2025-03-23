@@ -455,6 +455,13 @@ def run(container=None):
                         st.markdown(f"**Source Application:** {source_application}")
 
                     st.header("Selected Model Data:")
+                    # Create a dataframe from the version data
+                    version_data_df = pd.DataFrame.from_dict(version_data, orient='index')
+                    # Convert the createdAt column to datetime
+                    version_data_df['createdAt'] = pd.to_datetime(version_data_df['createdAt'])
+                    # Sort the dataframe by createdAt
+                    version_data_df = version_data_df.sort_values(by='createdAt')
+
 
                     # Create a pie chart of the contributors in a column
                     # Create a pie chart of the Source Applications in a column
