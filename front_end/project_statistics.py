@@ -743,7 +743,7 @@ def run(container=None):
                             # Sort by creation date
                             all_versions_df = all_versions_df.sort_values(by='createdAt')
 
-                            height = min(100, max(7 * total_version_count, 200))
+                            height = min(800, max(150 + 7 * total_version_count, 200))
 
                             # Create a timeline showing version commits by model
                             fig = px.scatter(all_versions_df, 
@@ -836,174 +836,459 @@ def run(container=None):
                             metrics_col2.metric("Average Versions per Active Day", f"{avg_versions_per_active_day:.2f}")
                             metrics_col3.metric("Most Active Day", f"{versions_per_day.idxmax().strftime('%Y-%m-%d')} ({versions_per_day.max()} versions)")
 
-def show(container, client, project, models, versions, verbose=False):
-    with container:
-        st.subheader("Statistics")
+            with overall_statistics_tab:
 
-        # Columns for Cards
-        modelCol, versionCol, connectorCol, contributorCol = st.columns(4)
+                # Create a timeline of all the version data with a different color for each team
+                timeline_data = []
+                for model in project_tree.values():
+                    for version in model["version_data"].values():
+                        created_at = version["createdAt"]
+                        team_name = model["team_name"]
 
-        #DEFINITIONS
-        #create a definition to convert your list to markdown
-        def listToMarkdown(list, column):
-            list = ["- " + i +  "\n" for i in list]
-            list = "".join(list)
-            return column.markdown(list)
+                        timeline_data.append({
+                            "createdAt": created_at,
+                            "team_name": team_name,
+                        })
+                #COMMIT PANDAS TABLE
+                st.subheader("Activity Timeline")
+                
+                # Convert timeline_data to pandas DataFrame
+                timeline_df = pd.DataFrame(timeline_data)
+                
+                # Convert the createdAt column to datetime
+                timeline_df['createdAt'] = pd.to_datetime(timeline_df['createdAt'])
+                
+                # Group by date and team, count occurrences
+                timeline_df['date'] = timeline_df['createdAt'].dt.date
+                timeline_grouped = timeline_df.groupby(['date', 'team_name']).size().reset_index(name='count')
+                
+                # Create line chart with a line for each team
+                fig = px.line(
+                    timeline_grouped, 
+                    x='date', 
+                    y='count', 
+                    color='team_name',
+                    markers=True,
+                    labels={'date': 'Date', 'count': 'Number of Versions', 'team_name': 'Team'}
+                )
+                
+                # Improve styling
+                fig.update_layout(
+                    showlegend=True,
+                    legend=dict(
+                        orientation="h",
+                        yanchor="bottom",
+                        y=1.02,
+                        xanchor="right",
+                        x=0.8
+                    ),
+                    legend_title='Teams',
+                    margin=dict(l=1, r=1, t=10, b=1),
+                    height=300,
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    font_family="Roboto Mono",
+                    font_color="#2c3e50",
+                    hovermode='closest',
+                    hoverlabel=dict(
+                        bgcolor="white",
+                        font_size=12,
+                        font_family="Roboto Mono",
+                        font_color="#2c3e50",
+                    ),
+                )
+                
+                # Add hover information
+                fig.update_traces(
+                    hovertemplate='<b>%{x}</b><br>Team: %{customdata}<br>Versions: %{y}<extra></extra>'
+                )
+                
+                # Add team name as custom data for hover info
+                fig.update_traces(customdata=timeline_grouped['team_name'])
+                
+                # Show Chart
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Add metrics for overall statistics
+                st.subheader("Overall Project Statistics")
+                # Get the total number of models that have versions
+                total_models = sum(1 for model in project_tree.values() if model["version_count"] > 0)
+                # Get the total number of versions
+                total_versions = sum(model["version_count"] for model in project_tree.values())
+                # Get the total number of contributors
+                total_contributors = len(set(version["authorUser"].name for model in project_tree.values() for version in model["version_data"].values()))
+                # Get the total number of source applications
+                total_source_applications = len(set(version["sourceApplication"] for model in project_tree.values() for version in model["version_data"].values()))
+                
+                # Get the active days
+                all_versions_df = pd.DataFrame()
+                for model in project_tree.values():
+                    for version in model["version_data"].values():
+                        all_versions_df = pd.concat([all_versions_df, pd.DataFrame([{
+                            "createdAt": version["createdAt"],
+                            "authorUser": version["authorUser"],
+                            "sourceApplication": version["sourceApplication"],
+                        }])], ignore_index=True)
+                all_versions_df['createdAt'] = pd.to_datetime(all_versions_df['createdAt'])
+                all_versions_df['date'] = all_versions_df['createdAt'].dt.date
+                all_versions_df['count'] = 1
+                active_days = all_versions_df.groupby('date').size().reset_index(name='count')
+                active_days = len(active_days[active_days['count'] > 0])
+                total_days = (all_versions_df['createdAt'].max() - all_versions_df['createdAt'].min()).days + 1
+                avg_versions_per_active_day = all_versions_df.groupby('date').size().mean()
+                # Create metrics
+                metrics_col1, metrics_col2, metrics_col3, metrics_col4 = st.columns(4)
+                metrics_col1.metric("Total Models", total_models)
+                metrics_col2.metric("Total Versions", total_versions)
+                metrics_col3.metric("Total Contributors", total_contributors)
+                metrics_col4.metric("Total Source Applications", total_source_applications)
+                metrics_col5, metrics_col6, metrics_col7 = st.columns(3)
+                metrics_col5.metric("Active Days", f"{active_days}/{total_days} days")
+                metrics_col6.metric("Average Versions per Active Day", f"{avg_versions_per_active_day:.2f}")
+                if active_days > 0:
+                    most_active_day = all_versions_df.groupby('date').size().idxmax()
+                    most_active_count = all_versions_df.groupby('date').size().max()
+                    metrics_col7.metric("Most Active Day", f"{most_active_day.strftime('%Y-%m-%d')} ({most_active_count} versions)")
+                else:
+                    metrics_col7.metric("Most Active Day", "No data")
+                
 
-        #Model Card 💳
-        modelCol.metric(label = "Number of Models in Project", value= len(models))
-        #branch names as markdown list
-        modelNames = [m.name for m in models]
-        # listToMarkdown(modelNames, modelCol)
+                pie_height = 300
+                contributer_col, source_application_col = st.columns([1, 1])
+                with contributer_col:
+                    # Create a pie chart of all the project contributors
+                    st.subheader("Project Contributors")
+                    # Get the contributors from the version data
+                    all_contributors = []
+                    for model in project_tree.values():
+                        for version in model["version_data"].values():
+                            all_contributors.append(version["authorUser"].name)
+                    all_contributors = pd.Series(all_contributors).value_counts().reset_index()
+                    all_contributors.columns = ['Contributor', 'Count']
 
-        #Version Card 💳
-        versionCol.metric(label = "Number of Versions in Selected Model", value= len(versions))
+                    # Update 'Contributor' column to include the percentage
+                    all_contributors['Percentage'] = (all_contributors['Count'] / all_contributors['Count'].sum()) * 100
+                    all_contributors['Percentage Contributor'] = all_contributors['Percentage'].round(2).astype(str) + "% " + all_contributors['Contributor']
 
-        def get_all_versions_in_project(project):
-            all_versions = []
-            for model in project.models.items:
-                versions = client.version.get_versions(model_id=model.id, project_id=project.id, limit=100).items
-                all_versions.extend(versions)
-            return all_versions
+                    # Create a pie chart of the contributors
+                    fig = px.pie(all_contributors, names='Percentage Contributor', values='Count', hole=0.5)
+                    fig.update_layout(
+                        showlegend=True,
+                        legend_title="Contributors",
+                        margin=dict(l=1, r=1, t=1, b=1),
+                        height=pie_height,
+                        font_family="Roboto Mono",
+                        font_color="#2c3e50"
+                    )
+                    fig.update_traces(marker=dict(line=dict(color='#000000', width=2)))
+                    # Show the chart
+                    st.plotly_chart(fig, use_container_width=True)
+
+                    # Add a celebration message for the most active contributor
+                    most_active_contributor = all_contributors.iloc[0]['Contributor']
+                    most_active_contributor_count = all_contributors.iloc[0]['Count']
+                    st.markdown(f"**Most Active Contributor: {most_active_contributor}** with {most_active_contributor_count} contributions!")
+
+                with source_application_col:
+                    # Create a pie chart of all the project source applications
+                    st.subheader("Project Source Applications")
+                    # Get the source applications from the version data
+                    all_source_applications = []
+                    for model in project_tree.values():
+                        for version in model["version_data"].values():
+                            all_source_applications.append(version["sourceApplication"])
+                    all_source_applications = pd.Series(all_source_applications).value_counts().reset_index()
+                    all_source_applications.columns = ['Source Application', 'Count']
+
+                    # Update 'Source Application' column to include the percentage
+                    all_source_applications['Percentage'] = (all_source_applications['Count'] / all_source_applications['Count'].sum()) * 100
+                    all_source_applications['Percentage Source Application'] = all_source_applications['Percentage'].round(2).astype(str) + "% " + all_source_applications['Source Application']
+
+                    # Create a pie chart of the source applications
+                    fig = px.pie(all_source_applications, names='Percentage Source Application', values='Count', hole=0.5)
+                    fig.update_layout(
+                        showlegend=True,
+                        legend_title="Source Applications",
+                        margin=dict(l=1, r=1, t=1, b=1),
+                        height=pie_height,
+                        font_family="Roboto Mono",
+                        font_color="#2c3e50"
+                    )
+                    fig.update_traces(marker=dict(line=dict(color='#000000', width=2)))
+                    # Show the chart
+                    st.plotly_chart(fig, use_container_width=True)
+
+                    # Add a celebration message for the most used source application
+                    most_used_source_application = all_source_applications.iloc[0]['Source Application']
+                    most_used_source_application_count = all_source_applications.iloc[0]['Count']
+                    st.markdown(f"**Most Used Source Application: {most_used_source_application}** with {most_used_source_application_count} contributions!")
+
+                version_col, model_col = st.columns([1, 1])
+
+                with version_col:
+                    # Create a pie chart of all the versions by team
+                    st.subheader("Project Versions by Team")
+                    # Get the teams from the version data
+                    all_teams = []
+                    for model in project_tree.values():
+                        for version in model["version_data"].values():
+                            all_teams.append(model["team_name"])
+                    all_teams = pd.Series(all_teams).value_counts().reset_index()
+                    all_teams.columns = ['Team', 'Count']
+
+                    # Remove the "Root" team from the list
+                    all_teams = all_teams[all_teams['Team'] != 'Root']
+
+                    # Update 'Team' column to include the percentage
+                    all_teams['Percentage'] = (all_teams['Count'] / all_teams['Count'].sum()) * 100
+                    all_teams['Percentage Team'] = all_teams['Percentage'].round(2).astype(str) + "% " + all_teams['Team']
+
+                    # Create a pie chart of the teams
+                    fig = px.pie(all_teams, names='Percentage Team', values='Count', hole=0.5)
+                    fig.update_layout(
+                        showlegend=True,
+                        legend_title="Teams",
+                        margin=dict(l=1, r=1, t=1, b=1),
+                        height=pie_height,
+                        font_family="Roboto Mono",
+                        font_color="#2c3e50"
+                    )
+                    fig.update_traces(marker=dict(line=dict(color='#000000', width=2)))
+                    # Show the chart
+                    st.plotly_chart(fig, use_container_width=True)
+
+                with model_col:
+                    # Create a pie chart of all the models by team
+                    st.subheader("Project Models by Team")
+                    # Get the teams from the version data
+                    all_models_by_team = []
+                    for model in project_tree.values():
+                        all_models_by_team.append(model["team_name"])
+                    all_models_by_team = pd.Series(all_models_by_team).value_counts().reset_index()
+                    all_models_by_team.columns = ['Team', 'Count']
+
+                    # Remove the "Root" team from the list
+                    all_models_by_team = all_models_by_team[all_models_by_team['Team'] != 'Root']
+                    
+                    # Update 'Team' column to include the percentage
+                    all_models_by_team['Percentage'] = (all_models_by_team['Count'] / all_models_by_team['Count'].sum()) * 100
+                    all_models_by_team['Percentage Team'] = all_models_by_team['Percentage'].round(2).astype(str) + "% " + all_models_by_team['Team']
+
+                    # Create a pie chart of the teams
+                    fig = px.pie(all_models_by_team, names='Percentage Team', values='Count', hole=0.5)
+                    fig.update_layout(
+                        showlegend=True,
+                        legend_title="Teams",
+                        margin=dict(l=1, r=1, t=1, b=1),
+                        height=pie_height,
+                        font_family="Roboto Mono",
+                        font_color="#2c3e50"
+                    )
+                    fig.update_traces(marker=dict(line=dict(color='#000000', width=2)))
+                    # Show the chart
+                    st.plotly_chart(fig, use_container_width=True)
+                
+                # Add a celebration message for the most active team
+                team_data = {}
+
+                for team in all_teams['Team']:
+                    if team not in team_data:
+                        team_data[team] = {
+                            'total_count': 0,
+                            'version_count': 0,
+                            'model_count': 0
+                        }
+
+                # Iterate through all_teams
+                for index, row in all_teams.iterrows():
+                    team = row['Team']
+                    count = row['Count']
+                    team_data[team]['total_count'] += count
+                    team_data[team]['version_count'] += count
+                
+                # Iterate through all_models_by_team
+                for index, row in all_models_by_team.iterrows():
+                    team = row['Team']
+                    count = row['Count']
+                    print(f'team: {team} count: {count}')
+                    team_data[team]['total_count'] += count
+                    team_data[team]['model_count'] += count
+
+                # Find the most active team
+                most_active_team = max(team_data, key=lambda x: team_data[x]['total_count'])
+                most_active_team_version_count = team_data[most_active_team]['version_count']
+                most_active_team_model_count = team_data[most_active_team]['model_count']
+                st.markdown(f"<div style='text-align: center;'><b>Most Active Team: {most_active_team}</b> with {most_active_team_version_count} versions across {most_active_team_model_count} models!</div>", unsafe_allow_html=True)
+
+
+# def show(container, client, project, models, versions, verbose=False):
+#     with container:
+#         st.subheader("Statistics")
+
+#         # Columns for Cards
+#         modelCol, versionCol, connectorCol, contributorCol = st.columns(4)
+
+#         #DEFINITIONS
+#         #create a definition to convert your list to markdown
+#         def listToMarkdown(list, column):
+#             list = ["- " + i +  "\n" for i in list]
+#             list = "".join(list)
+#             return column.markdown(list)
+
+#         #Model Card 💳
+#         modelCol.metric(label = "Number of Models in Project", value= len(models))
+#         #branch names as markdown list
+#         modelNames = [m.name for m in models]
+#         # listToMarkdown(modelNames, modelCol)
+
+#         #Version Card 💳
+#         versionCol.metric(label = "Number of Versions in Selected Model", value= len(versions))
+
+#         def get_all_versions_in_project(project):
+#             all_versions = []
+#             for model in project.models.items:
+#                 versions = client.version.get_versions(model_id=model.id, project_id=project.id, limit=100).items
+#                 all_versions.extend(versions)
+#             return all_versions
             
 
-        #Connector Card 💳
-        #connector list
-        all_versions_in_project = get_all_versions_in_project(project)
-        connectorList = [v.sourceApplication for v in all_versions_in_project]
-        #number of connectors
-        connectorCol.metric(label="Number of Connectors in Project", value= len(dict.fromkeys(connectorList)))
-        #get connector names
-        connectorNames = list(dict.fromkeys(connectorList))
-        #convert it to markdown list
-        listToMarkdown(connectorNames, connectorCol)
+#         #Connector Card 💳
+#         #connector list
+#         all_versions_in_project = get_all_versions_in_project(project)
+#         connectorList = [v.sourceApplication for v in all_versions_in_project]
+#         #number of connectors
+#         connectorCol.metric(label="Number of Connectors in Project", value= len(dict.fromkeys(connectorList)))
+#         #get connector names
+#         connectorNames = list(dict.fromkeys(connectorList))
+#         #convert it to markdown list
+#         listToMarkdown(connectorNames, connectorCol)
 
-        def get_all_coillaborators_in_project(project):
-            all_collaborators = []
-            for model in project.models.items:
-                versions = client.version.get_versions(model_id=model.id, project_id=project.id, limit=100).items
-                for version in versions:
-                    all_collaborators.append(version.authorUser)
-            return all_collaborators
+#         def get_all_coillaborators_in_project(project):
+#             all_collaborators = []
+#             for model in project.models.items:
+#                 versions = client.version.get_versions(model_id=model.id, project_id=project.id, limit=100).items
+#                 for version in versions:
+#                     all_collaborators.append(version.authorUser)
+#             return all_collaborators
 
-        #Contributor Card 💳
-        all_collaborators = get_all_coillaborators_in_project(project)
-        #unique contributor names
-        contributorNames = list(dict.fromkeys([col.name for col in all_collaborators]))
-        contributorCol.metric(label = "Number of Contributors to Project", value= len(contributorNames))
-        #convert it to markdown list
-        listToMarkdown(contributorNames,contributorCol)
+#         #Contributor Card 💳
+#         all_collaborators = get_all_coillaborators_in_project(project)
+#         #unique contributor names
+#         contributorNames = list(dict.fromkeys([col.name for col in all_collaborators]))
+#         contributorCol.metric(label = "Number of Contributors to Project", value= len(contributorNames))
+#         #convert it to markdown list
+#         listToMarkdown(contributorNames,contributorCol)
 
-        #COLUMNS FOR CHARTS
-        connector_graph_col, collaborator_graph_col = st.columns([1,1])
+#         #COLUMNS FOR CHARTS
+#         connector_graph_col, collaborator_graph_col = st.columns([1,1])
 
-        #model GRAPH 📊
-        #model count dataframe
-        model_names = []
-        version_counts = []
-        for model in models:
-            model_names.append(model.name)
-            version_count = len(client.version.get_versions(model_id=model.id, project_id=project.id, limit=100).items)
-            # print(f'Model: {model.name} - Version count: {version_count}\n')
-            version_counts.append(version_count)
+#         #model GRAPH 📊
+#         #model count dataframe
+#         model_names = []
+#         version_counts = []
+#         for model in models:
+#             model_names.append(model.name)
+#             version_count = len(client.version.get_versions(model_id=model.id, project_id=project.id, limit=100).items)
+#             # print(f'Model: {model.name} - Version count: {version_count}\n')
+#             version_counts.append(version_count)
 
-        model_counts = pd.DataFrame([[model_name, version_count] for model_name, version_count in zip(model_names, version_counts)])
+#         model_counts = pd.DataFrame([[model_name, version_count] for model_name, version_count in zip(model_names, version_counts)])
 
-        # Create a new row for the pie charts
-        pie_col1, pie_col2 = st.columns(2)
+#         # Create a new row for the pie charts
+#         pie_col1, pie_col2 = st.columns(2)
 
-        # CONNECTOR CHART 🍩
-        with pie_col1:
-            st.subheader("Connector Chart")
-            version_frame = pd.DataFrame.from_dict([c.dict() for c in all_versions_in_project])
-            #get apps from commits
-            apps = version_frame["sourceApplication"]
-            #reset index
-            apps = apps.value_counts().reset_index()
-            #rename columns
-            apps.columns=["app","count"]
-            #donut chart
-            fig = px.pie(apps, names=apps["app"],values=apps["count"], hole=0.5)
-            #set dimensions of the chart
-            fig.update_layout(
-                showlegend=False,
-                margin=dict(l=1, r=1, t=1, b=1),
-                height=200,
-                paper_bgcolor='rgba(0,0,0,0)',
-                font_family="Roboto Mono",
-                font_color="#2c3e50"
-            )
-            #set width of the chart so it uses column width
-            connector_graph_col.plotly_chart(fig, use_container_width=True)
+#         # CONNECTOR CHART 🍩
+#         with pie_col1:
+#             st.subheader("Connector Chart")
+#             version_frame = pd.DataFrame.from_dict([c.dict() for c in all_versions_in_project])
+#             #get apps from commits
+#             apps = version_frame["sourceApplication"]
+#             #reset index
+#             apps = apps.value_counts().reset_index()
+#             #rename columns
+#             apps.columns=["app","count"]
+#             #donut chart
+#             fig = px.pie(apps, names=apps["app"],values=apps["count"], hole=0.5)
+#             #set dimensions of the chart
+#             fig.update_layout(
+#                 showlegend=False,
+#                 margin=dict(l=1, r=1, t=1, b=1),
+#                 height=200,
+#                 paper_bgcolor='rgba(0,0,0,0)',
+#                 font_family="Roboto Mono",
+#                 font_color="#2c3e50"
+#             )
+#             #set width of the chart so it uses column width
+#             connector_graph_col.plotly_chart(fig, use_container_width=True)
 
-        # COLLABORATOR CHART 🍩
-        with pie_col2:
-            st.subheader("Collaborator Chart")
-            #get authors from commits
-            version_user_names = []
-            for user in version_frame["authorUser"]:
-                # # print(f'type: {type(user)}')
-                # # print(f'user: {user.get('name')}\n')
-                version_user_names.append(user.name)
+#         # COLLABORATOR CHART 🍩
+#         with pie_col2:
+#             st.subheader("Collaborator Chart")
+#             #get authors from commits
+#             version_user_names = []
+#             for user in version_frame["authorUser"]:
+#                 # # print(f'type: {type(user)}')
+#                 # # print(f'user: {user.get('name')}\n')
+#                 version_user_names.append(user.name)
 
-            authors = pd.DataFrame(version_user_names).value_counts().reset_index()
-            #rename columns
-            authors.columns=["author","count"]
-            #create our chart
-            authorFig = px.pie(authors, names=authors["author"], values=authors["count"],hole=0.5)
-            authorFig.update_layout(
-                showlegend=False,
-                margin=dict(l=1,r=1,t=1,b=1),
-                height=200,
-                paper_bgcolor='rgba(0,0,0,0)',  # Add transparent background
-                plot_bgcolor='rgba(0,0,0,0)',   # Add transparent plot background
-                font_family="Roboto Mono",
-                font_color="#2c3e50",
-                yaxis_scaleanchor="x",
-            )
-            collaborator_graph_col.plotly_chart(authorFig, use_container_width=True)
+#             authors = pd.DataFrame(version_user_names).value_counts().reset_index()
+#             #rename columns
+#             authors.columns=["author","count"]
+#             #create our chart
+#             authorFig = px.pie(authors, names=authors["author"], values=authors["count"],hole=0.5)
+#             authorFig.update_layout(
+#                 showlegend=False,
+#                 margin=dict(l=1,r=1,t=1,b=1),
+#                 height=200,
+#                 paper_bgcolor='rgba(0,0,0,0)',  # Add transparent background
+#                 plot_bgcolor='rgba(0,0,0,0)',   # Add transparent plot background
+#                 font_family="Roboto Mono",
+#                 font_color="#2c3e50",
+#                 yaxis_scaleanchor="x",
+#             )
+#             collaborator_graph_col.plotly_chart(authorFig, use_container_width=True)
 
-        st.markdown("---")
+#         st.markdown("---")
 
-        #COMMIT PANDAS TABLE 🔲
-        st.subheader("Commit Activity Timeline 🕒")
-        #created at parameter to dataframe with counts
-        # # print("VALUE")
-        # # print(pd.to_datetime(commits["createdAt"]).dt.date.value_counts().reset_index())
+#         #COMMIT PANDAS TABLE 🔲
+#         st.subheader("Commit Activity Timeline 🕒")
+#         #created at parameter to dataframe with counts
+#         # # print("VALUE")
+#         # # print(pd.to_datetime(commits["createdAt"]).dt.date.value_counts().reset_index())
 
-        timestamps = [version.createdAt.date() for version in all_versions_in_project]
-        # print(f'timestamps: {timestamps}\n')
+#         timestamps = [version.createdAt.date() for version in all_versions_in_project]
+#         # print(f'timestamps: {timestamps}\n')
 
-        #convert to pandas dataframe and
-        # rename the column of the timestamps frame to createdAt
-        timestamps_frame = pd.DataFrame(timestamps, columns=["createdAt"]).value_counts().reset_index().sort_values("createdAt")
+#         #convert to pandas dataframe and
+#         # rename the column of the timestamps frame to createdAt
+#         timestamps_frame = pd.DataFrame(timestamps, columns=["createdAt"]).value_counts().reset_index().sort_values("createdAt")
 
-        # print(f'timestamps_frame: {timestamps_frame}\n')
+#         # print(f'timestamps_frame: {timestamps_frame}\n')
 
-        cdate = timestamps_frame
-        #rename columns
-        cdate.columns = ["date", "count"]
-        #redate indexed dates
-        cdate["date"] = pd.to_datetime(cdate["date"]).dt.date
+#         cdate = timestamps_frame
+#         #rename columns
+#         cdate.columns = ["date", "count"]
+#         #redate indexed dates
+#         cdate["date"] = pd.to_datetime(cdate["date"]).dt.date
 
-        # print(f'cdate: {cdate}\n')
+#         # print(f'cdate: {cdate}\n')
 
-        #COMMIT ACTIVITY LINE CHART📈
-        #line chart
-        fig = px.line(cdate, x=cdate["date"], y=cdate["count"], markers =True)
-        #recolor line
-        fig.update_layout(
-            showlegend=False,
-            margin=dict(l=1,r=1,t=1,b=1),
-            height=200,
-            paper_bgcolor='rgba(0,0,0,0)',  # Add transparent background
-            plot_bgcolor='rgba(0,0,0,0)',   # Add transparent plot background
-            font_family="Roboto Mono",
-            font_color="#2c3e50"
-        )
-        fig.update_traces(line_color="red")
+#         #COMMIT ACTIVITY LINE CHART📈
+#         #line chart
+#         fig = px.line(cdate, x=cdate["date"], y=cdate["count"], markers =True)
+#         #recolor line
+#         fig.update_layout(
+#             showlegend=False,
+#             margin=dict(l=1,r=1,t=1,b=1),
+#             height=200,
+#             paper_bgcolor='rgba(0,0,0,0)',  # Add transparent background
+#             plot_bgcolor='rgba(0,0,0,0)',   # Add transparent plot background
+#             font_family="Roboto Mono",
+#             font_color="#2c3e50"
+#         )
+#         fig.update_traces(line_color="red")
 
-        #Show Chart
-        st.plotly_chart(fig, use_container_width=True)
+#         #Show Chart
+#         st.plotly_chart(fig, use_container_width=True)
 
-        #--------------------------
+#         #--------------------------

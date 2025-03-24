@@ -656,86 +656,86 @@ with content_container:
                 facade_metrics = facade_dashboard.generate_metrics(verified, team_data)
                 display_st_metric_values(container=cols[8], metrics=facade_metrics, use_columns=False, include_header=False)
 
-            # Add speckle inputs selection menu
-            with input_container:  # Use the new name here
-                st.subheader("Inputs")
-                viewer_toggle, statistics_toggle = st.columns(2)
+            # # Add speckle inputs selection menu
+            # with input_container:  # Use the new name here
+            #     st.subheader("Inputs")
+            #     viewer_toggle, statistics_toggle = st.columns(2)
                 
-                show_viewer = viewer_toggle.checkbox("Show Speckle Viewer", value=True)
-                show_statistics = statistics_toggle.checkbox("Show Project Statistics", value=True)
+            #     show_viewer = viewer_toggle.checkbox("Show Speckle Viewer", value=True)
+            #     show_statistics = statistics_toggle.checkbox("Show Project Statistics", value=True)
 
-                # #-------
-                # #Speckle Server and Token
-                speckleServer = "macad.speckle.xyz"
-                speckleToken = "61c9dd1efb887a27eb3d52d0144f1e7a4a23f962d7"
-                #CLIENT
-                client = SpeckleClient(host=speckleServer)
-                #Get account from Token
-                account = get_account_from_token(speckleToken, speckleServer)
-                #Authenticate
-                client.authenticate_with_account(account)
-                # #-------
+            #     # #-------
+            #     # #Speckle Server and Token
+            #     speckleServer = "macad.speckle.xyz"
+            #     speckleToken = "61c9dd1efb887a27eb3d52d0144f1e7a4a23f962d7"
+            #     #CLIENT
+            #     client = SpeckleClient(host=speckleServer)
+            #     #Get account from Token
+            #     account = get_account_from_token(speckleToken, speckleServer)
+            #     #Authenticate
+            #     client.authenticate_with_account(account)
+            #     # #-------
 
-                # # Get the team project
-                project_id = '31f8cca4e0'
-                selected_project = client.project.get(project_id=project_id)
+            #     # # Get the team project
+            #     project_id = '31f8cca4e0'
+            #     selected_project = client.project.get(project_id=project_id)
 
-                # Get the project with models
-                project = client.project.get_with_models(project_id=selected_project.id, models_limit=100)
-                # print(f'Project: {project.name}')
+            #     # Get the project with models
+            #     project = client.project.get_with_models(project_id=selected_project.id, models_limit=100)
+            #     # print(f'Project: {project.name}')
 
-                # Get the models
-                models = project.models.items
+            #     # Get the models
+            #     models = project.models.items
 
-                # Add model selection
-                selected_model_name = st.selectbox(
-                    label="Select model to analyze",
-                    options=[m.name for m in models],
-                    help="Select a specific model to analyze its data"
-                )
+            #     # Add model selection
+            #     selected_model_name = st.selectbox(
+            #         label="Select model to analyze",
+            #         options=[m.name for m in models],
+            #         help="Select a specific model to analyze its data"
+            #     )
 
-                # Get the selected model object
-                selected_model = [m for m in models if m.name == selected_model_name][0]
+            #     # Get the selected model object
+            #     selected_model = [m for m in models if m.name == selected_model_name][0]
 
-                # Get the versions for the selected model
-                versions = client.version.get_versions(model_id=selected_model.id, project_id=project.id, limit=100).items
+            #     # Get the versions for the selected model
+            #     versions = client.version.get_versions(model_id=selected_model.id, project_id=project.id, limit=100).items
 
-                def versionName(version):
-                    timestamp = version.createdAt.strftime("%Y-%m-%d %H:%M:%S")
-                    return ' - '.join([version.authorUser.name, timestamp, version.message])
+            #     def versionName(version):
+            #         timestamp = version.createdAt.strftime("%Y-%m-%d %H:%M:%S")
+            #         return ' - '.join([version.authorUser.name, timestamp, version.message])
 
-                keys = [versionName(version) for version in versions]
+            #     keys = [versionName(version) for version in versions]
 
-                # Add version selection
-                selected_version_key = st.selectbox(
-                    label="Select version to analyze",
-                    options=keys,
-                    help="Select a specific version to analyze"
-                )
-                try:
-                    selected_version = versions[keys.index(selected_version_key)]
+            #     # Add version selection
+            #     selected_version_key = st.selectbox(
+            #         label="Select version to analyze",
+            #         options=keys,
+            #         help="Select a specific version to analyze"
+            #     )
+            #     try:
+            #         selected_version = versions[keys.index(selected_version_key)]
 
-                    # Create a iframe to display the selected version
-                    def version2viewer(project, model, version, height=400) -> str:
-                        embed_src = f"https://macad.speckle.xyz/projects/{project.id}/models/{model.id}@{version.id}#embed=%7B%22isEnabled%22%3Atrue%2C%7D"            
-                        # print(f'embed_src {embed_src}')  # Print the URL to verify correctness
-                        # print()
-                        return st.components.v1.iframe(src=embed_src, height=height)
+            #         # Create a iframe to display the selected version
+            #         def version2viewer(project, model, version, height=400) -> str:
+            #             embed_src = f"https://macad.speckle.xyz/projects/{project.id}/models/{model.id}@{version.id}#embed=%7B%22isEnabled%22%3Atrue%2C%7D"            
+            #             # print(f'embed_src {embed_src}')  # Print the URL to verify correctness
+            #             # print()
+            #             return st.components.v1.iframe(src=embed_src, height=height)
 
-                    if show_viewer:
-                        with viewer:
-                            st.subheader("Selected Version👇")
-                            version2viewer(project, selected_model, selected_version)
+            #         if show_viewer:
+            #             with viewer:
+            #                 st.subheader("Selected Version👇")
+            #                 version2viewer(project, selected_model, selected_version)
 
-                    if show_statistics:
-                        statistics.show(report, client, project, models, versions)
+            #         if show_statistics:
+            #             statistics.show(report, client, project, models, versions)
 
-                    # Add a separator
-                    st.markdown("---")
-                    # Add attribute extraction for debugging
-                    attribute_extraction.run(selected_version, client, project)
-                except:
-                    st.error("No version selected/found. Please select a version to analyze.")
+            #         # Add a separator
+            #         st.markdown("---")
+            #         # Add attribute extraction for debugging
+            #         attribute_extraction.run(selected_version, client, project)
+            #     except:
+            #         st.error("No version selected/found. Please select a version to analyze.")
 
     else:
         with dashboard_placeholder.container():
