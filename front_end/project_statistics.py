@@ -12,6 +12,23 @@ import attribute_extraction
 def create_network_graph(project_tree, height=800):
     st.subheader("Project Network Diagram")
 
+    # Add expander for click instructions
+    with st.expander("How to use the network diagram"):
+        st.markdown("""
+        - Click on any node to highlight it and all its parent nodes
+        - The highlighted path shows the connection from the selected node to the root
+        - Each click will update the highlighted path
+        - Use the Plotly UI controls in the top-right corner of the chart:
+            - The magnifying glass icon allows you to zoom in on a selected region
+            - The home icon resets the zoom level to the default view
+            - The pan icon lets you drag the view to explore different parts of the diagram
+        """)
+
+    # Add a weight adjustment factor to fine-tune the graph layout
+    # Higher values (>1.0) increase separation between depths
+    # Lower values (<1.0) decrease separation between depths
+    weight_adjustment_factor = st.slider("Weight Adjustment Factor", min_value=0.1, max_value=3.0, value=1.5, step=0.1)
+
     G = nx.DiGraph()  # Use a directed graph for clearer parent/child relationships
 
     # First, add all nodes to the graph
@@ -51,11 +68,6 @@ def create_network_graph(project_tree, height=800):
             node_depths[root] = 0
             for u, v in bfs_edges:
                 node_depths[v] = node_depths[u] + 1
-
-    # Add a weight adjustment factor to fine-tune the graph layout
-    # Higher values (>1.0) increase separation between depths
-    # Lower values (<1.0) decrease separation between depths
-    weight_adjustment_factor = 1.5
 
     # Assign weights to edges based on node depths
     # We want children of the root to be further from root (smaller weight)
@@ -192,15 +204,7 @@ def create_network_graph(project_tree, height=800):
                     clickmode='event+select'
                 )
                 )
-    
-    # Add expander for click instructions
-    with st.expander("How to use the network diagram"):
-        st.markdown("""
-        - Click on any node to highlight it and all its parent nodes
-        - The highlighted path shows the connection from the selected node to the root
-        - Each click will update the highlighted path
-        """)
-    
+        
     # Create containers for the highlighted path information and chart
     highlight_container = st.empty()
     chart_container = st.container()
