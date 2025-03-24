@@ -23,11 +23,22 @@ def create_network_graph(project_tree, height=800):
             - The home icon resets the zoom level to the default view
             - The pan icon lets you drag the view to explore different parts of the diagram
         """)
-
-        # Add a weight adjustment factor to fine-tune the graph layout
-        # Higher values (>1.0) increase separation between depths
-        # Lower values (<1.0) decrease separation between depths
-        weight_adjustment_factor = st.slider("Weight Adjustment Factor", min_value=0.1, max_value=2.0, value=1.2, step=0.1, help="Adjust the weight of edges based on node depth. Higher values increase separation between nodes at different depths.")
+        
+        # Add controls in a row
+        control_col1, control_col2 = st.columns([3, 1])
+        
+        with control_col1:
+            # Add a weight adjustment factor to fine-tune the graph layout
+            # Higher values (>1.0) increase separation between depths
+            # Lower values (<1.0) decrease separation between depths
+            weight_adjustment_factor = st.slider("Weight Adjustment Factor", min_value=0.1, max_value=2.0, value=1.2, step=0.1, help="Adjust the weight of edges based on node depth. Higher values increase separation between nodes at different depths.")
+        
+        with control_col2:
+            # Add reset button that clears the selection
+            if st.button("Reset Selection", help="Clear the current selection and reset the network view"):
+                # Reset the highlighted node in session state
+                st.session_state.highlighted_node = None
+                st.rerun()
 
     G = nx.DiGraph()  # Use a directed graph for clearer parent/child relationships
 
@@ -480,6 +491,9 @@ def run(container=None):
                 # Create the network diagram
                 selected_model_name, selected_node_children = create_network_graph(project_tree)
 
+                # Sort the children by their long name
+                selected_node_children.sort()
+
                 # print()
                 # # Debug print
                 # print(f"Selected Model Name: {selected_model_name}")
@@ -677,7 +691,7 @@ def run(container=None):
                                 # Create a Speckle Viewer
                                 st.subheader("Speckle Viewer")
                                 speckle_model_id = combined_model_id
-                                height = max(200 * len(child_model_ids), default_speckle_viewer_height)
+                                height = min(max(50 * len(child_model_ids), default_speckle_viewer_height), 1000)
                                 display_speckle_viewer(
                                                         container=viewer_col, 
                                                         project_id=project_id, 
@@ -696,11 +710,10 @@ def run(container=None):
                                 st.subheader("Latest Version Data")
 
                                 for child, version_info in latest_version_data_per_model.items():
-                                    st.markdown(f"**Latest Version for {child}:**")
-                                    st.markdown(f"**Created By:** {version_info['authorUser'].name}")
-                                    st.markdown(f"**Created At:** {version_info['createdAt'].strftime('%Y-%m-%d %H:%M:%S %Z')}")
-                                    st.markdown(f"**Source Application:** {version_info['sourceApplication']}")
-                                    st.markdown("---")
+                                    with st.expander(f"**Latest Version for {child}:**"):
+                                        st.markdown(f"**Created By:** {version_info['authorUser'].name}")
+                                        st.markdown(f"**Created At:** {version_info['createdAt'].strftime('%Y-%m-%d %H:%M:%S %Z')}")
+                                        st.markdown(f"**Source Application:** {version_info['sourceApplication']}")
 
                             st.header("Combined Model Data:")
                             
