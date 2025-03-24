@@ -402,49 +402,29 @@ def display_metric(container, metric: Metric, add_text=True) -> None:
     # Display the tape diagram
     display_tape_diagram(container, metric)
 
-    # """Display a metric in the specified container."""
-    # print("DISPLAY METRIC: ", metric.title)
-
-    # # Create two columns with specified widths
-    # col1, col2 = container.columns([1, 2])  # First column is 1 part, second column is 2 parts
-
-    # # In the first column, display the image with some right margin
-    # with col1:
-    #     image_width = 400  # Set your desired width
-    #     st.markdown(f'<div style="text-align: right;">', unsafe_allow_html=True)  # Align image to the right
-    #     st.image(metric.image_path, width=image_width, use_container_width=False)
-    #     st.markdown('</div>', unsafe_allow_html=True)  # Close the div
-
-    # # In the second column, display the text with additional margin
-    # with col2:
-    #     st.markdown(f'<div style="margin-top: 20px;">', unsafe_allow_html=True)  # Add top margin
-    #     st.markdown(f"### {metric.title}")
-    #     st.latex(metric.formula_markdown)
-    #     st.markdown(metric.description)
-    #     # st.metric(metric.title, f'{metric.value:.2f}')  # Display the metric value
-    #     st.markdown('</div>', unsafe_allow_html=True)  # Close the div
-
-    # # Call the function to display circles and tape
-    # with container:
-    #     display_metric_circles_and_tape(container, metric)
-    #     for _ in range(5):
-    #         st.markdown("")
-
 def display_tape_diagram(container, metric: Metric) -> None:
+    range_center = metric.ideal_value # Center of the range
+    half_range_width = max(abs(metric.value - metric.ideal_value) * 1.2, metric.ideal_value) # Width of the range
+    # range_start = min(metric.min_value, range_center - half_range_width) # Start of the range
+    # range_end = max(metric.max_value, range_center + half_range_width) # End of the range
+
+    range_start = range_center - half_range_width
+    range_end = range_center + half_range_width
+
     fig = go.Figure(go.Indicator(
         mode="number+gauge+delta",
         gauge={
             'shape': "bullet",
-            'axis': {'range': [metric.min_value, metric.max_value]},
+            'axis': {'range': [range_start, range_end]},
             'steps': [
-                {'range': [metric.min_value, metric.ideal_value],
+                {'range': [range_start, metric.ideal_value],
                     'color': "Salmon"},
-                {'range': [metric.ideal_value, metric.max_value],
+                {'range': [metric.ideal_value, range_end],
                     'color': "PaleGreen"},
             ],
             'threshold': {
                 'line': {'color': "SteelBlue", 'width': 8},
-                'value': metric.ideal_value
+                'value': metric.ideal_value,
             },
             'bar': {'color': "Silver", },
         },
