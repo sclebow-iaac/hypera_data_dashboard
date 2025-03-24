@@ -27,7 +27,7 @@ def create_network_graph(project_tree, height=800):
         # Add a weight adjustment factor to fine-tune the graph layout
         # Higher values (>1.0) increase separation between depths
         # Lower values (<1.0) decrease separation between depths
-        weight_adjustment_factor = st.slider("Weight Adjustment Factor", min_value=0.1, max_value=3.0, value=1.2, step=0.1, help="Adjust the weight of edges based on node depth. Higher values increase separation between nodes at different depths.")
+        weight_adjustment_factor = st.slider("Weight Adjustment Factor", min_value=0.1, max_value=2.0, value=1.2, step=0.1, help="Adjust the weight of edges based on node depth. Higher values increase separation between nodes at different depths.")
 
     G = nx.DiGraph()  # Use a directed graph for clearer parent/child relationships
 
