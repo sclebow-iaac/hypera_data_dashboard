@@ -534,7 +534,7 @@ def run(container=None):
                         selected_version_id = st.selectbox(f"Select a version, there is/are {len(version_data)}", list(version_data.keys()), format_func=lambda x: version_data[x]["createdAt"])
                         
                         
-                        attribute_extraction.run_from_version_id(selected_version_id=selected_version_id, model_id=selected_model_id)
+                        attribute_extraction.run_from_version_id(version_id=selected_version_id, model_id=selected_model_id)
 
                         # Create two columns for the speckle viewer and the version data
                         viewer_col, version_data_col = st.columns([1, 1])
@@ -743,7 +743,7 @@ def run(container=None):
                             # Sort by creation date
                             all_versions_df = all_versions_df.sort_values(by='createdAt')
 
-                            height = max(7 * total_version_count, 200)
+                            height = min(100, max(7 * total_version_count, 200))
 
                             # Create a timeline showing version commits by model
                             fig = px.scatter(all_versions_df, 
