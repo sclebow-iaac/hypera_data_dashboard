@@ -40,9 +40,48 @@ def create_network_graph(project_tree, height=800):
         if len(component) < 5:  # Print small components to help identify the issue
             print(f"  Nodes in component {i}: {component}")
     
+    # Calculate node depths from root
+    node_depths = {}
+    roots = [n for n, d in G.in_degree() if d == 0]
+    
+    if roots:
+        # Use BFS to calculate depth from root
+        for root in roots:
+            bfs_edges = list(nx.bfs_edges(G, root))
+            node_depths[root] = 0
+            for u, v in bfs_edges:
+                node_depths[v] = node_depths[u] + 1
+
+    # Add a weight adjustment factor to fine-tune the graph layout
+    # Higher values (>1.0) increase separation between depths
+    # Lower values (<1.0) decrease separation between depths
+    weight_adjustment_factor = 1.5
+
+    # Assign weights to edges based on node depths
+    # We want children of the root to be further from root (smaller weight)
+    # and deeper nodes to be closer to their parents (larger weight)
+    edge_weights = {}
+    for u, v in G.edges():
+        # Check if both nodes have depth information
+        if u in node_depths and v in node_depths:
+            # Base weight - deeper nodes get higher weights (closer to parents)
+            depth_weight = min(node_depths[u], node_depths[v])
+            
+            # For edges connected to root or near-root, use much smaller weights
+            if depth_weight <= 1:
+                edge_weights[(u, v)] = 0.5 / weight_adjustment_factor  # Weight for root connections
+            else:
+                # Progressive weighting - deeper nodes get higher weights
+                edge_weights[(u, v)] = 0.5 + (depth_weight * 0.3 * weight_adjustment_factor)
+    
     # Convert to undirected for visualization layout purposes
     G_undirected = G.to_undirected()
-    
+
+    # Apply edge weights to the undirected graph
+    for (u, v), weight in edge_weights.items():
+        if G_undirected.has_edge(u, v):
+            G_undirected[u][v]['weight'] = weight
+
     # Use Kamada-Kawai layout for better visualization of hierarchical data
     pos = nx.kamada_kawai_layout(G_undirected)
 
@@ -265,7 +304,8 @@ def create_network_graph(project_tree, height=800):
 
     return selected_model_name, selected_node_children
 
-@st.cache_data(ttl='5minutes')
+# @st.cache_data(ttl='5minutes')
+@st.cache_data()
 def get_project_data():
     print(f'get_project_data(models, client, project_id)')
     
