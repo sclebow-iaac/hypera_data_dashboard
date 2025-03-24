@@ -24,10 +24,10 @@ def create_network_graph(project_tree, height=800):
             - The pan icon lets you drag the view to explore different parts of the diagram
         """)
 
-    # Add a weight adjustment factor to fine-tune the graph layout
-    # Higher values (>1.0) increase separation between depths
-    # Lower values (<1.0) decrease separation between depths
-    weight_adjustment_factor = st.slider("Weight Adjustment Factor", min_value=0.1, max_value=3.0, value=1.5, step=0.1)
+        # Add a weight adjustment factor to fine-tune the graph layout
+        # Higher values (>1.0) increase separation between depths
+        # Lower values (<1.0) decrease separation between depths
+        weight_adjustment_factor = st.slider("Weight Adjustment Factor", min_value=0.1, max_value=3.0, value=1.2, step=0.1, help="Adjust the weight of edges based on node depth. Higher values increase separation between nodes at different depths.")
 
     G = nx.DiGraph()  # Use a directed graph for clearer parent/child relationships
 
@@ -489,10 +489,11 @@ def run(container=None):
                     st.write("No model selected.")
                 else:
                     if len(selected_node_children) == 0:
-                        st.write("No child models available for this model.")
+                        st.write("No child models available for this node.")
                         single_tab = st.container()
                         combined_tab = None
                     else:
+                        st.write(f'The selected node has {len(selected_node_children)} child model(s)')
                         combined_tab, single_tab = st.tabs([
                             "Analyze all Child Models Combined", 
                             "Analyze a Single Child Model"
