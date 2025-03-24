@@ -1208,7 +1208,19 @@ def run(container=None):
                 most_balanced_team_members_df['Goal Percentage'] = most_balanced_team_members_df['Goal Percentage'].round(2).astype(str) + "%"
                 most_balanced_team_members_df['Difference'] = most_balanced_team_members_df['Difference'].round(2).astype(str) + "%"
 
-                st.dataframe(most_balanced_team_members_df[['Version Count', 'Percentage', 'Goal Percentage', 'Difference']], use_container_width=True)               
+                st.dataframe(most_balanced_team_members_df[['Version Count', 'Percentage', 'Goal Percentage', 'Difference']], use_container_width=True)
+
+                # Also show the balance scores of the other teams
+                st.subheader("Team Balance Scores")
+                # Create a dataframe for the team balance scores
+                team_balance_scores_df = pd.DataFrame.from_dict(balanced_team_data, orient='index')
+                team_balance_scores_df['Team'] = team_balance_scores_df.index
+                team_balance_scores_df['Team Balance Score'] = team_balance_scores_df['team_score']
+
+                # Sort the dataframe by team balance score, lowest first
+                team_balance_scores_df = team_balance_scores_df.sort_values(by='Team Balance Score', ascending=True)
+
+                st.dataframe(team_balance_scores_df[['Team', 'Team Balance Score']], use_container_width=True)
                     
             with metric_analysis_tab:
                 # Add metric analysis here
@@ -1222,7 +1234,7 @@ def run(container=None):
                 st.write("This tab is under construction. Please check back later.")
                 st.write('This tab will display data from the dashboard github repository')
 
-                
+
 # def show(container, client, project, models, versions, verbose=False):
 #     with container:
 #         st.subheader("Statistics")
