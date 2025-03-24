@@ -7,27 +7,108 @@ from pprint import pprint
 from streamlit_plotly_events import plotly_events
 
 from dashboards.dashboard import *
+import attribute_extraction
 
-def create_network_graph(project_tree):
-    # print(f'create_network_graph(project_tree)')
-
-    # Create a subheader for the network diagram
+def create_network_graph(project_tree, height=800):
     st.subheader("Project Network Diagram")
 
-    # with st.spinner("Creating network graph..."):
-    G = nx.Graph() # Create a new graph
+    # Add expander for click instructions
+    with st.expander("How to use the network diagram"):
+        st.markdown("""
+        - Click on any node to highlight it and all its parent nodes
+        - The highlighted path shows the connection from the selected node to the root
+        - Each click will update the highlighted path
+        - Use the Plotly UI controls in the top-right corner of the chart:
+            - The magnifying glass icon allows you to zoom in on a selected region
+            - The home icon resets the zoom level to the default view
+            - The pan icon lets you drag the view to explore different parts of the diagram
+        """)
 
-    for key, value in project_tree.items():
-        print(f"Key: {key}, Value: {value}")
+        # Add controls in a row
+        control_col1, control_col2 = st.columns([3, 1])
         
+        with control_col1:
+            # Add a weight adjustment factor to fine-tune the graph layout
+            # Higher values (>1.0) increase separation between depths
+            # Lower values (<1.0) decrease separation between depths
+            weight_adjustment_factor = st.slider("Weight Adjustment Factor", min_value=0.1, max_value=2.0, value=1.2, step=0.1, help="Adjust the weight of edges based on node depth. Higher values increase separation between nodes at different depths.")
+        
+        with control_col2:
+            # Add reset button that clears the selection
+            if st.button("Reset Selection", help="Clear the current selection and reset the network view"):
+                # Reset the highlighted node in session state
+                st.session_state.highlighted_node = None
+                st.rerun()
+
+    G = nx.DiGraph()  # Use a directed graph for clearer parent/child relationships
+
+    # First, add all nodes to the graph
+    for key in project_tree.keys():
+        G.add_node(key)
+    
+    # Then, add all edges to connect parents and children
+    for key, value in project_tree.items():
+        # Add edge to parent if parent exists
         if value["parent"] is not None:
+            # Create edges from child to parent
             G.add_edge(key, value["parent"])
+            
+            # Debug info to trace the edge being created
+            print(f"Adding edge: {key} -> {value['parent']}")
+            
+            # Validate that parent exists in the tree
+            if value["parent"] not in project_tree:
+                print(f"WARNING: Parent {value['parent']} for {key} not found in project_tree!")
 
-    # k = 1 / math.sqrt(len(G.nodes())) * 3 # optimal distance between nodes
-    # pos = nx.spring_layout(G, k=k, seed=0)  # positions for all nodes
+    # After adding all edges, check for any disconnected components
+    components = list(nx.weakly_connected_components(G))
+    print(f"Number of disconnected components: {len(components)}")
+    for i, component in enumerate(components):
+        print(f"Component {i} has {len(component)} nodes")
+        if len(component) < 5:  # Print small components to help identify the issue
+            print(f"  Nodes in component {i}: {component}")
+    
+    # Calculate node depths from root
+    node_depths = {}
+    roots = [n for n, d in G.in_degree() if d == 0]
+    
+    if roots:
+        # Use BFS to calculate depth from root
+        for root in roots:
+            bfs_edges = list(nx.bfs_edges(G, root))
+            node_depths[root] = 0
+            for u, v in bfs_edges:
+                node_depths[v] = node_depths[u] + 1
 
-    pos = nx.kamada_kawai_layout(G)  # positions for all nodes
+    # Assign weights to edges based on node depths
+    # We want children of the root to be further from root (smaller weight)
+    # and deeper nodes to be closer to their parents (larger weight)
+    edge_weights = {}
+    for u, v in G.edges():
+        # Check if both nodes have depth information
+        if u in node_depths and v in node_depths:
+            # Base weight - deeper nodes get higher weights (closer to parents)
+            depth_weight = min(node_depths[u], node_depths[v])
+            
+            # For edges connected to root or near-root, use much smaller weights
+            if depth_weight <= 1:
+                edge_weights[(u, v)] = 0.5 / weight_adjustment_factor  # Weight for root connections
+            else:
+                # Progressive weighting - deeper nodes get higher weights
+                edge_weights[(u, v)] = 0.5 + (depth_weight * 0.3 * weight_adjustment_factor)
+    
+    # Convert to undirected for visualization layout purposes
+    G_undirected = G.to_undirected()
 
+    # Apply edge weights to the undirected graph
+    for (u, v), weight in edge_weights.items():
+        if G_undirected.has_edge(u, v):
+            G_undirected[u][v]['weight'] = weight
+
+    # Use Kamada-Kawai layout for better visualization of hierarchical data
+    pos = nx.kamada_kawai_layout(G_undirected)
+
+    # Create edge traces
     edge_x = []
     edge_y = []
     edge_pairs = []  # Store edge pairs for highlighting
@@ -46,11 +127,12 @@ def create_network_graph(project_tree):
     edge_trace = go.Scatter(
         x=edge_x,
         y=edge_y,
-        line=dict(width=0.5, color='#888'),
+        line=dict(width=2, color='lightgrey'),
         hoverinfo='none',
         mode='lines'
     )
 
+    # Create node traces
     node_x = []
     node_y = []
     node_names = []  # Store node names for clickData reference
@@ -61,115 +143,91 @@ def create_network_graph(project_tree):
         node_y.append(y)
         node_names.append(node)
 
+    # Calculate node distances from root for visual scaling
+    node_distances = []
+    node_text = []
+    hover_text = []
+    for node in G.nodes():
+        # Use a safely guarded approach to get distances
+        distance = 0
+        current_node = node
+        visited_nodes = set()  # Track visited nodes to prevent cycles
+        
+        while (current_node in project_tree and 
+               project_tree[current_node]["parent"] is not None and 
+               current_node not in visited_nodes):
+            
+            visited_nodes.add(current_node)
+            distance += 1
+            current_node = project_tree[current_node]["parent"]
+            
+            # Safety check - if we somehow end up in a loop or with a parent not in tree
+            if current_node not in project_tree:
+                break
+                
+        node_distances.append(distance)
+        
+        # Get display name
+        if node in project_tree and "short_name" in project_tree[node]:
+            display_name = project_tree[node]["short_name"]
+        else:
+            display_name = node.split("/")[-1] if "/" in node else node
+
+        node_text.append(f'{display_name}')
+        hover_text.append(project_tree[node]["long_name"])
+
+    max_distance = max(node_distances) if node_distances else 0
+    # Reverse the distances to get the distance from the root node
+    node_distances = [max_distance - d for d in node_distances]
+
+    # Create node trace with styling based on node distances
     node_trace = go.Scatter(
         x=node_x,
         y=node_y,
         mode='markers+text',
         hoverinfo='text',
+        hovertext=hover_text,
         marker=dict(
             showscale=False,
             colorscale='ice',
-            size=10,
-            line_width=2,
+            color=node_distances,
+            size=[10 + 20 * (d / max_distance) if max_distance > 0 else 20 for d in node_distances],
+            line=dict(width=2, color='rgb(0, 0, 0)'),
         ),
+        text=node_text,
         textfont=dict(
             family='Arial',
-            size=16,
+            size=[8 + 10 * (d / max_distance) if max_distance > 0 else 14 for d in node_distances],
             color='#000000'
         ),
         textposition='top center',
     )
 
-    node_distances = []
-    node_text = []
-    for node in G.nodes():
-        distance = 0
-        current_node = node
-        while project_tree[current_node]["parent"] is not None:
-            distance += 1
-            current_node = project_tree[current_node]["parent"]
-        node_distances.append(distance)
-        node_text.append(f'{node}')
-
-    max_distance = max(node_distances)
-    # Reverse the distances to get the distance from the root node
-    node_distances = [max_distance - d for d in node_distances]
-
-    node_trace.marker.color = node_distances
-    node_trace.marker.line.color = 'rgb(0, 0, 0)'
-    node_trace.text = node_text
-
-    marker_sizes = [10 + 30 * (d / max_distance) for d in node_distances] # Marker size based on distance, larger for nodes closer to the root
-    node_trace.marker.size = marker_sizes
-
-    text_sizes = [8 + 10 * (d / max_distance) for d in node_distances] # Text size based on distance, smaller for nodes further away
-    node_trace.textfont.size = text_sizes
-
+    # Create the figure
     fig = go.Figure(data=[edge_trace, node_trace],
-                    layout=go.Layout(
-                        showlegend=False,
-                        hovermode='closest',
-                        margin=dict(b=0,l=0,r=0,t=0),
-                        height=800,  # Set the figure height here
-                        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                        clickmode='event+select'  # Enable click events
-                    )
-                    )
-    
-    # # Display the chart and capture click events
-    # chart = st.plotly_chart(fig, use_container_width=True, key="network_chart")
-    
-    # Add expander for click instructions
-    with st.expander("How to use the network diagram"):
-        st.markdown("""
-        - Click on any node to highlight it and all its parent nodes
-        - The highlighted path shows the connection from the selected node to the root
-        - Each click will update the highlighted path
-        """)
-    
-    # Create a container for the highlighted path information
+                layout=go.Layout(
+                    showlegend=False,
+                    hovermode='closest',
+                    margin=dict(b=0,l=0,r=0,t=0),
+                    height=height,
+                    xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                    yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                    clickmode='event+select'
+                )
+                )
+        
+    # Create containers for the highlighted path information and chart
     highlight_container = st.empty()
+    chart_container = st.container()
     
     # Initialize session state for highlighted node if not exists
     if 'highlighted_node' not in st.session_state:
         st.session_state.highlighted_node = None
     
-    # Create a container for the chart that we'll reuse
-    chart_container = st.container()
-    
     selected_model_name = None
-    selected_node_children = set()  # Using a set instead of a list
 
-    # Function to recursively get all children
-    def get_all_children(node, parent_path="", visited=None):
-        if visited is None:
-            visited = set()
-        
-        # Protect against circular references
-        if node in visited:
-            return []
-        
-        visited.add(node)
-        results = []
-        
-        if node in project_tree and "children" in project_tree[node]:
-            current_path = f"{parent_path}/{node}" if parent_path else node
-            
-            # If this node has no children, it's a leaf node
-            if not project_tree[node]["children"]:
-                return [current_path]
-                
-            # Otherwise, get children of each child
-            for child in project_tree[node]["children"]:
-                child_results = get_all_children(child, current_path, visited)
-                results.extend(child_results)
-                
-        return results
-
-    # Check if there's a highlighted node from previous interaction
+    # Handle highlighted node from previous interaction
     if st.session_state.highlighted_node and st.session_state.highlighted_node in project_tree:
-        # Get the selected node from session state
         selected_node = st.session_state.highlighted_node
         
         # Generate highlighted path
@@ -179,23 +237,13 @@ def create_network_graph(project_tree):
             path_nodes.append(current)
             current = project_tree[current]["parent"]
         
-        selected_model_name = '/'.join(reversed(path_nodes))
-        
-        # Get all descendants of the selected node
-        if "children" in project_tree[selected_node]:
-            direct_children = project_tree[selected_node]["children"]
-            
-            # Get recursive children for each direct child
-            for child in direct_children:
-                child_paths = get_all_children(child, "", None)
-                # Use update instead of extend for sets
-                selected_node_children.update(child_paths)
+        selected_model_name = selected_node
         
         # Update the info display
+        display_path = '/'.join([project_tree[node].get("short_name", node.split("/")[-1]) for node in reversed(path_nodes)])
         highlight_container.markdown(f"""
         **Selected Model**  
-        {selected_model_name}
-        
+        {display_path}
         """)
         
         # Create highlighted path elements
@@ -212,7 +260,7 @@ def create_network_graph(project_tree):
             highlighted_edge_x.extend([x0, x1, None])
             highlighted_edge_y.extend([y0, y1, None])
         
-        # Create highlighted edge trace
+        # Create highlighted traces
         highlighted_edge_trace = go.Scatter(
             x=highlighted_edge_x,
             y=highlighted_edge_y,
@@ -221,7 +269,6 @@ def create_network_graph(project_tree):
             mode='lines'
         )
         
-        # Create highlighted node trace
         highlighted_node_x = [pos[node][0] for node in path_nodes]
         highlighted_node_y = [pos[node][1] for node in path_nodes]
         
@@ -235,40 +282,45 @@ def create_network_graph(project_tree):
                 size=15,
                 line=dict(width=2, color='darkred')
             ),
-            text=path_nodes
+            text=[project_tree[node].get("short_name", node.split("/")[-1]) for node in path_nodes]
         )
         
-        # Create a new figure with the original data plus highlighted elements
-        display_fig = go.Figure(data=[edge_trace, node_trace, highlighted_edge_trace, highlighted_node_trace],
-                        layout=fig.layout)
+        # Create a new figure with highlighting
+        display_fig = go.Figure(
+            data=[edge_trace, node_trace, highlighted_edge_trace, highlighted_node_trace],
+            layout=fig.layout
+        )
     else:
         # Use the original figure if no highlights
         display_fig = fig
     
-    # Use Streamlit's native click detection on the displayed figure
+    # Use Streamlit's plotly_events to handle click interactions
     with chart_container:
-        selected_points = plotly_events(display_fig, click_event=True, override_height=800)
+        selected_points = plotly_events(display_fig, click_event=True, override_height=height)
     
-    # Process any new clicks
+    # Process new clicks
     if selected_points:
-        # Get the point index from the selected point
-        point_index = selected_points[0]["pointIndex"]
+        point_index = selected_points[0].get("pointIndex")
         
         if point_index is not None and point_index < len(node_names):
-            # Update session state with the newly selected node
+            # Update session state with newly selected node
             st.session_state.highlighted_node = node_names[point_index]
-            # Force a rerun to display the updated chart
             st.rerun()
     
-    selected_node_children = list(selected_node_children)
-
-    # Append the selected model name to the names in the list of children
-    for i in range(len(selected_node_children)):
-        selected_node_children[i] = f"{selected_model_name}/{selected_node_children[i]}"
+    # Get direct children of the selected model - your new implementation
+    selected_node_children = []
+    if selected_model_name:
+        for key, value in project_tree.items():
+            if value['parent'] is not None:
+                if selected_model_name in value['parent']:
+                    # Check if the child has versions
+                    if value["version_count"] > 0:
+                        selected_node_children.append(key)
 
     return selected_model_name, selected_node_children
 
-@st.cache_data
+# @st.cache_data(ttl='5minutes')
+@st.cache_data()
 def get_project_data():
     print(f'get_project_data(models, client, project_id)')
     
@@ -276,20 +328,24 @@ def get_project_data():
 
     # Create a dictionary to store the project data
     project_tree = {}
-
-    # Get the versions of all models in the project
+    
+    # First pass: Add all models to the tree
     for model in models:
-        print(f'model: {model.name}')
         id = model.id
         long_name = model.name
         short_name = model.name.split("/")[-1]
-        parent = model.name.split("/")[-2]
+        parent = '/'.join(model.name.split("/")[:-1]) if "/" in model.name else None
+        team_name = model.name.split("/")[1].capitalize() if len(model.name.split("/")) > 1 else "Root"
+
         versions = client.version.get_versions(model_id=model.id, project_id=project_id, limit=100).items
-        # Get the number of versions
         version_count = len(versions)
-
+        
+        if version_count == 0:
+            # Skip models with no versions
+            print(f"Skipping model {long_name} with no versions")
+            continue
+        
         version_data = {}
-
         for version in versions:
             version_data[version.id] = {
                 "createdAt": version.createdAt,
@@ -297,83 +353,129 @@ def get_project_data():
                 "sourceApplication": version.sourceApplication,
             }
 
-        for index, node_name in enumerate(long_name.split('/')):
-            # print(f'node_name: {node_name}, index: {index}')
-            if index == 0:
-                parent = None
-            else:
-                parent = long_name.split('/')[index - 1]
-
-            # Add the node to the project tree
-            if node_name not in project_tree:
-                project_tree[node_name] = {
-                    "parent": parent,
-                    "children": [],
-                    "id": id,
-                    "version_count": version_count,
-                    "version_data": version_data,
-                    "long_name": long_name,
-                    "short_name": short_name,
-                }
+        # Add or update the model in the project tree
+        project_tree[long_name] = {
+            "parent": parent if parent else None,
+            "children": project_tree.get(long_name, {}).get("children", []),
+            "id": id,
+            "version_count": version_count,
+            "version_data": version_data,
+            "long_name": long_name,
+            "short_name": short_name,
+            "team_name": team_name
+        }
+    
+    # Second pass: Ensure all parents exist and add children
+    all_nodes = list(project_tree.keys())
+    for node_name in all_nodes:
+        node = project_tree[node_name]
+        parent_name = node["parent"]
+        
+        if parent_name and parent_name not in project_tree:
+            # Create a placeholder parent node with minimal information
+            project_tree[parent_name] = {
+                "parent": '/'.join(parent_name.split("/")[:-1]) if "/" in parent_name else None,
+                "children": [],
+                "id": None,  # We don't have this information
+                "version_count": 0,
+                "version_data": {},
+                "long_name": parent_name,
+                "short_name": parent_name.split("/")[-1] if "/" in parent_name else parent_name,
+                "team_name": parent_name.split("/")[1].capitalize() if len(parent_name) > 1 else "Root"
+            }
+        
+        # Add this node as a child to its parent
+        if parent_name:
+            if node_name not in project_tree[parent_name]["children"]:
+                project_tree[parent_name]["children"].append(node_name)
+    
+    # Second pass: Create necessary parent nodes that don't exist as actual models
+    for node_name in list(project_tree.keys()):  # Use a copy of keys to safely modify dict
+        node = project_tree[node_name]
+        current_parent = node["parent"]
+        
+        # Create parent nodes all the way up to root if needed
+        while current_parent and current_parent not in project_tree:
+            print(f"Creating missing parent: {current_parent}")
+            parent_parts = current_parent.split("/")
+            parent_of_parent = '/'.join(parent_parts[:-1]) if len(parent_parts) > 1 else None
+            parent_short_name = parent_parts[-1]
             
-            # Add the child node to the parent node
-            if parent is not None and parent in project_tree:
-                project_tree[parent]["children"].append(node_name)
-            else:
-                project_tree[parent] = {
-                    "parent": None,
-                    "children": [node_name],
-                    "id": id,
-                    "version_count": version_count,
-                    "version_data": version_data,
-                    "long_name": long_name,
-                    "short_name": short_name,
-                }
+            # Create the parent node
+            project_tree[current_parent] = {
+                "parent": parent_of_parent,
+                "children": [],
+                "id": None,
+                "version_count": 0,
+                "version_data": {},
+                "long_name": current_parent,
+                "short_name": parent_short_name,
+                "team_name": parent_parts[1].capitalize() if len(parent_parts) > 1 else "Root"
+            }
+            
+            # Move up to the next parent
+            current_parent = parent_of_parent
 
+    # Third pass: Find the root nodes (nodes with no parent) and set their parent to None
+    root_nodes = []
+    for node_name, node in project_tree.items():
+        if node["parent"] is None or node["parent"] == "":
+            root_nodes.append(node_name)
+            
+    # If we have more than one root, create a single project root
+    if len(root_nodes) > 1:
+        project_root_name = "project_root"
+        project_tree[project_root_name] = {
+            "parent": None,
+            "children": root_nodes,
+            "id": None,
+            "version_count": 0,
+            "version_data": {},
+            "long_name": project_root_name,
+            "short_name": "Project Root",
+            "team_name": "Root"
+        }
+        
+        # Update the former root nodes to point to the new project root
+        for node_name in root_nodes:
+            project_tree[node_name]["parent"] = project_root_name
+    
+    # Fourth pass: Ensure all parent references are valid
+    for node_name, node in project_tree.items():
+        if node["parent"] and node["parent"] not in project_tree:
+            # If the parent doesn't exist, set it to None
+            node["parent"] = None
+
+    # Debug output
+    print("\nProject Tree Parent Links:")
+    for node_name, node in project_tree.items():
+        parent = node["parent"]
+        if parent:
+            if parent not in project_tree:
+                print(f"WARNING: {node_name} has parent {parent} that doesn't exist in tree!")
+            else:
+                print(f"{node_name} → {parent}")
+        else:
+            print(f"{node_name} (ROOT)")
 
     return project_tree, project_id
 
-def create_test_tree():
-    test_project_tree = {}
-
-    test_project_tree['project'] = {
-        "parent": None,
-        "children": ['team_0', 'team_1', 'team_2']
-    }
-    test_project_tree['team_0'] = {
-        "parent": 'project',
-        "children": ['model_0', 'model_1']
-    }
-    test_project_tree['team_1'] = {
-        "parent": 'project',
-        "children": ['model_2']
-    }
-    test_project_tree['team_2'] = {
-        "parent": 'project',
-        "children": ['model_3']
-    }
-    test_project_tree['model_0'] = {
-        "parent": 'team_0',
-        "children": []
-    }
-    test_project_tree['model_1'] = {
-        "parent": 'team_0',
-        "children": []
-    }
-    test_project_tree['model_2'] = {
-        "parent": 'team_1',
-        "children": []
-    }
-    test_project_tree['model_3'] = {
-        "parent": 'team_2',
-        "children": []
-    }
-
-    return test_project_tree
-
 def run(container=None):
+    default_speckle_viewer_height = 600
+
     # Get the project data
     project_tree, project_id = get_project_data()
+
+    # for key, value in project_tree.items():
+    #     print(f'key: {key}')
+    #     print(f'children: {value["children"]}')
+    #     print(f'parent: {value["parent"]}')
+    #     # print(f'value: {value}')
+    #     print()
+    #     pass
+
+    # # Debug print
+    # pprint(project_tree)
 
     left_margin, content_container, right_margin = get_content_container_columns()
     with content_container:
@@ -382,52 +484,43 @@ def run(container=None):
 
         with container:
             # Create tabs for the dashboard
-            model_inspector_tab, overall_statistics_tab = st.tabs(["Model Inspector", "Overall Project Statistics"])
+            model_inspector_tab, overall_statistics_tab, metric_analysis_tab, dashboard_metrics_tab = \
+                st.tabs(["Model Inspector", "Overall Project Statistics", "Metric Analysis", "Dashboard Analytics"])
 
             with model_inspector_tab:
+                st.write('This tab allows you to explore the project tree and select models for analysis.')
 
                 # Create the network diagram
                 selected_model_name, selected_node_children = create_network_graph(project_tree)
 
+                # Sort the children by their long name
+                selected_node_children.sort()
+
+                # print()
+                # # Debug print
+                # print(f"Selected Model Name: {selected_model_name}")
+                # print(f"Selected Node Children: {selected_node_children}")
+
                 if selected_model_name is None:
                     st.write("No model selected.")
                 else:
-                    # cleaned_node_children = []
-                    # # Remove selected_model_name that are not in the project tree long names
-                    # all_long_names = [value["long_name"] for value in project_tree.values()]
-                    # for name in selected_node_children:
-                    #     if name in all_long_names:
-                    #         cleaned_node_children.append(name)
-                    # selected_node_children = cleaned_node_children
+                    if len(selected_node_children) == 0:
+                        st.write("No child models available for this node.")
+                        single_tab = st.container()
+                        combined_tab = None
+                    else:
+                        st.write(f'The selected node has {len(selected_node_children)} child model(s)')
+                        combined_tab, single_tab = st.tabs([
+                            "Analyze all Child Models Combined", 
+                            "Analyze a Single Child Model"
+                        ])
 
-                    # cleaned_node_children = []
-                    # # Remove any selected_node_children that have no versions
-                    # for name in selected_node_children:
-                    #     # Get the project tree entry for the long name
-                    #     for key, value in project_tree.items():
-                    #         if value["long_name"] == name:
-                    #             # Check if the version count is greater than 0
-                    #             if value["version_count"] > 0:
-                    #                 cleaned_node_children.append(name)
-                    #             break
-                    # selected_node_children = cleaned_node_children
 
-                    selected_analysis_mode = 'Analyze all Child Models Combined'
-                    default_analysis_index = 1
-                    if len(selected_node_children) > 0:
-                        st.write(f'There are {len(selected_node_children)} child models of {selected_model_name}')
-                        # Add a radio button to select a Child Model or View a Combined Model of all children
-                        selected_analysis_mode = st.radio(
-                            "Select Analysis Mode",
-                            ("Analyze a Single Child Model", 
-                            "Analyze all Child Models Combined"),
-                            index=default_analysis_index
-                        )
-
-                    if selected_analysis_mode == "Analyze a Single Child Model":
-                        # Create a dropdown to select a model from the children
-                        selected_child_name = st.selectbox(f'**Select a child model to analyze, there is/are {len(selected_node_children)}**', selected_node_children)
-                        selected_model_name = selected_child_name
+                    with single_tab:
+                        if len(selected_node_children) != 0:
+                            # Create a dropdown to select a model from the children
+                            selected_child_name = st.selectbox(f'**Select a child model to analyze, there is/are {len(selected_node_children)}**', selected_node_children)
+                            selected_model_name = selected_child_name
 
                         # Get the model ID from the selected model name
                         # Check the long name of the model
@@ -437,18 +530,21 @@ def run(container=None):
                             if value["long_name"] == selected_model_name:
                                 selected_model_id = value["id"]
                                 version_data = value["version_data"]
+                                print(f'version_data: {version_data}')
                                 break
 
-                        # Create a dropdown to select a version from the selected model
                         selected_version_id = st.selectbox(f"Select a version, there is/are {len(version_data)}", list(version_data.keys()), format_func=lambda x: version_data[x]["createdAt"])
                         
+                        
+                        attribute_extraction.run_from_version_id(version_id=selected_version_id, model_id=selected_model_id)
+
                         # Create two columns for the speckle viewer and the version data
                         viewer_col, version_data_col = st.columns([1, 1])
                         with viewer_col:
                             # Create a Speckle Viewer
                             st.subheader("Speckle Viewer")
                             speckle_model_id = selected_model_id + '@' + selected_version_id
-                            display_speckle_viewer(container=viewer_col, project_id=project_id, model_id=speckle_model_id, header_text='Selected Model')
+                            display_speckle_viewer(container=viewer_col, project_id=project_id, model_id=speckle_model_id, header_text='Selected Model', height=default_speckle_viewer_height)
 
                         with version_data_col:
                             # Display the version data
@@ -570,345 +666,731 @@ def run(container=None):
                         else:
                             metrics_col3.metric("Most Active Day", "No data")
 
-                    elif selected_analysis_mode == "Analyze all Child Models Combined":
-                        viewer_col, version_data_col = st.columns([1, 1])
-                        # Combine all child model ids for the speckle viewer
-                        child_model_ids = []
-                        latest_version_data_per_model = {}
-                        all_version_data_per_model = {}
-                        for child in selected_node_children:
-                            # Get the model ID from the selected model name
-                            # Check the long name of the model
-                            for key, value in project_tree.items():
-                                if value["long_name"] == child:
-                                    child_model_ids.append(value["id"])
-                                    # Get the latest version data
-                                    latest_version_data = None
-                                    soonest_date = None
-                                    for version_id, version_info in value["version_data"].items():
-                                        if latest_version_data is None or version_info["createdAt"] < soonest_date:
-                                            latest_version_data = version_info
-                                            soonest_date = version_info["createdAt"]
-                                    latest_version_data_per_model[child] = latest_version_data
-                                    all_version_data_per_model[child] = value["version_data"]
-                                    break
+                    if combined_tab is not None:
+                        with combined_tab:
+                            viewer_col, version_data_col = st.columns([1, 1])
+                            # Combine all child model ids for the speckle viewer
+                            child_model_ids = []
+                            latest_version_data_per_model = {}
+                            all_version_data_per_model = {}
+                            for child in selected_node_children:
+                                # Get the model ID from the selected model name
+                                # Check the long name of the model
+                                for key, value in project_tree.items():
+                                    if value["long_name"] == child:
+                                        child_model_ids.append(value["id"])
+                                        # Get the latest version data
+                                        latest_version_data = None
+                                        soonest_date = None
+                                        for version_id, version_info in value["version_data"].items():
+                                            if latest_version_data is None or version_info["createdAt"] < soonest_date:
+                                                latest_version_data = version_info
+                                                soonest_date = version_info["createdAt"]
+                                        latest_version_data_per_model[child] = latest_version_data
+                                        all_version_data_per_model[child] = value["version_data"]
+                                        break
 
-                        combined_model_id = ','.join(child_model_ids)
+                            combined_model_id = ','.join(child_model_ids)
 
-                        with viewer_col:
-                            # Create a Speckle Viewer
-                            st.subheader("Speckle Viewer")
-                            speckle_model_id = combined_model_id
-                            height = 200 * len(child_model_ids)
-                            display_speckle_viewer(
-                                                    container=viewer_col, 
-                                                    project_id=project_id, 
-                                                    model_id=speckle_model_id, 
-                                                    is_transparent=False,
-                                                    hide_controls=False,
-                                                    hide_selection_info=False,
-                                                    no_scroll=False,
-                                                    height=height,
-                                                    header_text='Combined Model',
-                                                )
+                            with viewer_col:
+                                # Create a Speckle Viewer
+                                st.subheader("Speckle Viewer")
+                                speckle_model_id = combined_model_id
+                                height = min(max(50 * len(child_model_ids), default_speckle_viewer_height), 1000)
+                                display_speckle_viewer(
+                                                        container=viewer_col, 
+                                                        project_id=project_id, 
+                                                        model_id=speckle_model_id, 
+                                                        is_transparent=False,
+                                                        hide_controls=False,
+                                                        hide_selection_info=False,
+                                                        no_scroll=False,
+                                                        height=height,
+                                                        header_text='Combined Model',
+                                                    )
 
 
-                        with version_data_col:
-                            # Display the version data
-                            st.subheader("Latest Version Data")
+                            with version_data_col:
+                                # Display the version data
+                                st.subheader("Latest Version Data")
 
-                            for child, version_info in latest_version_data_per_model.items():
-                                st.markdown(f"**Latest Version for {child}:**")
-                                st.markdown(f"**Created By:** {version_info['authorUser'].name}")
-                                st.markdown(f"**Created At:** {version_info['createdAt'].strftime('%Y-%m-%d %H:%M:%S %Z')}")
-                                st.markdown(f"**Source Application:** {version_info['sourceApplication']}")
-                                st.markdown("---")
+                                for child, version_info in latest_version_data_per_model.items():
+                                    with st.expander(f"**Latest Version for {child}:**"):
+                                        st.markdown(f"**Created By:** {version_info['authorUser'].name}")
+                                        st.markdown(f"**Created At:** {version_info['createdAt'].strftime('%Y-%m-%d %H:%M:%S %Z')}")
+                                        st.markdown(f"**Source Application:** {version_info['sourceApplication']}")
 
-                        st.header("Combined Model Data:")
-                        
-                        # Create a timeline of all version data with a different color for each model
-                        total_version_count = sum(len(value) for value in all_version_data_per_model.values())
-                        st.subheader(f'Timeline for {total_version_count} version(s) across {len(all_version_data_per_model)} models')
-
-                        # Create a dataframe to store all version data
-                        all_versions_df = pd.DataFrame()
-
-                        # Process each model's versions and add them to the dataframe
-                        for child_model, version_data in all_version_data_per_model.items():
-                            # Create a dataframe for this model's versions
-                            model_df = pd.DataFrame.from_dict(version_data, orient='index')
-                            # Add model name column
-                            model_df['model_name'] = child_model
-                            # Convert timestamps to datetime
-                            model_df['createdAt'] = pd.to_datetime(model_df['createdAt'])
-                            # Extract author name from authorUser object
-                            model_df['author_name'] = model_df['authorUser'].apply(lambda x: x.name)
-                            # Add to the combined dataframe
-                            all_versions_df = pd.concat([all_versions_df, model_df])
-
-                        # Sort by creation date
-                        all_versions_df = all_versions_df.sort_values(by='createdAt')
-
-                        height = max(7 * total_version_count, 200)
-
-                        # Create a timeline showing version commits by model
-                        fig = px.scatter(all_versions_df, 
-                                        x='createdAt', 
-                                        y='model_name',
-                                        color='model_name',
-                                        hover_data=['sourceApplication', 'author_name'],  # Use author_name instead of authorUser
-                                        labels={'createdAt': 'Date', 'model_name': 'Model Name', 'author_name': 'Author'},
-                                        height=height)
-
-                        # Improve the visualization
-                        fig.update_traces(marker=dict(size=12, opacity=0.8, line=dict(width=1, color='black')))
-                        fig.update_layout(
-                            xaxis_title="Version Creation Date",
-                            yaxis_title="Model",
-                            legend_title="Models",
-                            font_family="Roboto Mono",
-                            font_color="#2c3e50",
-                            plot_bgcolor='rgba(240,240,240,0.2)',
-                            hovermode='closest',
-                            showlegend=False,
-                        )
-
-                        # Add connecting lines for each model to better visualize the sequence
-                        for model_name in all_versions_df['model_name'].unique():
-                            model_data = all_versions_df[all_versions_df['model_name'] == model_name].sort_values('createdAt')
+                            st.header("Combined Model Data:")
                             
-                            fig.add_trace(go.Scatter(
-                                x=model_data['createdAt'],
-                                y=[model_name] * len(model_data),
-                                mode='lines',
-                                line=dict(width=1.5, dash='dot'),
+                            # Create a timeline of all version data with a different color for each model
+                            total_version_count = sum(len(value) for value in all_version_data_per_model.values())
+                            st.subheader(f'Timeline for {total_version_count} version(s) across {len(all_version_data_per_model)} models')
+
+                            # Create a dataframe to store all version data
+                            all_versions_df = pd.DataFrame()
+
+                            # Process each model's versions and add them to the dataframe
+                            for child_model, version_data in all_version_data_per_model.items():
+                                # Create a dataframe for this model's versions
+                                model_df = pd.DataFrame.from_dict(version_data, orient='index')
+                                # Add model name column
+                                model_df['model_name'] = child_model
+                                # Convert timestamps to datetime
+                                model_df['createdAt'] = pd.to_datetime(model_df['createdAt'])
+                                # Extract author name from authorUser object
+                                model_df['author_name'] = model_df['authorUser'].apply(lambda x: x.name)
+                                # Add to the combined dataframe
+                                all_versions_df = pd.concat([all_versions_df, model_df])
+
+                            # Sort by creation date
+                            all_versions_df = all_versions_df.sort_values(by='createdAt')
+
+                            height = min(800, max(150 + 7 * total_version_count, 200))
+
+                            # Create a timeline showing version commits by model
+                            fig = px.scatter(all_versions_df, 
+                                            x='createdAt', 
+                                            y='model_name',
+                                            color='model_name',
+                                            hover_data=['sourceApplication', 'author_name'],  # Use author_name instead of authorUser
+                                            labels={'createdAt': 'Date', 'model_name': 'Model Name', 'author_name': 'Author'},
+                                            height=height)
+
+                            # Improve the visualization
+                            fig.update_traces(marker=dict(size=12, opacity=0.8, line=dict(width=1, color='black')))
+                            fig.update_layout(
+                                xaxis_title="Version Creation Date",
+                                yaxis_title="Model",
+                                legend_title="Models",
+                                font_family="Roboto Mono",
+                                font_color="#2c3e50",
+                                plot_bgcolor='rgba(240,240,240,0.2)',
+                                hovermode='closest',
                                 showlegend=False,
-                                opacity=0.7,
-                                hoverinfo='skip'
-                            ))
-
-                        # Show the chart
-                        st.plotly_chart(fig, use_container_width=True)
-
-                        # Create a pie chart of the contributors in a column
-                        # Create a pie chart of the Source Applications in a column
-                        contributor_col, source_application_col = st.columns([1, 1])
-                        with contributor_col:
-                            st.subheader("Model Contributors")
-                            # Get the contributors from the version data
-                            contributors = all_versions_df['authorUser'].apply(lambda x: x.name).value_counts().reset_index()
-                            contributors.columns = ['Contributor', 'Count']
-                            # Create a pie chart of the contributors
-                            fig = px.pie(contributors, names='Contributor', values='Count', hole=0.5)
-                            fig.update_layout(
-                                showlegend=True,
-                                margin=dict(l=1, r=1, t=1, b=1),
-                                height=200,
-                                font_family="Roboto Mono",
-                                font_color="#2c3e50"
                             )
-                            fig.update_traces(marker=dict(line=dict(color='#000000', width=2)))
+
+                            # Add connecting lines for each model to better visualize the sequence
+                            for model_name in all_versions_df['model_name'].unique():
+                                model_data = all_versions_df[all_versions_df['model_name'] == model_name].sort_values('createdAt')
+                                
+                                fig.add_trace(go.Scatter(
+                                    x=model_data['createdAt'],
+                                    y=[model_name] * len(model_data),
+                                    mode='lines',
+                                    line=dict(width=1.5, dash='dot'),
+                                    showlegend=False,
+                                    opacity=0.7,
+                                    hoverinfo='skip'
+                                ))
+
                             # Show the chart
-                            contributor_col.plotly_chart(fig, use_container_width=True)
-                        with source_application_col:
-                            st.subheader("Model Source Applications")
-                            # Get the source applications from the version data
-                            source_applications = all_versions_df['sourceApplication'].value_counts().reset_index()
-                            source_applications.columns = ['Source Application', 'Count']
-                            # Create a pie chart of the source applications
-                            fig = px.pie(source_applications, names='Source Application', values='Count', hole=0.5)
-                            fig.update_layout(
-                                showlegend=True,
-                                margin=dict(l=1, r=1, t=1, b=1),
-                                height=200,
-                                font_family="Roboto Mono",
-                                font_color="#2c3e50"
-                            )
-                            fig.update_traces(marker=dict(line=dict(color='#000000', width=2)))
-                            # Show the chart
-                            source_application_col.plotly_chart(fig, use_container_width=True)
+                            st.plotly_chart(fig, use_container_width=True)
 
-                        # Add information about version frequency
-                        st.markdown("### Version Frequency Analysis")
-                        versions_per_day = all_versions_df.set_index('createdAt').groupby(pd.Grouper(freq='D')).size()
-                        versions_per_day = versions_per_day[versions_per_day > 0]  # Only days with versions
+                            # Create a pie chart of the contributors in a column
+                            # Create a pie chart of the Source Applications in a column
+                            contributor_col, source_application_col = st.columns([1, 1])
+                            with contributor_col:
+                                st.subheader("Model Contributors")
+                                # Get the contributors from the version data
+                                contributors = all_versions_df['authorUser'].apply(lambda x: x.name).value_counts().reset_index()
+                                contributors.columns = ['Contributor', 'Count']
+                                # Create a pie chart of the contributors
+                                fig = px.pie(contributors, names='Contributor', values='Count', hole=0.5)
+                                fig.update_layout(
+                                    showlegend=True,
+                                    margin=dict(l=1, r=1, t=1, b=1),
+                                    height=200,
+                                    font_family="Roboto Mono",
+                                    font_color="#2c3e50"
+                                )
+                                fig.update_traces(marker=dict(line=dict(color='#000000', width=2)))
+                                # Show the chart
+                                contributor_col.plotly_chart(fig, use_container_width=True)
+                            with source_application_col:
+                                st.subheader("Model Source Applications")
+                                # Get the source applications from the version data
+                                source_applications = all_versions_df['sourceApplication'].value_counts().reset_index()
+                                source_applications.columns = ['Source Application', 'Count']
+                                # Create a pie chart of the source applications
+                                fig = px.pie(source_applications, names='Source Application', values='Count', hole=0.5)
+                                fig.update_layout(
+                                    showlegend=True,
+                                    margin=dict(l=1, r=1, t=1, b=1),
+                                    height=200,
+                                    font_family="Roboto Mono",
+                                    font_color="#2c3e50"
+                                )
+                                fig.update_traces(marker=dict(line=dict(color='#000000', width=2)))
+                                # Show the chart
+                                source_application_col.plotly_chart(fig, use_container_width=True)
 
-                        active_days = len(versions_per_day)
-                        total_days = (all_versions_df['createdAt'].max() - all_versions_df['createdAt'].min()).days + 1
-                        avg_versions_per_active_day = versions_per_day.mean()
+                            # Add information about version frequency
+                            st.markdown("### Version Frequency Analysis")
+                            versions_per_day = all_versions_df.set_index('createdAt').groupby(pd.Grouper(freq='D')).size()
+                            versions_per_day = versions_per_day[versions_per_day > 0]  # Only days with versions
 
-                        metrics_col1, metrics_col2, metrics_col3 = st.columns(3)
-                        metrics_col1.metric("Active Days", f"{active_days}/{total_days} days")
-                        metrics_col2.metric("Average Versions per Active Day", f"{avg_versions_per_active_day:.2f}")
-                        metrics_col3.metric("Most Active Day", f"{versions_per_day.idxmax().strftime('%Y-%m-%d')} ({versions_per_day.max()} versions)")
+                            active_days = len(versions_per_day)
+                            total_days = (all_versions_df['createdAt'].max() - all_versions_df['createdAt'].min()).days + 1
+                            avg_versions_per_active_day = versions_per_day.mean()
 
-def show(container, client, project, models, versions, verbose=False):
-    with container:
-        st.subheader("Statistics")
+                            metrics_col1, metrics_col2, metrics_col3 = st.columns(3)
+                            metrics_col1.metric("Active Days", f"{active_days}/{total_days} days")
+                            metrics_col2.metric("Average Versions per Active Day", f"{avg_versions_per_active_day:.2f}")
+                            metrics_col3.metric("Most Active Day", f"{versions_per_day.idxmax().strftime('%Y-%m-%d')} ({versions_per_day.max()} versions)")
 
-        # Columns for Cards
-        modelCol, versionCol, connectorCol, contributorCol = st.columns(4)
+            with overall_statistics_tab:
+                st.write('This tab shows the overall statistics of the entire project')
 
-        #DEFINITIONS
-        #create a definition to convert your list to markdown
-        def listToMarkdown(list, column):
-            list = ["- " + i +  "\n" for i in list]
-            list = "".join(list)
-            return column.markdown(list)
+                # Create a timeline of all the version data with a different color for each team
+                timeline_data = []
+                for model in project_tree.values():
+                    for version in model["version_data"].values():
+                        created_at = version["createdAt"]
+                        team_name = model["team_name"]
 
-        #Model Card 💳
-        modelCol.metric(label = "Number of Models in Project", value= len(models))
-        #branch names as markdown list
-        modelNames = [m.name for m in models]
-        # listToMarkdown(modelNames, modelCol)
+                        timeline_data.append({
+                            "createdAt": created_at,
+                            "team_name": team_name,
+                        })
+                #COMMIT PANDAS TABLE
+                st.subheader("Activity Timeline")
+                
+                # Convert timeline_data to pandas DataFrame
+                timeline_df = pd.DataFrame(timeline_data)
+                
+                # Convert the createdAt column to datetime
+                timeline_df['createdAt'] = pd.to_datetime(timeline_df['createdAt'])
+                
+                # Group by date and team, count occurrences
+                timeline_df['date'] = timeline_df['createdAt'].dt.date
+                timeline_grouped = timeline_df.groupby(['date', 'team_name']).size().reset_index(name='count')
+                
+                # Create line chart with a line for each team
+                fig = px.line(
+                    timeline_grouped, 
+                    x='date', 
+                    y='count', 
+                    color='team_name',
+                    markers=True,
+                    labels={'date': 'Date', 'count': 'Number of Versions', 'team_name': 'Team'}
+                )
+                
+                # Improve styling
+                fig.update_layout(
+                    showlegend=True,
+                    legend=dict(
+                        orientation="h",
+                        yanchor="bottom",
+                        y=1.02,
+                        xanchor="right",
+                        x=0.8
+                    ),
+                    legend_title='Teams',
+                    margin=dict(l=1, r=1, t=10, b=1),
+                    height=300,
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    font_family="Roboto Mono",
+                    font_color="#2c3e50",
+                    hovermode='closest',
+                    hoverlabel=dict(
+                        bgcolor="white",
+                        font_size=12,
+                        font_family="Roboto Mono",
+                        font_color="#2c3e50",
+                    ),
+                )
+                
+                # Add hover information
+                fig.update_traces(
+                    hovertemplate='<b>%{x}</b><br>Team: %{customdata}<br>Versions: %{y}<extra></extra>'
+                )
+                
+                # Add team name as custom data for hover info
+                fig.update_traces(customdata=timeline_grouped['team_name'])
+                
+                # Show Chart
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Add metrics for overall statistics
+                st.subheader("Overall Project Statistics")
+                # Get the total number of models that have versions
+                total_models = sum(1 for model in project_tree.values() if model["version_count"] > 0)
+                # Get the total number of versions
+                total_versions = sum(model["version_count"] for model in project_tree.values())
+                # Get the total number of contributors
+                total_contributors = len(set(version["authorUser"].name for model in project_tree.values() for version in model["version_data"].values()))
+                # Get the total number of source applications
+                total_source_applications = len(set(version["sourceApplication"] for model in project_tree.values() for version in model["version_data"].values()))
+                
+                # Get the active days
+                all_versions_df = pd.DataFrame()
+                for model in project_tree.values():
+                    for version in model["version_data"].values():
+                        all_versions_df = pd.concat([all_versions_df, pd.DataFrame([{
+                            "createdAt": version["createdAt"],
+                            "authorUser": version["authorUser"],
+                            "sourceApplication": version["sourceApplication"],
+                        }])], ignore_index=True)
+                all_versions_df['createdAt'] = pd.to_datetime(all_versions_df['createdAt'])
+                all_versions_df['date'] = all_versions_df['createdAt'].dt.date
+                all_versions_df['count'] = 1
+                active_days = all_versions_df.groupby('date').size().reset_index(name='count')
+                active_days = len(active_days[active_days['count'] > 0])
+                total_days = (all_versions_df['createdAt'].max() - all_versions_df['createdAt'].min()).days + 1
+                avg_versions_per_active_day = all_versions_df.groupby('date').size().mean()
+                # Create metrics
+                metrics_col1, metrics_col2, metrics_col3, metrics_col4 = st.columns(4)
+                metrics_col1.metric("Total Models", total_models)
+                metrics_col2.metric("Total Versions", total_versions)
+                metrics_col3.metric("Total Contributors", total_contributors)
+                metrics_col4.metric("Total Source Applications", total_source_applications)
+                metrics_col5, metrics_col6, metrics_col7 = st.columns(3)
+                metrics_col5.metric("Active Days", f"{active_days}/{total_days} days")
+                metrics_col6.metric("Average Versions per Active Day", f"{avg_versions_per_active_day:.2f}")
+                if active_days > 0:
+                    most_active_day = all_versions_df.groupby('date').size().idxmax()
+                    most_active_count = all_versions_df.groupby('date').size().max()
+                    metrics_col7.metric("Most Active Day", f"{most_active_day.strftime('%Y-%m-%d')} ({most_active_count} versions)")
+                else:
+                    metrics_col7.metric("Most Active Day", "No data")
+                
 
-        #Version Card 💳
-        versionCol.metric(label = "Number of Versions in Selected Model", value= len(versions))
+                pie_height = 300
+                contributer_col, source_application_col = st.columns([1, 1])
+                with contributer_col:
+                    # Create a pie chart of all the project contributors
+                    st.subheader("Project Contributors")
+                    # Get the contributors from the version data
+                    all_contributors = []
+                    for model in project_tree.values():
+                        for version in model["version_data"].values():
+                            all_contributors.append(version["authorUser"].name)
+                    all_contributors = pd.Series(all_contributors).value_counts().reset_index()
+                    all_contributors.columns = ['Contributor', 'Count']
 
-        def get_all_versions_in_project(project):
-            all_versions = []
-            for model in project.models.items:
-                versions = client.version.get_versions(model_id=model.id, project_id=project.id, limit=100).items
-                all_versions.extend(versions)
-            return all_versions
+                    # Update 'Contributor' column to include the percentage
+                    all_contributors['Percentage'] = (all_contributors['Count'] / all_contributors['Count'].sum()) * 100
+                    all_contributors['Percentage Contributor'] = all_contributors['Percentage'].round(2).astype(str) + "% " + all_contributors['Contributor']
 
-        #Connector Card 💳
-        #connector list
-        all_versions_in_project = get_all_versions_in_project(project)
-        connectorList = [v.sourceApplication for v in all_versions_in_project]
-        #number of connectors
-        connectorCol.metric(label="Number of Connectors in Project", value= len(dict.fromkeys(connectorList)))
-        #get connector names
-        connectorNames = list(dict.fromkeys(connectorList))
-        #convert it to markdown list
-        listToMarkdown(connectorNames, connectorCol)
+                    # Create a pie chart of the contributors
+                    fig = px.pie(all_contributors, names='Percentage Contributor', values='Count', hole=0.5)
+                    fig.update_layout(
+                        showlegend=True,
+                        legend_title="Contributors",
+                        margin=dict(l=1, r=1, t=1, b=1),
+                        height=pie_height,
+                        font_family="Roboto Mono",
+                        font_color="#2c3e50"
+                    )
+                    fig.update_traces(marker=dict(line=dict(color='#000000', width=2)))
+                    # Show the chart
+                    st.plotly_chart(fig, use_container_width=True)
 
-        def get_all_coillaborators_in_project(project):
-            all_collaborators = []
-            for model in project.models.items:
-                versions = client.version.get_versions(model_id=model.id, project_id=project.id, limit=100).items
-                for version in versions:
-                    all_collaborators.append(version.authorUser)
-            return all_collaborators
+                    # Add a celebration message for the most active contributor
+                    most_active_contributor = all_contributors.iloc[0]['Contributor']
+                    most_active_contributor_count = all_contributors.iloc[0]['Count']
+                    st.markdown(f"**Most Active Contributor: {most_active_contributor}** with {most_active_contributor_count} contributions!")
 
-        #Contributor Card 💳
-        all_collaborators = get_all_coillaborators_in_project(project)
-        #unique contributor names
-        contributorNames = list(dict.fromkeys([col.name for col in all_collaborators]))
-        contributorCol.metric(label = "Number of Contributors to Project", value= len(contributorNames))
-        #convert it to markdown list
-        listToMarkdown(contributorNames,contributorCol)
+                with source_application_col:
+                    # Create a pie chart of all the project source applications
+                    st.subheader("Project Source Applications")
+                    # Get the source applications from the version data
+                    all_source_applications = []
+                    for model in project_tree.values():
+                        for version in model["version_data"].values():
+                            all_source_applications.append(version["sourceApplication"])
+                    all_source_applications = pd.Series(all_source_applications).value_counts().reset_index()
+                    all_source_applications.columns = ['Source Application', 'Count']
 
-        #COLUMNS FOR CHARTS
-        connector_graph_col, collaborator_graph_col = st.columns([1,1])
+                    # Update 'Source Application' column to include the percentage
+                    all_source_applications['Percentage'] = (all_source_applications['Count'] / all_source_applications['Count'].sum()) * 100
+                    all_source_applications['Percentage Source Application'] = all_source_applications['Percentage'].round(2).astype(str) + "% " + all_source_applications['Source Application']
 
-        #model GRAPH 📊
-        #model count dataframe
-        model_names = []
-        version_counts = []
-        for model in models:
-            model_names.append(model.name)
-            version_count = len(client.version.get_versions(model_id=model.id, project_id=project.id, limit=100).items)
-            # print(f'Model: {model.name} - Version count: {version_count}\n')
-            version_counts.append(version_count)
+                    # Create a pie chart of the source applications
+                    fig = px.pie(all_source_applications, names='Percentage Source Application', values='Count', hole=0.5)
+                    fig.update_layout(
+                        showlegend=True,
+                        legend_title="Source Applications",
+                        margin=dict(l=1, r=1, t=1, b=1),
+                        height=pie_height,
+                        font_family="Roboto Mono",
+                        font_color="#2c3e50"
+                    )
+                    fig.update_traces(marker=dict(line=dict(color='#000000', width=2)))
+                    # Show the chart
+                    st.plotly_chart(fig, use_container_width=True)
 
-        model_counts = pd.DataFrame([[model_name, version_count] for model_name, version_count in zip(model_names, version_counts)])
+                    # Add a celebration message for the most used source application
+                    most_used_source_application = all_source_applications.iloc[0]['Source Application']
+                    most_used_source_application_count = all_source_applications.iloc[0]['Count']
+                    st.markdown(f"**Most Used Source Application: {most_used_source_application}** with {most_used_source_application_count} contributions!")
 
-        # Create a new row for the pie charts
-        pie_col1, pie_col2 = st.columns(2)
+                version_col, model_col = st.columns([1, 1])
 
-        # CONNECTOR CHART 🍩
-        with pie_col1:
-            st.subheader("Connector Chart")
-            version_frame = pd.DataFrame.from_dict([c.dict() for c in all_versions_in_project])
-            #get apps from commits
-            apps = version_frame["sourceApplication"]
-            #reset index
-            apps = apps.value_counts().reset_index()
-            #rename columns
-            apps.columns=["app","count"]
-            #donut chart
-            fig = px.pie(apps, names=apps["app"],values=apps["count"], hole=0.5)
-            #set dimensions of the chart
-            fig.update_layout(
-                showlegend=False,
-                margin=dict(l=1, r=1, t=1, b=1),
-                height=200,
-                paper_bgcolor='rgba(0,0,0,0)',
-                font_family="Roboto Mono",
-                font_color="#2c3e50"
-            )
-            #set width of the chart so it uses column width
-            connector_graph_col.plotly_chart(fig, use_container_width=True)
+                with version_col:
+                    # Create a pie chart of all the versions by team
+                    st.subheader("Project Versions by Team")
+                    # Get the teams from the version data
+                    all_versions_by_team = []
+                    for model in project_tree.values():
+                        for version in model["version_data"].values():
+                            all_versions_by_team.append(model["team_name"])
+                    all_versions_by_team = pd.Series(all_versions_by_team).value_counts().reset_index()
+                    all_versions_by_team.columns = ['Team', 'Count']
 
-        # COLLABORATOR CHART 🍩
-        with pie_col2:
-            st.subheader("Collaborator Chart")
-            #get authors from commits
-            version_user_names = []
-            for user in version_frame["authorUser"]:
-                # # print(f'type: {type(user)}')
-                # # print(f'user: {user.get('name')}\n')
-                version_user_names.append(user.name)
+                    # Remove the "Root" team from the list
+                    all_versions_by_team = all_versions_by_team[all_versions_by_team['Team'] != 'Root']
 
-            authors = pd.DataFrame(version_user_names).value_counts().reset_index()
-            #rename columns
-            authors.columns=["author","count"]
-            #create our chart
-            authorFig = px.pie(authors, names=authors["author"], values=authors["count"],hole=0.5)
-            authorFig.update_layout(
-                showlegend=False,
-                margin=dict(l=1,r=1,t=1,b=1),
-                height=200,
-                paper_bgcolor='rgba(0,0,0,0)',  # Add transparent background
-                plot_bgcolor='rgba(0,0,0,0)',   # Add transparent plot background
-                font_family="Roboto Mono",
-                font_color="#2c3e50",
-                yaxis_scaleanchor="x",
-            )
-            collaborator_graph_col.plotly_chart(authorFig, use_container_width=True)
+                    # Update 'Team' column to include the percentage
+                    all_versions_by_team['Percentage'] = (all_versions_by_team['Count'] / all_versions_by_team['Count'].sum()) * 100
+                    all_versions_by_team['Percentage Team'] = all_versions_by_team['Percentage'].round(2).astype(str) + "% " + all_versions_by_team['Team']
 
-        st.markdown("---")
+                    # Create a pie chart of the teams
+                    fig = px.pie(all_versions_by_team, names='Percentage Team', values='Count', hole=0.5)
+                    fig.update_layout(
+                        showlegend=True,
+                        legend_title="Teams",
+                        margin=dict(l=1, r=1, t=1, b=1),
+                        height=pie_height,
+                        font_family="Roboto Mono",
+                        font_color="#2c3e50"
+                    )
+                    fig.update_traces(marker=dict(line=dict(color='#000000', width=2)))
+                    # Show the chart
+                    st.plotly_chart(fig, use_container_width=True)
 
-        #COMMIT PANDAS TABLE 🔲
-        st.subheader("Commit Activity Timeline 🕒")
-        #created at parameter to dataframe with counts
-        # # print("VALUE")
-        # # print(pd.to_datetime(commits["createdAt"]).dt.date.value_counts().reset_index())
+                with model_col:
+                    # Create a pie chart of all the models by team
+                    st.subheader("Project Models by Team")
+                    # Get the teams from the version data
+                    all_models_by_team = []
+                    for model in project_tree.values():
+                        all_models_by_team.append(model["team_name"])
+                    all_models_by_team = pd.Series(all_models_by_team).value_counts().reset_index()
+                    all_models_by_team.columns = ['Team', 'Count']
 
-        timestamps = [version.createdAt.date() for version in all_versions_in_project]
-        # print(f'timestamps: {timestamps}\n')
+                    # Remove the "Root" team from the list
+                    all_models_by_team = all_models_by_team[all_models_by_team['Team'] != 'Root']
+                    
+                    # Update 'Team' column to include the percentage
+                    all_models_by_team['Percentage'] = (all_models_by_team['Count'] / all_models_by_team['Count'].sum()) * 100
+                    all_models_by_team['Percentage Team'] = all_models_by_team['Percentage'].round(2).astype(str) + "% " + all_models_by_team['Team']
 
-        #convert to pandas dataframe and
-        # rename the column of the timestamps frame to createdAt
-        timestamps_frame = pd.DataFrame(timestamps, columns=["createdAt"]).value_counts().reset_index().sort_values("createdAt")
+                    # Create a pie chart of the teams
+                    fig = px.pie(all_models_by_team, names='Percentage Team', values='Count', hole=0.5)
+                    fig.update_layout(
+                        showlegend=True,
+                        legend_title="Teams",
+                        margin=dict(l=1, r=1, t=1, b=1),
+                        height=pie_height,
+                        font_family="Roboto Mono",
+                        font_color="#2c3e50"
+                    )
+                    fig.update_traces(marker=dict(line=dict(color='#000000', width=2)))
+                    # Show the chart
+                    st.plotly_chart(fig, use_container_width=True)
+                
+                # Add a celebration message for the most active team
+                team_data = {}
 
-        # print(f'timestamps_frame: {timestamps_frame}\n')
+                for team in all_versions_by_team['Team']:
+                    if team not in team_data:
+                        team_data[team] = {
+                            'total_count': 0,
+                            'version_count': 0,
+                            'model_count': 0
+                        }
 
-        cdate = timestamps_frame
-        #rename columns
-        cdate.columns = ["date", "count"]
-        #redate indexed dates
-        cdate["date"] = pd.to_datetime(cdate["date"]).dt.date
+                # Iterate through all_versions_by_team
+                for index, row in all_versions_by_team.iterrows():
+                    team = row['Team']
+                    count = row['Count']
+                    team_data[team]['total_count'] += count
+                    team_data[team]['version_count'] += count
+                
+                # Iterate through all_models_by_team
+                for index, row in all_models_by_team.iterrows():
+                    team = row['Team']
+                    count = row['Count']
+                    print(f'team: {team} count: {count}')
+                    team_data[team]['total_count'] += count
+                    team_data[team]['model_count'] += count
 
-        # print(f'cdate: {cdate}\n')
+                # Find the most active team
+                most_active_team = max(team_data, key=lambda x: team_data[x]['total_count'])
+                most_active_team_version_count = team_data[most_active_team]['version_count']
+                most_active_team_model_count = team_data[most_active_team]['model_count']
+                st.markdown(f"<div style='text-align: center;'><b>Most Active Team: {most_active_team}</b> with {most_active_team_version_count} versions across {most_active_team_model_count} models!</div>", unsafe_allow_html=True)
 
-        #COMMIT ACTIVITY LINE CHART📈
-        #line chart
-        fig = px.line(cdate, x=cdate["date"], y=cdate["count"], markers =True)
-        #recolor line
-        fig.update_layout(
-            showlegend=False,
-            margin=dict(l=1,r=1,t=1,b=1),
-            height=200,
-            paper_bgcolor='rgba(0,0,0,0)',  # Add transparent background
-            plot_bgcolor='rgba(0,0,0,0)',   # Add transparent plot background
-            font_family="Roboto Mono",
-            font_color="#2c3e50"
-        )
-        fig.update_traces(line_color="red")
+                # Calculate the most balanced team
+                # The most balanced team is the one with the most equal number of versions for each team member
+                balanced_data = {}
 
-        #Show Chart
-        st.plotly_chart(fig, use_container_width=True)
+                # Manually enter the number of members per team
+                team_members = {
+                    "Facade": 3,
+                    "Services": 3,
+                    "Industrial": 3,
+                    "Residential": 3,
+                    "Structure": 2
+                }
+                
+                for model in project_tree.values():
+                    for version in model["version_data"].values():
+                        team_name = model["team_name"]
+                        author_name = version["authorUser"].name
+                        if team_name not in balanced_data:
+                            balanced_data[team_name] = {}
+                        if author_name not in balanced_data[team_name]:
+                            balanced_data[team_name][author_name] = 0
+                        balanced_data[team_name][author_name] += 1
+                # Calculate the average number of versions per team member for each team
+                balanced_team_data = {}
+                for team, members in balanced_data.items():
+                    if len(members) < team_members[team]:
+                        # Add missing members with 0 versions
+                        for i in range(team_members[team] - len(members)):
+                            members[f"Member {i+1}"] = 0
+                    total_versions = sum(members.values())
 
-        #--------------------------
+
+                    balanced_team_data[team] = {
+                        'total_versions': total_versions,
+                        'members': members,
+                        'team_members': team_members[team],
+                        'team_score': 0,
+                        'goal_percentage_per_member': 0,
+                        'percentage_per_member': 0
+                    }
+
+                    percentage_per_member = []
+
+                    for member, count in members.items():
+                        percentage = (count / total_versions) * 100
+                        percentage_per_member.append(percentage)
+                    
+                    # print(f"team: {team} percentage_per_member: {percentage_per_member} total_versions: {total_versions}")
+
+                    # The best team has all of the contributers with the same percentage
+                    # The most balanced team is the one with the most equal number of versions for each team member
+                    goal_percentage_per_member = 100 / team_members[team]
+                    team_score = sum(abs(percentage - goal_percentage_per_member) for percentage in percentage_per_member)
+
+                    print(f"team: {team} team_score: {team_score} goal_percentage_per_member: {goal_percentage_per_member} percentage_per_member: {percentage_per_member}")
+                    balanced_team_data[team]['team_score'] = team_score
+                    balanced_team_data[team]['goal_percentage_per_member'] = goal_percentage_per_member
+                    balanced_team_data[team]['percentage_per_member'] = percentage_per_member
+                    balanced_team_data[team]['members'] = members
+                    balanced_team_data[team]['team_members'] = team_members[team]
+                
+                # Find the most balanced team
+                # The most balanced team is the one with the lowest team score
+                st.subheader("Most Balanced Team Members")
+                most_balanced_team = min(balanced_team_data, key=lambda x: balanced_team_data[x]['team_score'])
+                most_balanced_team_percentage_per_member = balanced_team_data[most_balanced_team]['percentage_per_member']
+                most_balanced_team_goal_percentage_per_member = balanced_team_data[most_balanced_team]['goal_percentage_per_member']
+                most_balanced_team_number_of_members = team_members[most_balanced_team]
+                most_balanced_team_score = balanced_team_data[most_balanced_team]['team_score']
+                most_balanced_team_members = balanced_team_data[most_balanced_team]['members']
+                most_balanced_team_total_versions = balanced_team_data[most_balanced_team]['total_versions']
+                st.markdown(f"<div style='text-align: center;'><b>Most Balanced Team: {most_balanced_team}</b> with {most_balanced_team_total_versions} versions across {most_balanced_team_number_of_members} members!</div>", unsafe_allow_html=True)
+                # Show the most balanced team members
+                # Create a dataframe for the most balanced team members
+                most_balanced_team_members_df = pd.DataFrame.from_dict(most_balanced_team_members, orient='index', columns=['Version Count'])
+                most_balanced_team_members_df['Percentage'] = (most_balanced_team_members_df['Version Count'] / most_balanced_team_total_versions) * 100
+                most_balanced_team_members_df['Goal Percentage'] = most_balanced_team_goal_percentage_per_member
+                most_balanced_team_members_df['Difference'] = most_balanced_team_members_df['Percentage'] - most_balanced_team_members_df['Goal Percentage']
+
+                # Format the columns
+                most_balanced_team_members_df['Version Count'] = most_balanced_team_members_df['Version Count'].astype(int)
+                most_balanced_team_members_df['Percentage'] = most_balanced_team_members_df['Percentage'].round(2).astype(str) + "%"
+                most_balanced_team_members_df['Goal Percentage'] = most_balanced_team_members_df['Goal Percentage'].round(2).astype(str) + "%"
+                most_balanced_team_members_df['Difference'] = most_balanced_team_members_df['Difference'].round(2).astype(str) + "%"
+
+                st.dataframe(most_balanced_team_members_df[['Version Count', 'Percentage', 'Goal Percentage', 'Difference']], use_container_width=True)               
+                    
+            with metric_analysis_tab:
+                # Add metric analysis here
+                st.subheader("Metric Analysis")
+                st.write("This tab is under construction. Please check back later.")
+                st.write('This tab will display all the metrics across all teams and compare them to each other')
+
+            with dashboard_metrics_tab:
+                # Add dashboard metrics here
+                st.subheader("Dashboard Analytics")
+                st.write("This tab is under construction. Please check back later.")
+                st.write('This tab will display data from the dashboard github repository')
+
+                
+# def show(container, client, project, models, versions, verbose=False):
+#     with container:
+#         st.subheader("Statistics")
+
+#         # Columns for Cards
+#         modelCol, versionCol, connectorCol, contributorCol = st.columns(4)
+
+#         #DEFINITIONS
+#         #create a definition to convert your list to markdown
+#         def listToMarkdown(list, column):
+#             list = ["- " + i +  "\n" for i in list]
+#             list = "".join(list)
+#             return column.markdown(list)
+
+#         #Model Card 💳
+#         modelCol.metric(label = "Number of Models in Project", value= len(models))
+#         #branch names as markdown list
+#         modelNames = [m.name for m in models]
+#         # listToMarkdown(modelNames, modelCol)
+
+#         #Version Card 💳
+#         versionCol.metric(label = "Number of Versions in Selected Model", value= len(versions))
+
+#         def get_all_versions_in_project(project):
+#             all_versions = []
+#             for model in project.models.items:
+#                 versions = client.version.get_versions(model_id=model.id, project_id=project.id, limit=100).items
+#                 all_versions.extend(versions)
+#             return all_versions
+            
+
+#         #Connector Card 💳
+#         #connector list
+#         all_versions_in_project = get_all_versions_in_project(project)
+#         connectorList = [v.sourceApplication for v in all_versions_in_project]
+#         #number of connectors
+#         connectorCol.metric(label="Number of Connectors in Project", value= len(dict.fromkeys(connectorList)))
+#         #get connector names
+#         connectorNames = list(dict.fromkeys(connectorList))
+#         #convert it to markdown list
+#         listToMarkdown(connectorNames, connectorCol)
+
+#         def get_all_coillaborators_in_project(project):
+#             all_collaborators = []
+#             for model in project.models.items:
+#                 versions = client.version.get_versions(model_id=model.id, project_id=project.id, limit=100).items
+#                 for version in versions:
+#                     all_collaborators.append(version.authorUser)
+#             return all_collaborators
+
+#         #Contributor Card 💳
+#         all_collaborators = get_all_coillaborators_in_project(project)
+#         #unique contributor names
+#         contributorNames = list(dict.fromkeys([col.name for col in all_collaborators]))
+#         contributorCol.metric(label = "Number of Contributors to Project", value= len(contributorNames))
+#         #convert it to markdown list
+#         listToMarkdown(contributorNames,contributorCol)
+
+#         #COLUMNS FOR CHARTS
+#         connector_graph_col, collaborator_graph_col = st.columns([1,1])
+
+#         #model GRAPH 📊
+#         #model count dataframe
+#         model_names = []
+#         version_counts = []
+#         for model in models:
+#             model_names.append(model.name)
+#             version_count = len(client.version.get_versions(model_id=model.id, project_id=project.id, limit=100).items)
+#             # print(f'Model: {model.name} - Version count: {version_count}\n')
+#             version_counts.append(version_count)
+
+#         model_counts = pd.DataFrame([[model_name, version_count] for model_name, version_count in zip(model_names, version_counts)])
+
+#         # Create a new row for the pie charts
+#         pie_col1, pie_col2 = st.columns(2)
+
+#         # CONNECTOR CHART 🍩
+#         with pie_col1:
+#             st.subheader("Connector Chart")
+#             version_frame = pd.DataFrame.from_dict([c.dict() for c in all_versions_in_project])
+#             #get apps from commits
+#             apps = version_frame["sourceApplication"]
+#             #reset index
+#             apps = apps.value_counts().reset_index()
+#             #rename columns
+#             apps.columns=["app","count"]
+#             #donut chart
+#             fig = px.pie(apps, names=apps["app"],values=apps["count"], hole=0.5)
+#             #set dimensions of the chart
+#             fig.update_layout(
+#                 showlegend=False,
+#                 margin=dict(l=1, r=1, t=1, b=1),
+#                 height=200,
+#                 paper_bgcolor='rgba(0,0,0,0)',
+#                 font_family="Roboto Mono",
+#                 font_color="#2c3e50"
+#             )
+#             #set width of the chart so it uses column width
+#             connector_graph_col.plotly_chart(fig, use_container_width=True)
+
+#         # COLLABORATOR CHART 🍩
+#         with pie_col2:
+#             st.subheader("Collaborator Chart")
+#             #get authors from commits
+#             version_user_names = []
+#             for user in version_frame["authorUser"]:
+#                 # # print(f'type: {type(user)}')
+#                 # # print(f'user: {user.get('name')}\n')
+#                 version_user_names.append(user.name)
+
+#             authors = pd.DataFrame(version_user_names).value_counts().reset_index()
+#             #rename columns
+#             authors.columns=["author","count"]
+#             #create our chart
+#             authorFig = px.pie(authors, names=authors["author"], values=authors["count"],hole=0.5)
+#             authorFig.update_layout(
+#                 showlegend=False,
+#                 margin=dict(l=1,r=1,t=1,b=1),
+#                 height=200,
+#                 paper_bgcolor='rgba(0,0,0,0)',  # Add transparent background
+#                 plot_bgcolor='rgba(0,0,0,0)',   # Add transparent plot background
+#                 font_family="Roboto Mono",
+#                 font_color="#2c3e50",
+#                 yaxis_scaleanchor="x",
+#             )
+#             collaborator_graph_col.plotly_chart(authorFig, use_container_width=True)
+
+#         st.markdown("---")
+
+#         #COMMIT PANDAS TABLE 🔲
+#         st.subheader("Commit Activity Timeline 🕒")
+#         #created at parameter to dataframe with counts
+#         # # print("VALUE")
+#         # # print(pd.to_datetime(commits["createdAt"]).dt.date.value_counts().reset_index())
+
+#         timestamps = [version.createdAt.date() for version in all_versions_in_project]
+#         # print(f'timestamps: {timestamps}\n')
+
+#         #convert to pandas dataframe and
+#         # rename the column of the timestamps frame to createdAt
+#         timestamps_frame = pd.DataFrame(timestamps, columns=["createdAt"]).value_counts().reset_index().sort_values("createdAt")
+
+#         # print(f'timestamps_frame: {timestamps_frame}\n')
+
+#         cdate = timestamps_frame
+#         #rename columns
+#         cdate.columns = ["date", "count"]
+#         #redate indexed dates
+#         cdate["date"] = pd.to_datetime(cdate["date"]).dt.date
+
+#         # print(f'cdate: {cdate}\n')
+
+#         #COMMIT ACTIVITY LINE CHART📈
+#         #line chart
+#         fig = px.line(cdate, x=cdate["date"], y=cdate["count"], markers =True)
+#         #recolor line
+#         fig.update_layout(
+#             showlegend=False,
+#             margin=dict(l=1,r=1,t=1,b=1),
+#             height=200,
+#             paper_bgcolor='rgba(0,0,0,0)',  # Add transparent background
+#             plot_bgcolor='rgba(0,0,0,0)',   # Add transparent plot background
+#             font_family="Roboto Mono",
+#             font_color="#2c3e50"
+#         )
+#         fig.update_traces(line_color="red")
+
+#         #Show Chart
+#         st.plotly_chart(fig, use_container_width=True)
+
+#         #--------------------------

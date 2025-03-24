@@ -3,6 +3,18 @@ import data_extraction.data_extractor as data_extractor
 
 from specklepy.objects.base import Base
 
+from dashboards.dashboard import setup_speckle_connection
+
+def run_from_version_id(version_id, model_id):
+    models, client, project_id = setup_speckle_connection()
+    # Get the version object from the model
+    version = client.version.get(version_id, project_id)
+
+    # Get the project object from the model
+    project = client.project.get(project_id)
+
+    # Run the extraction function with the selected version
+    run(version, client, project)
 
 def run(selected_version, client, project):
     with st.spinner("Getting geometry data..."):
@@ -11,7 +23,7 @@ def run(selected_version, client, project):
 
         # Add a toggle to show data extraction debug information
         show_extraction_debug = attribute_container.checkbox(
-            label="Show data extraction debug information for the selected version",
+            label="Show data extraction debug information for the selected version (Slow Process)",
             value=False,
             help="Toggle to show/hide data extraction debug information"
         )

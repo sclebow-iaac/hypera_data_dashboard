@@ -402,49 +402,36 @@ def display_metric(container, metric: Metric, add_text=True) -> None:
     # Display the tape diagram
     display_tape_diagram(container, metric)
 
-    # """Display a metric in the specified container."""
-    # print("DISPLAY METRIC: ", metric.title)
-
-    # # Create two columns with specified widths
-    # col1, col2 = container.columns([1, 2])  # First column is 1 part, second column is 2 parts
-
-    # # In the first column, display the image with some right margin
-    # with col1:
-    #     image_width = 400  # Set your desired width
-    #     st.markdown(f'<div style="text-align: right;">', unsafe_allow_html=True)  # Align image to the right
-    #     st.image(metric.image_path, width=image_width, use_container_width=False)
-    #     st.markdown('</div>', unsafe_allow_html=True)  # Close the div
-
-    # # In the second column, display the text with additional margin
-    # with col2:
-    #     st.markdown(f'<div style="margin-top: 20px;">', unsafe_allow_html=True)  # Add top margin
-    #     st.markdown(f"### {metric.title}")
-    #     st.latex(metric.formula_markdown)
-    #     st.markdown(metric.description)
-    #     # st.metric(metric.title, f'{metric.value:.2f}')  # Display the metric value
-    #     st.markdown('</div>', unsafe_allow_html=True)  # Close the div
-
-    # # Call the function to display circles and tape
-    # with container:
-    #     display_metric_circles_and_tape(container, metric)
-    #     for _ in range(5):
-    #         st.markdown("")
-
 def display_tape_diagram(container, metric: Metric) -> None:
+    range_center = metric.ideal_value # Center of the range
+    half_range_width = max(abs(metric.value - metric.ideal_value) * 1.2, metric.ideal_value) # Width of the range
+
+    range_start = range_center - half_range_width
+    range_end = range_center + half_range_width
+    
+    # Use a consistent marker offset adjustment relative to the gauge
+    marker_offset = 0.125
+
+    # Calculate the normalized position of the ideal value for the marker
+    normalized_ideal = (metric.ideal_value - range_start) / (range_end - range_start) - marker_offset
+
+    # Calculate the position of the current value
+    normalized_value = 0.125 + 0.75 * ((metric.value - range_start) / (half_range_width * 2)) - marker_offset
+
     fig = go.Figure(go.Indicator(
         mode="number+gauge+delta",
         gauge={
             'shape': "bullet",
-            'axis': {'range': [metric.min_value, metric.max_value]},
+            'axis': {'range': [range_start, range_end]},
             'steps': [
-                {'range': [metric.min_value, metric.ideal_value],
+                {'range': [range_start, metric.ideal_value],
                     'color': "Salmon"},
-                {'range': [metric.ideal_value, metric.max_value],
+                {'range': [metric.ideal_value, range_end],
                     'color': "PaleGreen"},
             ],
             'threshold': {
                 'line': {'color': "SteelBlue", 'width': 8},
-                'value': metric.ideal_value
+                'value': metric.ideal_value,
             },
             'bar': {'color': "Silver", },
         },
@@ -453,21 +440,64 @@ def display_tape_diagram(container, metric: Metric) -> None:
                'position': 'right', 'relative': True},
         domain={'x': [0, 1], 'y': [0, 1]},
     ),)
+    
+    # Add a text annotation for the ideal value
+    fig.add_annotation(
+        x=normalized_ideal,  # Apply offset after normalization
+        y=1.0,  # Position slightly above the chart
+        text="Ideal Value",
+        showarrow=True,
+        arrowhead=2,
+        arrowsize=1,
+        arrowwidth=2,
+        arrowcolor="SteelBlue",
+        font=dict(
+            size=12,
+            color="SteelBlue",
+        ),
+        xref="paper",
+        yref="paper",
+        ax=0,
+        ay=-25,  # Adjust the position of the arrow
+        yshift=2  # Move the text a little above the arrow
+    )
+
+    # Add a text annotation for the current value
+    fig.add_annotation(
+        x=normalized_value,  # Apply offset after normalization
+        y=0.75,  # Position slightly below the chart
+        text="Current Value",
+        showarrow=True,
+        arrowhead=2,
+        arrowsize=1,
+        arrowwidth=2,
+        arrowcolor="Salmon",
+        font=dict(
+            size=12,
+            color="Salmon",
+        ),
+        xref="paper",
+        yref="paper",
+        ax=0,
+        ay=55,  # Adjust the position of the arrow
+        yshift=-8  # Move the text a little below the arrow
+    )
 
     side_margin = 100
-    top_margin = 0
-    height = 50
+    top_margin = 30  # Increased to accommodate the annotation
+    bottom_margin = 40 # Increased to accommodate the annotation
+    height = 110      # Increased height to accommodate the annotation
     font_size = 16
 
     fig.update_layout(
         height=height,
-        margin=dict(l=side_margin, r=side_margin, t=top_margin, b=top_margin),
+        margin=dict(l=side_margin, r=side_margin, t=top_margin, b=bottom_margin),
         font=dict(size=font_size),
         paper_bgcolor='rgba(0, 0, 0, 0)',
         plot_bgcolor='rgba(0, 0, 0, 0)',
     )
     container.plotly_chart(fig)
-
+    
 def create_top_menu(teams: list[str]) -> str:
     browser_data = browser_detection_engine()
     print("Browser Data: ", browser_data)  # Debugging: Print browser data
