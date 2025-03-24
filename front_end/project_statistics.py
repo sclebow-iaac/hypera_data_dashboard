@@ -23,7 +23,7 @@ def create_network_graph(project_tree, height=800):
             - The home icon resets the zoom level to the default view
             - The pan icon lets you drag the view to explore different parts of the diagram
         """)
-        
+
         # Add controls in a row
         control_col1, control_col2 = st.columns([3, 1])
         
@@ -533,6 +533,9 @@ def run(container=None):
 
                         selected_version_id = st.selectbox(f"Select a version, there is/are {len(version_data)}", list(version_data.keys()), format_func=lambda x: version_data[x]["createdAt"])
                         
+                        
+                        attribute_extraction.run_from_version_id(selected_version_id=selected_version_id, model_id=selected_model_id)
+
                         # Create two columns for the speckle viewer and the version data
                         viewer_col, version_data_col = st.columns([1, 1])
                         with viewer_col:
