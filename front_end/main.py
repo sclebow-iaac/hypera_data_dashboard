@@ -101,29 +101,54 @@ st.markdown("""
     /* Main background */
     .stApp {
         font-family: 'Roboto Mono', sans-serif;  /* Apply font family to entire app */
+        font-size: 14px !important;  /* Base font size for the entire app */
     }
     
     /* Main container */
     .main {
         font-family: 'Roboto Mono', sans-serif;
+        font-size: 14px !important;
     }
     
     /* Headers */
     .css-10trblm, .css-qrbaxs {
         font-weight: 600;
-        font-family: 'Roboto Mono', sans-serif !important;  /* Added !important */
-    }
-    
-    /* All text elements */
-    .stMarkdown, .stText, div, span, p, h1, h2, h3 {
         font-family: 'Roboto Mono', sans-serif !important;
     }
     
+    /* All text elements */
+    .stMarkdown, .stText, div, span, p {
+        font-family: 'Roboto Mono', sans-serif !important;
+        font-size: 13px !important;
+    }
+
+    /* Header sizes */
+    h1 {
+        font-size: 28px !important;
+    }
+    
+    h2 {
+        font-size: 24px !important;
+    }
+    
+    h3 {
+        font-size: 20px !important;
+    }
+
     /* Metrics styling */
     div[data-testid="stMetricValue"] {
         padding: 1rem;
         border-radius: 0.5rem;
         box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        font-size: 16px !important;
+    }
+
+    div[data-testid="stMetricLabel"] {
+        font-size: 14px !important;
+    }
+
+    div[data-testid="stMetricDelta"] {
+        font-size: 12px !important;
     }
     
     /* Cards and containers */
@@ -138,7 +163,7 @@ st.markdown("""
         background-color: transparent;
         border: 0px solid #000000;
         padding: 0;
-        font-size: 8px;  /* Change this value to adjust font size */
+        font-size: 14px !important;  /* Changed from 8px to match overall theme */
     }
     div.stButton > button:hover {
         background-color: #ffffff;
@@ -152,7 +177,6 @@ st.markdown("""
     div.stButton > button[data-selected="true"]:hover {
         background-color: transparent;
     }
-
     
     /* Chart containers */
     div[data-testid="stPlotlyChart"] {
@@ -160,7 +184,6 @@ st.markdown("""
         padding: 1rem;
         box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
-
 
     </style>
     
