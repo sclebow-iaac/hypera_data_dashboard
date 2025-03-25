@@ -34,7 +34,7 @@ text_dict = {
     ]
 }
 
-presentation_model_id = '1f57038e9d,9c80f3fd6b,9ac13d83d5,28a2fc9516,030700a8b8,84ec1f2936,b79d56ad71,87e887a1a2'
+presentation_model_id = '29bc37af8e'
 
 def process_data(verified, team_data):
     if not verified:
