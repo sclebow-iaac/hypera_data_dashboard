@@ -4,6 +4,9 @@ import plotly.express as px
 import plotly.graph_objects as go
 import networkx as nx
 from pprint import pprint
+import requests
+import datetime
+
 from streamlit_plotly_events import plotly_events
 
 from dashboards.dashboard import *
@@ -189,7 +192,7 @@ def create_network_graph(project_tree, height=800):
         hovertext=hover_text,
         marker=dict(
             showscale=False,
-            colorscale='ice',
+            colorscale='rainbow',
             color=node_distances,
             size=[10 + 20 * (d / max_distance) if max_distance > 0 else 20 for d in node_distances],
             line=dict(width=2, color='rgb(0, 0, 0)'),
@@ -319,8 +322,8 @@ def create_network_graph(project_tree, height=800):
 
     return selected_model_name, selected_node_children
 
-# @st.cache_data(ttl='5minutes')
-@st.cache_data()
+@st.cache_data(ttl='1h')
+# @st.cache_data()
 def get_project_data():
     print(f'get_project_data(models, client, project_id)')
     
@@ -460,11 +463,146 @@ def get_project_data():
 
     return project_tree, project_id
 
+@st.cache_data(ttl='6h')
+def fetch_github_repository_data(repository="sclebow-iaac/hypera_data_dashboard", since_date=None):
+    """
+    Fetch repository data from GitHub API with no commit limit
+    
+    Parameters:
+    repository (str): Repository name in format 'owner/repo'
+    since_date (str, optional): ISO format date string (YYYY-MM-DD) to filter commits from
+    """
+    try:
+        # Base API URL
+        base_url = f"https://api.github.com/repos/{repository}"
+        
+        # Get repository info
+        repo_response = requests.get(base_url)
+        if repo_response.status_code != 200:
+            return None, f"Error fetching repository data: {repo_response.status_code}"
+        
+        repo_data = repo_response.json()
+        
+        # Get all commits with pagination
+        all_commits = []
+        page = 1
+        more_commits = True
+        
+        while more_commits:
+            # Build the commits URL with pagination and optional date filtering
+            commits_url = f"{base_url}/commits?per_page=100&page={page}"
+            if since_date:
+                # Convert date string to proper format if needed
+                if isinstance(since_date, str) and len(since_date) == 10:  # YYYY-MM-DD format
+                    since_date = f"{since_date}T00:00:00Z"
+                commits_url += f"&since={since_date}"
+            
+            # Fetch commits for current page
+            commits_response = requests.get(commits_url)
+            
+            if commits_response.status_code != 200:
+                if page == 1:
+                    return repo_data, f"Error fetching commit data: {commits_response.status_code}"
+                else:
+                    # We've already got some commits, so just break the loop
+                    break
+            
+            page_commits = commits_response.json()
+            
+            # If we got an empty list or fewer than 100 items, we've reached the end
+            if not page_commits or len(page_commits) < 100:
+                all_commits.extend(page_commits)
+                more_commits = False
+            else:
+                all_commits.extend(page_commits)
+                page += 1
+                
+            # Add a progress message every few pages
+            if page % 5 == 0:
+                print(f"Fetched {len(all_commits)} commits so far...")
+        
+        # Get contributors
+        contributors_response = requests.get(f"{base_url}/contributors")
+        if contributors_response.status_code != 200:
+            return repo_data, all_commits, f"Error fetching contributor data: {contributors_response.status_code}"
+        
+        contributors_data = contributors_response.json()
+        
+        # Get pull requests with similar pagination approach
+        all_pulls = []
+        page = 1
+        more_pulls = True
+        
+        while more_pulls:
+            pulls_url = f"{base_url}/pulls?state=all&per_page=100&page={page}"
+            pulls_response = requests.get(pulls_url)
+            
+            if pulls_response.status_code != 200:
+                if page == 1:
+                    return repo_data, all_commits, contributors_data, f"Error fetching pull request data: {pulls_response.status_code}"
+                else:
+                    break
+            
+            page_pulls = pulls_response.json()
+            
+            if not page_pulls or len(page_pulls) < 100:
+                all_pulls.extend(page_pulls)
+                more_pulls = False
+            else:
+                all_pulls.extend(page_pulls)
+                page += 1
+        
+        # If we have a since_date, filter PRs that were created after that date
+        if since_date:
+            since_datetime = pd.to_datetime(since_date)
+            all_pulls = [pr for pr in all_pulls if pd.to_datetime(pr['created_at']) >= since_datetime]
+        
+        print(f"Fetched total: {len(all_commits)} commits, {len(all_pulls)} pull requests")
+        
+        return {
+            "repository": repo_data,
+            "commits": all_commits,
+            "contributors": contributors_data,
+            "pulls": all_pulls,
+            "filter_date": since_date
+        }
+    except Exception as e:
+        return None, f"Error: {str(e)}"
+
+def check_github_rate_limit():
+    """Check GitHub API rate limit status"""
+    try:
+        response = requests.get("https://api.github.com/rate_limit")
+        if response.status_code == 200:
+            data = response.json()
+            core = data.get("resources", {}).get("core", {})
+            remaining = core.get("remaining", 0)
+            limit = core.get("limit", 0)
+            reset_time = datetime.datetime.fromtimestamp(core.get("reset", 0))
+            
+            return {
+                "remaining": remaining,
+                "limit": limit,
+                "reset_time": reset_time
+            }
+    except Exception as e:
+        return None
+    
+    return None
+
+def fetch_branch_data(repository):
+    """Fetch branch data for a repository"""
+    try:
+        response = requests.get(f"https://api.github.com/repos/{repository}/branches")
+        if response.status_code == 200:
+            return response.json()
+        return []
+    except:
+        return []
+    
 def run(container=None):
     default_speckle_viewer_height = 600
 
-    # Get the project data
-    project_tree, project_id = get_project_data()
 
     # for key, value in project_tree.items():
     #     print(f'key: {key}')
@@ -486,6 +624,9 @@ def run(container=None):
             # Create tabs for the dashboard
             model_inspector_tab, overall_statistics_tab, metric_analysis_tab, dashboard_metrics_tab = \
                 st.tabs(["Model Inspector", "Overall Project Statistics", "Metric Analysis", "Dashboard Analytics"])
+            
+            # Get the project data
+            project_tree, project_id = get_project_data()
 
             with model_inspector_tab:
                 st.write('This tab allows you to explore the project tree and select models for analysis.')
@@ -1229,180 +1370,321 @@ def run(container=None):
                 st.write('This tab will display all the metrics across all teams and compare them to each other')
 
             with dashboard_metrics_tab:
+                # Add this in the dashboard_metrics_tab section
+                rate_limit = check_github_rate_limit()
+                if rate_limit:
+                    with st.expander("GitHub API Rate Limit Status"):
+                        st.write(f"Remaining requests: {rate_limit['remaining']}/{rate_limit['limit']}")
+                        st.write(f"Reset time: {rate_limit['reset_time'].strftime('%Y-%m-%d %H:%M:%S')}")
+
                 # Add dashboard metrics here
                 st.subheader("Dashboard Analytics")
                 st.write("This tab is under construction. Please check back later.")
                 st.write('This tab will display data from the dashboard github repository')
 
+                github_url = "https://github.com/sclebow-iaac/hypera_data_dashboard"
+                forked_url = 'https://github.com/specklesystems/specklepy'
+                
+                # Create a git commit history chart
+                st.subheader("Repository Links")
 
-# def show(container, client, project, models, versions, verbose=False):
-#     with container:
-#         st.subheader("Statistics")
+                # Add links to repositories
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.markdown(f"[Dashboard GitHub Repository]({github_url})")
+                with col2:
+                    st.markdown(f"[Forked from SpecklePy Repository on 1/23/2024]({forked_url})")
+                
+                # Add repository selection
+                repository = st.selectbox(
+                    "Select Repository", 
+                    options=["sclebow-iaac/hypera_data_dashboard", "specklesystems/specklepy"],
+                    index=0
+                )
+                
+                # Add date filtering 
+                st.subheader("Filter Commits")
+                col1, col2 = st.columns(2)
 
-#         # Columns for Cards
-#         modelCol, versionCol, connectorCol, contributorCol = st.columns(4)
+                with col1:
+                    start_date = st.date_input(
+                        "Start Date", 
+                        value=datetime.date(2025, 1, 1),
+                        min_value=datetime.date(2020, 1, 1),
+                        max_value=datetime.date.today()
+                    )
 
-#         #DEFINITIONS
-#         #create a definition to convert your list to markdown
-#         def listToMarkdown(list, column):
-#             list = ["- " + i +  "\n" for i in list]
-#             list = "".join(list)
-#             return column.markdown(list)
+                with col2:
+                    end_date = st.date_input(
+                        "End Date",
+                        value=datetime.date.today(),
+                        min_value=datetime.date(2020, 1, 1),
+                        max_value=datetime.date.today()
+                    )
 
-#         #Model Card 💳
-#         modelCol.metric(label = "Number of Models in Project", value= len(models))
-#         #branch names as markdown list
-#         modelNames = [m.name for m in models]
-#         # listToMarkdown(modelNames, modelCol)
+                # Format date for API filtering - pass the selected start date to the API call
+                since_date_str = start_date.strftime('%Y-%m-%d')
 
-#         #Version Card 💳
-#         versionCol.metric(label = "Number of Versions in Selected Model", value= len(versions))
+                # Fetch GitHub data with date filtering at the API level
+                with st.spinner("Fetching repository data..."):
+                    github_data = fetch_github_repository_data(repository, since_date=since_date_str)
 
-#         def get_all_versions_in_project(project):
-#             all_versions = []
-#             for model in project.models.items:
-#                 versions = client.version.get_versions(model_id=model.id, project_id=project.id, limit=100).items
-#                 all_versions.extend(versions)
-#             return all_versions
-            
+                if isinstance(github_data, tuple) and len(github_data) > 1 and isinstance(github_data[1], str):
+                    # Show error message
+                    st.error(github_data[1])
+                else:
+                    # Extract repository metrics
+                    repo_data = github_data["repository"]
+                    commits = github_data["commits"]
+                    contributors = github_data["contributors"]
+                    pulls = github_data["pulls"]
+                    
+                    # Display repository metrics
+                    st.subheader("Repository Overview")
+                    
+                    col1, col2, col3, col4 = st.columns(4)
+                    with col1:
+                        st.metric("Stars", repo_data.get("stargazers_count", 0))
+                    with col2:
+                        st.metric("Forks", repo_data.get("forks_count", 0))
+                    with col3:
+                        st.metric("Open Issues", repo_data.get("open_issues_count", 0))
+                    with col4:
+                        st.metric("Watchers", repo_data.get("subscribers_count", 0))
+                    
+                    # Process commit data
+                    commit_df = pd.DataFrame([
+                        {
+                            "date": pd.to_datetime(commit["commit"]["author"]["date"]),
+                            "author": commit["commit"]["author"]["name"],
+                            "message": commit["commit"]["message"].split("\n")[0],  # Get first line of commit message
+                            "sha": commit["sha"][:7]  # Short SHA
+                        }
+                        for commit in commits
+                    ])
+                    
+                    if not commit_df.empty:
+                        # Format end_date with time component for proper filtering
+                        # Both values need to be in UTC for proper comparison with GitHub dates
+                        end_timestamp = pd.Timestamp(end_date).replace(hour=23, minute=59, second=59).tz_localize('UTC')
+                        
+                        # Now all dates should have matching timezone info
+                        filtered_commit_df = commit_df[commit_df["date"] <= end_timestamp]
+                        
+                        # Show stats about filtered data
+                        total_commits = len(commit_df)
+                        filtered_commits = len(filtered_commit_df)
+                        
+                        st.markdown(f"Showing **{filtered_commits}** commits out of **{total_commits}** total commits")
+                        
+                        if filtered_commit_df.empty:
+                            st.warning(f"No commits found between {start_date} and {end_date}")
+                        else:
+                            # Sort by date
+                            filtered_commit_df = filtered_commit_df.sort_values("date")
+                            
+                            # Commit history visualization
+                            st.subheader("Commit History")
+                            
+                            # Group by date to count commits per day
+                            commit_counts = filtered_commit_df.groupby(filtered_commit_df["date"].dt.date).size().reset_index()
+                            commit_counts.columns = ["date", "count"]
+                            
+                            # Create commit activity line chart
+                            fig = px.line(
+                                commit_counts, 
+                                x="date", 
+                                y="count",
+                                labels={"date": "Date", "count": "Number of Commits"},
+                                markers=True
+                            )
+                            
+                            fig.update_layout(
+                                xaxis_title="Date",
+                                yaxis_title="Number of Commits",
+                                height=300,
+                                margin=dict(l=10, r=10, t=10, b=10),
+                                hovermode="x unified"
+                            )
+                            
+                            st.plotly_chart(fig, use_container_width=True)
+                            
+                            # Create git graph visualization
+                            st.subheader("Git Commit Graph")
+                            
+                            # Create a simplified gitgraph-like visualization
+                            fig = go.Figure()
+                            
+                            # Add main branch line
+                            fig.add_trace(go.Scatter(
+                                x=filtered_commit_df["date"],
+                                y=[0] * len(filtered_commit_df),
+                                mode="lines",
+                                line=dict(color="rgba(0,0,255,0.5)", width=2),
+                                hoverinfo="skip",
+                                showlegend=False
+                            ))
+                            
+                            # Create a color mapping for authors
+                            authors = filtered_commit_df["author"].unique()
+                            color_scale = px.colors.qualitative.Plotly[:len(authors)]
+                            author_colors = dict(zip(authors, color_scale))
+                            
+                            # Add commit nodes with author-based coloring
+                            fig.add_trace(go.Scatter(
+                                x=filtered_commit_df["date"],
+                                y=[0] * len(filtered_commit_df),
+                                mode="markers+text",
+                                marker=dict(
+                                    color=[author_colors.get(author, "blue") for author in filtered_commit_df["author"]],
+                                    size=12,
+                                    line=dict(color="darkblue", width=1)
+                                ),
+                                text=filtered_commit_df["sha"],
+                                textposition="top center",
+                                textfont=dict(size=8),
+                                hovertext=filtered_commit_df.apply(
+                                    lambda row: f"<b>{row['sha']}</b><br>" +
+                                                f"Author: {row['author']}<br>" +
+                                                f"Date: {row['date'].strftime('%Y-%m-%d %H:%M')}<br>" +
+                                                f"Message: {row['message']}",
+                                    axis=1
+                                ),
+                                hoverinfo="text",
+                                showlegend=False
+                            ))
+                            
+                            # Layout customization
+                            fig.update_layout(
+                                height=max(300, min(len(filtered_commit_df) * 15, 800)),  # Reasonable height scaling
+                                xaxis_title="Commit Date",
+                                yaxis=dict(
+                                    showticklabels=False,
+                                    showgrid=False,
+                                    zeroline=False,
+                                    range=[-1, 1]  # Fixed range for y-axis
+                                ),
+                                plot_bgcolor="rgba(240,240,240,0.2)",
+                                margin=dict(l=10, r=10, t=10, b=10),
+                                hovermode="closest"
+                            )
+                            
+                            st.plotly_chart(fig, use_container_width=True)
+                            
+                            # Add author legend
+                            st.subheader("Commit Authors")
+                            author_cols = st.columns(min(4, len(authors)))
+                            
+                            for i, (author, color) in enumerate(author_colors.items()):
+                                col_index = i % len(author_cols)
+                                with author_cols[col_index]:
+                                    st.markdown(
+                                        f"<div style='display: flex; align-items: center;'>"
+                                        f"<div style='width: 12px; height: 12px; background-color: {color}; "
+                                        f"margin-right: 8px; border-radius: 50%;'></div>"
+                                        f"{author}</div>",
+                                        unsafe_allow_html=True
+                                    )
+                            
+                            # Recent commits table
+                            st.subheader("10 Most Recent Commits")
+                            
+                            # Format commit dataframe for display
+                            display_df = filtered_commit_df.copy()
+                            display_df["date"] = display_df["date"].dt.strftime("%Y-%m-%d %H:%M")
+                            
+                            # Show the most recent 10 commits (reversed order)
+                            st.dataframe(
+                                display_df[["date", "author", "message", "sha"]].sort_values("date", ascending=False).head(10),
+                                use_container_width=True
+                            )
+                            
+                            # Contributor analysis within date range
+                            st.subheader(f"Contributor Analysis ({start_date} to {end_date})")
+                            
+                            # Calculate contributions within the filtered date range
+                            author_counts = filtered_commit_df["author"].value_counts().reset_index()
+                            author_counts.columns = ["name", "contributions"]
+                            
+                            if not author_counts.empty:
+                                # Create contributor pie chart for filtered dates
+                                fig = px.pie(
+                                    author_counts,
+                                    names="name",
+                                    values="contributions",
+                                    title="Contribution Distribution",
+                                    hole=0.4,
+                                    color_discrete_sequence=px.colors.qualitative.Plotly
+                                )
+                                
+                                fig.update_layout(
+                                    height=400,
+                                    margin=dict(l=10, r=10, t=50, b=10)
+                                )
+                                
+                                col1, col2 = st.columns([3, 2])
+                                
+                                with col1:
+                                    st.plotly_chart(fig, use_container_width=True)
+                                
+                                with col2:
+                                    # Calculate stats
+                                    total_contributors = len(author_counts)
+                                    total_commits = author_counts["contributions"].sum()
+                                    avg_commits = total_commits / total_contributors if total_contributors > 0 else 0
+                                    top_contributor = author_counts.iloc[0]["name"] if not author_counts.empty else "N/A"
+                                    top_contributions = author_counts.iloc[0]["contributions"] if not author_counts.empty else 0
+                                    
+                                    st.metric("Contributors in Period", total_contributors)
+                                    st.metric("Commits in Period", total_commits)
+                                    st.metric("Average Commits per Contributor", f"{avg_commits:.1f}")
+                                    st.metric("Top Contributor", f"{top_contributor} ({top_contributions} commits)")
+                            else:
+                                st.info("No contribution data available for the selected date range.")
 
-#         #Connector Card 💳
-#         #connector list
-#         all_versions_in_project = get_all_versions_in_project(project)
-#         connectorList = [v.sourceApplication for v in all_versions_in_project]
-#         #number of connectors
-#         connectorCol.metric(label="Number of Connectors in Project", value= len(dict.fromkeys(connectorList)))
-#         #get connector names
-#         connectorNames = list(dict.fromkeys(connectorList))
-#         #convert it to markdown list
-#         listToMarkdown(connectorNames, connectorCol)
+                    else:
+                        st.info("No commit data available for this repository.")
 
-#         def get_all_coillaborators_in_project(project):
-#             all_collaborators = []
-#             for model in project.models.items:
-#                 versions = client.version.get_versions(model_id=model.id, project_id=project.id, limit=100).items
-#                 for version in versions:
-#                     all_collaborators.append(version.authorUser)
-#             return all_collaborators
+                    # Get branch data
+                    branches = fetch_branch_data(repository)
+                    branch_names = [branch["name"] for branch in branches]
 
-#         #Contributor Card 💳
-#         all_collaborators = get_all_coillaborators_in_project(project)
-#         #unique contributor names
-#         contributorNames = list(dict.fromkeys([col.name for col in all_collaborators]))
-#         contributorCol.metric(label = "Number of Contributors to Project", value= len(contributorNames))
-#         #convert it to markdown list
-#         listToMarkdown(contributorNames,contributorCol)
-
-#         #COLUMNS FOR CHARTS
-#         connector_graph_col, collaborator_graph_col = st.columns([1,1])
-
-#         #model GRAPH 📊
-#         #model count dataframe
-#         model_names = []
-#         version_counts = []
-#         for model in models:
-#             model_names.append(model.name)
-#             version_count = len(client.version.get_versions(model_id=model.id, project_id=project.id, limit=100).items)
-#             # print(f'Model: {model.name} - Version count: {version_count}\n')
-#             version_counts.append(version_count)
-
-#         model_counts = pd.DataFrame([[model_name, version_count] for model_name, version_count in zip(model_names, version_counts)])
-
-#         # Create a new row for the pie charts
-#         pie_col1, pie_col2 = st.columns(2)
-
-#         # CONNECTOR CHART 🍩
-#         with pie_col1:
-#             st.subheader("Connector Chart")
-#             version_frame = pd.DataFrame.from_dict([c.dict() for c in all_versions_in_project])
-#             #get apps from commits
-#             apps = version_frame["sourceApplication"]
-#             #reset index
-#             apps = apps.value_counts().reset_index()
-#             #rename columns
-#             apps.columns=["app","count"]
-#             #donut chart
-#             fig = px.pie(apps, names=apps["app"],values=apps["count"], hole=0.5)
-#             #set dimensions of the chart
-#             fig.update_layout(
-#                 showlegend=False,
-#                 margin=dict(l=1, r=1, t=1, b=1),
-#                 height=200,
-#                 paper_bgcolor='rgba(0,0,0,0)',
-#                 font_family="Roboto Mono",
-#                 font_color="#2c3e50"
-#             )
-#             #set width of the chart so it uses column width
-#             connector_graph_col.plotly_chart(fig, use_container_width=True)
-
-#         # COLLABORATOR CHART 🍩
-#         with pie_col2:
-#             st.subheader("Collaborator Chart")
-#             #get authors from commits
-#             version_user_names = []
-#             for user in version_frame["authorUser"]:
-#                 # # print(f'type: {type(user)}')
-#                 # # print(f'user: {user.get('name')}\n')
-#                 version_user_names.append(user.name)
-
-#             authors = pd.DataFrame(version_user_names).value_counts().reset_index()
-#             #rename columns
-#             authors.columns=["author","count"]
-#             #create our chart
-#             authorFig = px.pie(authors, names=authors["author"], values=authors["count"],hole=0.5)
-#             authorFig.update_layout(
-#                 showlegend=False,
-#                 margin=dict(l=1,r=1,t=1,b=1),
-#                 height=200,
-#                 paper_bgcolor='rgba(0,0,0,0)',  # Add transparent background
-#                 plot_bgcolor='rgba(0,0,0,0)',   # Add transparent plot background
-#                 font_family="Roboto Mono",
-#                 font_color="#2c3e50",
-#                 yaxis_scaleanchor="x",
-#             )
-#             collaborator_graph_col.plotly_chart(authorFig, use_container_width=True)
-
-#         st.markdown("---")
-
-#         #COMMIT PANDAS TABLE 🔲
-#         st.subheader("Commit Activity Timeline 🕒")
-#         #created at parameter to dataframe with counts
-#         # # print("VALUE")
-#         # # print(pd.to_datetime(commits["createdAt"]).dt.date.value_counts().reset_index())
-
-#         timestamps = [version.createdAt.date() for version in all_versions_in_project]
-#         # print(f'timestamps: {timestamps}\n')
-
-#         #convert to pandas dataframe and
-#         # rename the column of the timestamps frame to createdAt
-#         timestamps_frame = pd.DataFrame(timestamps, columns=["createdAt"]).value_counts().reset_index().sort_values("createdAt")
-
-#         # print(f'timestamps_frame: {timestamps_frame}\n')
-
-#         cdate = timestamps_frame
-#         #rename columns
-#         cdate.columns = ["date", "count"]
-#         #redate indexed dates
-#         cdate["date"] = pd.to_datetime(cdate["date"]).dt.date
-
-#         # print(f'cdate: {cdate}\n')
-
-#         #COMMIT ACTIVITY LINE CHART📈
-#         #line chart
-#         fig = px.line(cdate, x=cdate["date"], y=cdate["count"], markers =True)
-#         #recolor line
-#         fig.update_layout(
-#             showlegend=False,
-#             margin=dict(l=1,r=1,t=1,b=1),
-#             height=200,
-#             paper_bgcolor='rgba(0,0,0,0)',  # Add transparent background
-#             plot_bgcolor='rgba(0,0,0,0)',   # Add transparent plot background
-#             font_family="Roboto Mono",
-#             font_color="#2c3e50"
-#         )
-#         fig.update_traces(line_color="red")
-
-#         #Show Chart
-#         st.plotly_chart(fig, use_container_width=True)
-
-#         #--------------------------
+                    # Display branch information
+                    st.subheader("Repository Branches")
+                    st.write(f"This repository has {len(branches)} branches:")
+                    st.write(", ".join(branch_names))
+                    
+                    # Add commit distribution by weekday
+                    if not commit_df.empty and not filtered_commit_df.empty:
+                        st.subheader("Commit Distribution by Weekday")
+                        
+                        # Add weekday to filtered dataframe
+                        filtered_commit_df['weekday'] = filtered_commit_df['date'].dt.day_name()
+                        
+                        # Count commits by weekday
+                        weekday_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+                        weekday_counts = filtered_commit_df['weekday'].value_counts().reindex(weekday_order).reset_index()
+                        weekday_counts.columns = ['Weekday', 'Count']
+                        
+                        # Create weekday distribution chart
+                        fig = px.bar(
+                            weekday_counts,
+                            x='Weekday',
+                            y='Count',
+                            color='Count',
+                            color_continuous_scale='Viridis',
+                            labels={'Count': 'Number of Commits', 'Weekday': 'Day of Week'}
+                        )
+                        
+                        fig.update_layout(
+                            xaxis_title="Day of Week",
+                            yaxis_title="Number of Commits",
+                            height=300,
+                            margin=dict(l=10, r=10, t=10, b=10)
+                        )
+                        
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                        # Calculate which day had the most commits
+                        most_active_day = weekday_counts.loc[weekday_counts['Count'].idxmax()]
+                        st.markdown(f"**Most active day of the week:** {most_active_day['Weekday']} with {most_active_day['Count']} commits")
