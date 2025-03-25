@@ -352,14 +352,15 @@ def run():
                     xaxis_title="Date",
                     yaxis_title="Number of Commits",
                     height=400,
-                    margin=dict(l=10, r=10, t=10, b=10),
+                    margin=dict(l=10, r=40, t=10, b=10),
                     hovermode="x unified",
                     legend=dict(
                         orientation="h",
                         yanchor="top",
                         y=1.1,
                         xanchor="center",
-                        x=0.5
+                        x=0.5,
+                        title="Authors",
                     )
                 )
                 
