@@ -1,6 +1,218 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
+import networkx as nx
+from pprint import pprint
+
+from dashboards.dashboard import *
+
+def create_network_graph(project_tree):
+    print(f'create_network_graph(project_tree)')
+
+    # with st.spinner("Creating network graph..."):
+    G = nx.Graph() # Create a new graph
+
+    for key, value in project_tree.items():
+        print(f"Key: {key}, Value: {value}")
+        
+        if value["parent"] is not None:
+            G.add_edge(key, value["parent"])
+
+    # k = 1 / math.sqrt(len(G.nodes())) * 3 # optimal distance between nodes
+    # pos = nx.spring_layout(G, k=k, seed=0)  # positions for all nodes
+
+    pos = nx.kamada_kawai_layout(G)  # positions for all nodes
+
+    edge_x = []
+    edge_y = []
+    for edge in G.edges():
+        x0, y0 = pos[edge[0]]
+        x1, y1 = pos[edge[1]]
+        edge_x.append(x0)
+        edge_x.append(x1)
+        edge_x.append(None)
+        edge_y.append(y0)
+        edge_y.append(y1)
+        edge_y.append(None)
+
+    edge_trace = go.Scatter(
+        x=edge_x,
+        y=edge_y,
+        line=dict(width=0.5, color='#888'),
+        hoverinfo='none',
+        mode='lines'
+    )
+
+    node_x = []
+    node_y = []
+    for node in G.nodes():
+        x, y = pos[node]
+        node_x.append(x)
+        node_y.append(y)
+
+    node_trace = go.Scatter(
+        x=node_x,
+        y=node_y,
+        mode='markers+text',
+        hoverinfo='text',
+        marker=dict(
+            showscale=False,
+            colorscale='YlGnBu',
+            size=10,
+            line_width=2,
+        ),
+        textfont=dict(
+            family='Arial',
+            size=16,
+            color='#000000'
+        ),
+        textposition='top center',
+    )
+
+    node_distances = []
+    node_text = []
+    for node in G.nodes():
+        distance = 0
+        current_node = node
+        while project_tree[current_node]["parent"] is not None:
+            distance += 1
+            current_node = project_tree[current_node]["parent"]
+        node_distances.append(distance)
+        node_text.append(f'{node}')
+
+    max_distance = max(node_distances)
+    # Reverse the distances to get the distance from the root node
+    node_distances = [max_distance - d for d in node_distances]
+
+    node_trace.marker.color = node_distances
+    node_trace.marker.line.color = 'rgb(0, 0, 0)'
+    node_trace.text = node_text
+
+    marker_sizes = [10 + 30 * (d / max_distance) for d in node_distances] # Marker size based on distance, larger for nodes closer to the root
+    node_trace.marker.size = marker_sizes
+
+    text_sizes = [5 + 10 * (d / max_distance) for d in node_distances] # Text size based on distance, smaller for nodes further away
+    node_trace.textfont.size = text_sizes
+
+    fig = go.Figure(data=[edge_trace, node_trace],
+                    layout=go.Layout(
+                        showlegend=False,
+                        hovermode='closest',
+                        margin=dict(b=0,l=0,r=0,t=0),
+                        height=700,  # Set the figure height here
+                        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
+                    )
+                    )
+        
+    st.plotly_chart(fig, use_container_width=True) 
+
+    return None
+
+@st.cache_data
+def get_project_data():
+    print(f'get_project_data(models, client, project_id)')
+    
+    models, client, project_id = setup_speckle_connection()
+
+    # Create a dictionary to store the project data
+    project_data = {}
+    project_tree = {}
+        
+    # Get the versions of all models in the project
+    for model in models:
+        print(f'model: {model.name}')
+        id = model.id
+        long_name = model.name
+        short_name = model.name.split("/")[-1]
+        parent = model.name.split("/")[-2]
+        versions = client.version.get_versions(model_id=model.id, project_id=project_id, limit=100).items
+        # Get the number of versions
+        version_count = len(versions)
+
+        # print(f'id: {id}, long_name: {long_name}, short_name: {short_name}, parent: {parent}, version_count: {version_count}') 
+
+        # print(long_name.split('/'))
+
+        for index, node_name in enumerate(long_name.split('/')):
+            # print(f'node_name: {node_name}, index: {index}')
+            if index == 0:
+                parent = None
+            else:
+                parent = long_name.split('/')[index - 1]
+
+            # Add the node to the project tree
+            if node_name not in project_tree:
+                project_tree[node_name] = {
+                    "parent": parent,
+                    "children": []
+                }
+            
+            # Add the child node to the parent node
+            if parent is not None and parent in project_tree:
+                project_tree[parent]["children"].append(node_name)
+            else:
+                project_tree[parent] = {
+                    "parent": None,
+                    "children": [node_name]
+                }
+
+
+    return project_tree
+
+def build_network_diagram(models):
+    pass
+
+def create_test_tree():
+    test_project_tree = {}
+
+    test_project_tree['project'] = {
+        "parent": None,
+        "children": ['team_0', 'team_1', 'team_2']
+    }
+    test_project_tree['team_0'] = {
+        "parent": 'project',
+        "children": ['model_0', 'model_1']
+    }
+    test_project_tree['team_1'] = {
+        "parent": 'project',
+        "children": ['model_2']
+    }
+    test_project_tree['team_2'] = {
+        "parent": 'project',
+        "children": ['model_3']
+    }
+    test_project_tree['model_0'] = {
+        "parent": 'team_0',
+        "children": []
+    }
+    test_project_tree['model_1'] = {
+        "parent": 'team_0',
+        "children": []
+    }
+    test_project_tree['model_2'] = {
+        "parent": 'team_1',
+        "children": []
+    }
+    test_project_tree['model_3'] = {
+        "parent": 'team_2',
+        "children": []
+    }
+
+    return test_project_tree
+
+def run():
+    # Setup speckle connection
+    
+
+    # Get the project data
+    project_tree = get_project_data()
+    # Create the network diagram
+    # project_tree = create_test_tree() # for testing
+    network_diagram = create_network_graph(project_tree)
+    # Display the network diagram
+    # st.plotly_chart(network_diagram, use_container_width=True)
 
 def show(container, client, project, models, versions, verbose=False):
     with container:

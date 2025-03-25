@@ -85,37 +85,6 @@ def display_federated_speckle_viewer(container, project_id, height):
         height=height,
     )
 
-# Function to display the residential dashboard
-def display_residential_dashboard():
-    with dashboard_placeholder.container():
-        selected_team = "residential"  # Set the selected team or get it from user input
-        residential_dashboard.run(selected_team)  # Call the function from the residential dashboard
-
-# Function to display the service dashboard
-def display_service_dashboard():
-    with dashboard_placeholder.container():
-        selected_team = "service"  # Set the selected team
-        service_dashboard.run(selected_team)  # Only pass selected_team
-
-# Function to display the structure dashboard
-def display_structure_dashboard():
-    with dashboard_placeholder.container():
-        selected_team = "structure"  # Set the selected team
-        structure_dashboard.run(selected_team)  # Only pass selected_team
-
-# Function to display the industrial dashboard
-def display_industrial_dashboard():
-    with dashboard_placeholder.container():
-        selected_team = "industrial"  # Set the selected team
-        industrial_dashboard.run(selected_team)  # Only pass selected_team
-
-# Function to display the facade dashboard
-def display_facade_dashboard():
-    with dashboard_placeholder.container():
-        selected_team = "facade"  # Set the selected team
-        facade_dashboard.run(selected_team)  # Only pass selected_team
-
-
 st.markdown("""
     <style>
     /* Import Google Font */
@@ -194,7 +163,7 @@ st.markdown("""
 # selected_dashboard = st.sidebar.radio("Select Dashboard", dashboard_options)
 
 
-selected_dashboard = create_top_menu(["Main", "Residential", "Service", "Structure", "Industrial", "Facade", "Data", "SlackBot"])
+selected_dashboard = create_top_menu(["Main", "Residential", "Service", "Structure", "Industrial", "Facade", "Data", "SlackBot", 'ProjectStats'])
 
 # Create a placeholder for the dashboard content
 dashboard_placeholder = st.empty()
@@ -811,21 +780,24 @@ if selected_dashboard == "Main":
 
 
 
-        else:
-            # Display only the selected dashboard
-            if selected_dashboard == "Residential":
-                display_residential_dashboard()
-            elif selected_dashboard == "Service":
-                display_service_dashboard()
-            elif selected_dashboard == "Structure":
-                display_structure_dashboard()
-            elif selected_dashboard == "Industrial":
-                display_industrial_dashboard()
-            elif selected_dashboard == "Facade":
-                display_facade_dashboard()
-            elif selected_dashboard == "Data":
-                data_dashboard.run()
-            elif selected_dashboard == "SlackBot":
-                slack_config.run()
+else:
+    with dashboard_placeholder.container():
+        # Display only the selected dashboard
+        if selected_dashboard == "Residential":
+            residential_dashboard.run('residential')
+        elif selected_dashboard == "Service":
+            service_dashboard.run('service')
+        elif selected_dashboard == "Structure":
+            structure_dashboard.run('structure')
+        elif selected_dashboard == "Industrial":
+            industrial_dashboard.run('industrial')
+        elif selected_dashboard == "Facade":
+            facade_dashboard.run('facade')
+        elif selected_dashboard == "Data":
+            data_dashboard.run()
+        elif selected_dashboard == "SlackBot":
+            slack_config.run()
+        elif selected_dashboard == 'ProjectStats':
+            statistics.run()
 
         #--------------------------

@@ -170,6 +170,9 @@ def get_last_message_time(day_bools, time_of_day) -> datetime.datetime:
 
 # Generate Recent Project Activity Message (Markdown)
 def generate_recent_project_activity_message(day_bools, time_of_day_value) -> list[str]:
+    print('day_bools: ', day_bools) # Debugging
+    print('time_of_day_value: ', time_of_day_value) # Debugging
+
     messages = []
 
     models, client, project_id = setup_speckle_connection(models_limit=50)
@@ -395,7 +398,9 @@ def read_config_file():
         wednesday_value = process_bool(lines[5])
         thursday_value = process_bool(lines[6])
         friday_value = process_bool(lines[7])
-        time_of_day_value = lines[8].split(": ")[1]
+        saturday_value = process_bool(lines[8])
+        sunday_value = process_bool(lines[9])
+        time_of_day_value = lines[10].split(": ")[1]
 
         return {
             "recent_project_activity": recent_project_activity_value,
@@ -406,6 +411,8 @@ def read_config_file():
             "wednesday": wednesday_value,
             "thursday": thursday_value,
             "friday": friday_value,
+            "saturday": saturday_value,
+            "sunday": sunday_value,
             "time_of_day": time_of_day_value
         }
     except FileNotFoundError:
@@ -416,17 +423,21 @@ def read_config_file():
             "data_analysis": True,
             "monday": True,
             "tuesday": True,
-            "wednesday": False,
-            "thursday": False,
-            "friday": False,
+            "wednesday": True,
+            "thursday": True,
+            "friday": True,
+            "saturday": True,
+            "sunday": True,
             "time_of_day": "09:00"
         }
-
+    
 def send_message_to_slack(messages):
-    message = '\n'.join(messages)
+    if not isinstance(messages, list):
+        messages = [messages]
 
-    # Replace double asterisks with single asterisks for bold formatting
-    message = message.replace("**", "*")
+    message = '\n'.join(messages)
+    # Replace '**' with '*'
+    message = message.replace('**', '*')
 
     # Send the message to Slack
     payload = {
@@ -446,6 +457,17 @@ def send_message_to_slack(messages):
     else:
         print(f"Message sent to Slack: {message}") # Debugging
         print(f"Response from Slack: {response.text}") # Debugging
+
+    # Wait for a few seconds to avoid rate limiting
+    time.sleep(1)
+
+def write_to_log(message: str) -> None:
+    # This function writes a message to a log file 
+    try:
+        with open('front_end\slack_message_log.txt', 'a') as log_file:
+            log_file.write(f'{message}\n')
+    except Exception as e:
+        print(f'Error writing to log file: {e}')
 
 def run():
     print() # Debugging
@@ -483,19 +505,26 @@ def run():
             wednesday_bool = st.toggle("Wednesday", value=wednesday_value, key="wednesday toggle")
             thursday_bool = st.toggle("Thursday", value=thursday_value, key="thursday toggle")
             friday_bool = st.toggle("Friday", value=friday_value, key="friday toggle")
+            saturday_bool = st.toggle("Saturday", value=False, key="saturday toggle")
+            sunday_bool = st.toggle("Sunday", value=False, key="sunday toggle")
 
             day_bools = {
                 "Monday": monday_bool,
                 "Tuesday": tuesday_bool,
                 "Wednesday": wednesday_bool,
                 "Thursday": thursday_bool,
-                "Friday": friday_bool
+                "Friday": friday_bool,
+                "Saturday": saturday_bool,
+                "Sunday": sunday_bool
             }
 
         # time_of_day_container = st.container()
         with time_of_day_container:
             st.header("Time of Day")
             # Add a time picker for selecting the time of day
+            # print(f'time_of_day_value: {time_of_day_value}') # Debugging
+            time_of_day_value = datetime.datetime.strptime(time_of_day_value, "%H:%M:%S").time()
+            # print(f'time_of_day_value: {time_of_day_value}') # Debugging
             time_of_day = st.time_input("Select Time of Day (GMT)", value=time_of_day_value, key="time of day picker")
         
         if st.button("Save Configuration", use_container_width=True):
@@ -511,6 +540,8 @@ def run():
                 f.write(f"Wednesday: {int(wednesday_bool)}\n")
                 f.write(f"Thursday: {int(thursday_bool)}\n")
                 f.write(f"Friday: {int(friday_bool)}\n")
+                f.write(f"Saturday: {int(saturday_bool)}\n")
+                f.write(f"Sunday: {int(sunday_bool)}\n")
                 f.write(f"Time of Day: {time_of_day}\n")
                 
             st.success("Configuration saved successfully! Reload Page to see changes.")
