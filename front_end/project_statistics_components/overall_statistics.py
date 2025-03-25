@@ -2,6 +2,14 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
+team_colors = {
+    "Facade": "#982062",
+    "Services": "#343779",
+    "Industrial": "#ffa646",
+    "Residential": "#33a9ac",
+    "Structure": "#f86041"
+}
+
 def create_activity_timeline(timeline_data):
     # Create and display the activity timeline chart.
     st.subheader("Activity Timeline")
@@ -23,7 +31,8 @@ def create_activity_timeline(timeline_data):
         y='count', 
         color='team_name',
         markers=True,
-        labels={'date': 'Date', 'count': 'Number of Versions', 'team_name': 'Team'}
+        labels={'date': 'Date', 'count': 'Number of Versions', 'team_name': 'Team'},
+        color_discrete_map=team_colors  # Add this line to use team colors
     )
     
     # Improve styling
@@ -225,6 +234,7 @@ def create_team_charts(project_tree, pie_height=300, bar_height=600):
         text='version_count',
         category_orders={'team_name': team_order},
         range_y=[0, all_models['version_count'].max() * 1.1],  # Add some space above the highest bar
+        color_discrete_map=team_colors  # Add this line to use team colors
     )
     fig.update_traces(texttemplate='%{text}', textposition='outside')
     fig.update_layout(
@@ -232,10 +242,10 @@ def create_team_charts(project_tree, pie_height=300, bar_height=600):
         legend_title="Teams",
         legend=dict(
             orientation="h",
-            yanchor="top",
-            y=1.5,
-            xanchor="left",
-            x=0.2
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=0.8
         ),
         margin=dict(l=1, r=50, t=1, b=1),
         height=bar_height,
@@ -273,7 +283,8 @@ def create_team_charts(project_tree, pie_height=300, bar_height=600):
         all_versions_by_team['Percentage Team'] = all_versions_by_team['Percentage'].round(2).astype(str) + "% " + all_versions_by_team['Team']
 
         # Create a pie chart of the teams
-        fig = px.pie(all_versions_by_team, names='Percentage Team', values='Count', hole=0.5)
+        fig = px.pie(all_versions_by_team, names='Percentage Team', values='Count', hole=0.5, 
+                     color='Team', color_discrete_map=team_colors)  # Add color parameters
         fig.update_layout(
             showlegend=True,
             legend_title="Teams",
@@ -304,7 +315,8 @@ def create_team_charts(project_tree, pie_height=300, bar_height=600):
         all_models_by_team['Percentage Team'] = all_models_by_team['Percentage'].round(2).astype(str) + "% " + all_models_by_team['Team']
 
         # Create a pie chart of the teams
-        fig = px.pie(all_models_by_team, names='Percentage Team', values='Count', hole=0.5)
+        fig = px.pie(all_models_by_team, names='Percentage Team', values='Count', hole=0.5,
+                     color='Team', color_discrete_map=team_colors)  # Add color parameters
         fig.update_layout(
             showlegend=True,
             legend_title="Teams",
