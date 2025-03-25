@@ -711,7 +711,7 @@ with content_container:
             # Add the overall statistics
             st.markdown('## Overall Project Statistics')
             project_tree, project_id = statistics.get_project_data()
-            overall_statistics.run_basic(project_tree, project_id)
+            overall_statistics.run(project_tree, project_id, detail_level='basic')
 
             # Add the federated Speckle viewer
             st.markdown('---')

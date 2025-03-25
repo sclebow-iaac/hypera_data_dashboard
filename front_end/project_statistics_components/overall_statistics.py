@@ -2,12 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-def run(project_tree, project_id):
-    run_basic(project_tree, project_id)
-    st.markdown('---')
-    run_detailed(project_tree, project_id)
-
-def run_basic(project_tree, project_id):
+def run(project_tree, project_id, detail_level='all'):
     # Create a timeline of all the version data with a different color for each team
     timeline_data = []
     for model in project_tree.values():
@@ -290,106 +285,107 @@ def run_basic(project_tree, project_id):
     most_active_team_model_count = team_data[most_active_team]['model_count']
     st.markdown(f"<div style='text-align: center;'><b>Most Active Team: {most_active_team}</b> with {most_active_team_version_count} versions across {most_active_team_model_count} models!</div>", unsafe_allow_html=True)
 
-    # Calculate the most balanced team
-    # The most balanced team is the one with the most equal number of versions for each team member
-    balanced_data = {}
-
-    # Manually enter the number of members per team
-    team_members = {
-        "Facade": 3,
-        "Services": 3,
-        "Industrial": 3,
-        "Residential": 3,
-        "Structure": 2
-    }
-    
-    for model in project_tree.values():
-        for version in model["version_data"].values():
-            team_name = model["team_name"]
-            author_name = version["authorUser"].name
-            if team_name not in balanced_data:
-                balanced_data[team_name] = {}
-            if author_name not in balanced_data[team_name]:
-                balanced_data[team_name][author_name] = 0
-            balanced_data[team_name][author_name] += 1
-    # Calculate the average number of versions per team member for each team
-    balanced_team_data = {}
-    for team, members in balanced_data.items():
-        if len(members) < team_members[team]:
-            # Add missing members with 0 versions
-            for i in range(team_members[team] - len(members)):
-                members[f"Member {i+1}"] = 0
-        total_versions = sum(members.values())
-
-
-        balanced_team_data[team] = {
-            'total_versions': total_versions,
-            'members': members,
-            'team_members': team_members[team],
-            'team_score': 0,
-            'goal_percentage_per_member': 0,
-            'percentage_per_member': 0
-        }
-
-        percentage_per_member = []
-
-        for member, count in members.items():
-            percentage = (count / total_versions) * 100
-            percentage_per_member.append(percentage)
-        
-        # print(f"team: {team} percentage_per_member: {percentage_per_member} total_versions: {total_versions}")
-
-        # The best team has all of the contributers with the same percentage
+    if detail_level == 'all':
+        # Calculate the most balanced team
         # The most balanced team is the one with the most equal number of versions for each team member
-        goal_percentage_per_member = 100 / team_members[team]
-        team_score = sum(abs(percentage - goal_percentage_per_member) for percentage in percentage_per_member)
+        balanced_data = {}
 
-        print(f"team: {team} team_score: {team_score} goal_percentage_per_member: {goal_percentage_per_member} percentage_per_member: {percentage_per_member}")
-        balanced_team_data[team]['team_score'] = team_score
-        balanced_team_data[team]['goal_percentage_per_member'] = goal_percentage_per_member
-        balanced_team_data[team]['percentage_per_member'] = percentage_per_member
-        balanced_team_data[team]['members'] = members
-        balanced_team_data[team]['team_members'] = team_members[team]
-
-def run_detailed(project_tree, project_id):
-    # Find the most balanced team
-    # The most balanced team is the one with the lowest team score
-    st.subheader("Most Balanced Team Members")
-    most_balanced_team = min(balanced_team_data, key=lambda x: balanced_team_data[x]['team_score'])
-    most_balanced_team_percentage_per_member = balanced_team_data[most_balanced_team]['percentage_per_member']
-    most_balanced_team_goal_percentage_per_member = balanced_team_data[most_balanced_team]['goal_percentage_per_member']
-    most_balanced_team_number_of_members = team_members[most_balanced_team]
-    most_balanced_team_score = balanced_team_data[most_balanced_team]['team_score']
-    most_balanced_team_members = balanced_team_data[most_balanced_team]['members']
-    most_balanced_team_total_versions = balanced_team_data[most_balanced_team]['total_versions']
-    st.markdown(f"<div style='text-align: center;'><b>Most Balanced Team: {most_balanced_team}</b> with {most_balanced_team_total_versions} versions across {most_balanced_team_number_of_members} members!</div>", unsafe_allow_html=True)
-    # Show the most balanced team members
-    # Create a dataframe for the most balanced team members
-    most_balanced_team_members_df = pd.DataFrame.from_dict(most_balanced_team_members, orient='index', columns=['Version Count'])
-    most_balanced_team_members_df['Percentage'] = (most_balanced_team_members_df['Version Count'] / most_balanced_team_total_versions) * 100
-    most_balanced_team_members_df['Goal Percentage'] = most_balanced_team_goal_percentage_per_member
-    most_balanced_team_members_df['Difference'] = most_balanced_team_members_df['Percentage'] - most_balanced_team_members_df['Goal Percentage']
-
-    # Format the columns
-    most_balanced_team_members_df['Version Count'] = most_balanced_team_members_df['Version Count'].astype(int)
-    most_balanced_team_members_df['Percentage'] = most_balanced_team_members_df['Percentage'].round(2).astype(str) + "%"
-    most_balanced_team_members_df['Goal Percentage'] = most_balanced_team_members_df['Goal Percentage'].round(2).astype(str) + "%"
-    most_balanced_team_members_df['Difference'] = most_balanced_team_members_df['Difference'].round(2).astype(str) + "%"
-
-    st.dataframe(most_balanced_team_members_df[['Version Count', 'Percentage', 'Goal Percentage', 'Difference']], use_container_width=True)
-
-    # Also show the balance scores of the other teams
-    st.subheader("Team Balance Scores")
-    st.write('Team Balance Score is the Sum of Difference from ideal percentage per member.  Ideal percentage is 100% / number of members. The lower the score, the more balanced the team.')
-    # Create a dataframe for the team balance scores
-    team_balance_scores_df = pd.DataFrame.from_dict(balanced_team_data, orient='index')
-    team_balance_scores_df['Team'] = team_balance_scores_df.index
-    team_balance_scores_df['Team Balance Score'] = team_balance_scores_df['team_score']
-
-    # Sort the dataframe by team balance score, lowest first
-    team_balance_scores_df = team_balance_scores_df.sort_values(by='Team Balance Score', ascending=True)
-    team_balance_scores_df.reset_index(drop=True, inplace=True)
-    team_balance_scores_df['Ranking'] = team_balance_scores_df.index + 1
-
-    st.dataframe(team_balance_scores_df[['Team', 'Ranking', 'Team Balance Score']], use_container_width=True, hide_index=True)
+        # Manually enter the number of members per team
+        team_members = {
+            "Facade": 3,
+            "Services": 3,
+            "Industrial": 3,
+            "Residential": 3,
+            "Structure": 2
+        }
         
+        for model in project_tree.values():
+            for version in model["version_data"].values():
+                team_name = model["team_name"]
+                author_name = version["authorUser"].name
+                if team_name not in balanced_data:
+                    balanced_data[team_name] = {}
+                if author_name not in balanced_data[team_name]:
+                    balanced_data[team_name][author_name] = 0
+                balanced_data[team_name][author_name] += 1
+
+        # Calculate the average number of versions per team member for each team
+        balanced_team_data = {}
+        for team, members in balanced_data.items():
+            if len(members) < team_members[team]:
+                # Add missing members with 0 versions
+                for i in range(team_members[team] - len(members)):
+                    members[f"Member {i+1}"] = 0
+            total_versions = sum(members.values())
+
+
+            balanced_team_data[team] = {
+                'total_versions': total_versions,
+                'members': members,
+                'team_members': team_members[team],
+                'team_score': 0,
+                'goal_percentage_per_member': 0,
+                'percentage_per_member': 0
+            }
+
+            percentage_per_member = []
+
+            for member, count in members.items():
+                percentage = (count / total_versions) * 100
+                percentage_per_member.append(percentage)
+            
+            # print(f"team: {team} percentage_per_member: {percentage_per_member} total_versions: {total_versions}")
+
+            # The best team has all of the contributers with the same percentage
+            # The most balanced team is the one with the most equal number of versions for each team member
+            goal_percentage_per_member = 100 / team_members[team]
+            team_score = sum(abs(percentage - goal_percentage_per_member) for percentage in percentage_per_member)
+
+            print(f"team: {team} team_score: {team_score} goal_percentage_per_member: {goal_percentage_per_member} percentage_per_member: {percentage_per_member}")
+            balanced_team_data[team]['team_score'] = team_score
+            balanced_team_data[team]['goal_percentage_per_member'] = goal_percentage_per_member
+            balanced_team_data[team]['percentage_per_member'] = percentage_per_member
+            balanced_team_data[team]['members'] = members
+            balanced_team_data[team]['team_members'] = team_members[team]
+
+        # Find the most balanced team
+        # The most balanced team is the one with the lowest team score
+        st.subheader("Most Balanced Team Members")
+        most_balanced_team = min(balanced_team_data, key=lambda x: balanced_team_data[x]['team_score'])
+        most_balanced_team_percentage_per_member = balanced_team_data[most_balanced_team]['percentage_per_member']
+        most_balanced_team_goal_percentage_per_member = balanced_team_data[most_balanced_team]['goal_percentage_per_member']
+        most_balanced_team_number_of_members = team_members[most_balanced_team]
+        most_balanced_team_score = balanced_team_data[most_balanced_team]['team_score']
+        most_balanced_team_members = balanced_team_data[most_balanced_team]['members']
+        most_balanced_team_total_versions = balanced_team_data[most_balanced_team]['total_versions']
+        st.markdown(f"<div style='text-align: center;'><b>Most Balanced Team: {most_balanced_team}</b> with {most_balanced_team_total_versions} versions across {most_balanced_team_number_of_members} members!</div>", unsafe_allow_html=True)
+        # Show the most balanced team members
+        # Create a dataframe for the most balanced team members
+        most_balanced_team_members_df = pd.DataFrame.from_dict(most_balanced_team_members, orient='index', columns=['Version Count'])
+        most_balanced_team_members_df['Percentage'] = (most_balanced_team_members_df['Version Count'] / most_balanced_team_total_versions) * 100
+        most_balanced_team_members_df['Goal Percentage'] = most_balanced_team_goal_percentage_per_member
+        most_balanced_team_members_df['Difference'] = most_balanced_team_members_df['Percentage'] - most_balanced_team_members_df['Goal Percentage']
+
+        # Format the columns
+        most_balanced_team_members_df['Version Count'] = most_balanced_team_members_df['Version Count'].astype(int)
+        most_balanced_team_members_df['Percentage'] = most_balanced_team_members_df['Percentage'].round(2).astype(str) + "%"
+        most_balanced_team_members_df['Goal Percentage'] = most_balanced_team_members_df['Goal Percentage'].round(2).astype(str) + "%"
+        most_balanced_team_members_df['Difference'] = most_balanced_team_members_df['Difference'].round(2).astype(str) + "%"
+
+        st.dataframe(most_balanced_team_members_df[['Version Count', 'Percentage', 'Goal Percentage', 'Difference']], use_container_width=True)
+
+        # Also show the balance scores of the other teams
+        st.subheader("Team Balance Scores")
+        st.write('Team Balance Score is the Sum of Difference from ideal percentage per member.  Ideal percentage is 100% / number of members. The lower the score, the more balanced the team.')
+        # Create a dataframe for the team balance scores
+        team_balance_scores_df = pd.DataFrame.from_dict(balanced_team_data, orient='index')
+        team_balance_scores_df['Team'] = team_balance_scores_df.index
+        team_balance_scores_df['Team Balance Score'] = team_balance_scores_df['team_score']
+
+        # Sort the dataframe by team balance score, lowest first
+        team_balance_scores_df = team_balance_scores_df.sort_values(by='Team Balance Score', ascending=True)
+        team_balance_scores_df.reset_index(drop=True, inplace=True)
+        team_balance_scores_df['Ranking'] = team_balance_scores_df.index + 1
+
+        st.dataframe(team_balance_scores_df[['Team', 'Ranking', 'Team Balance Score']], use_container_width=True, hide_index=True)
+            
