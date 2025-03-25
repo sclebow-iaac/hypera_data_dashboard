@@ -134,7 +134,7 @@ def analyze_team_performance(service_metrics, structure_metrics, residential_met
                 delta="Best Team" if team_name == best_team['Team'] else None
             )
 
-def run():
+def run(project_tree, project_id):
     # Create 9 columns: 5 for content and 4 for padding
     cols = st.columns([10, 1, 10, 1, 10, 1, 10, 1, 10])
 
