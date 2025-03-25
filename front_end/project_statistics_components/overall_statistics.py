@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 
 def create_activity_timeline(timeline_data):
-    """Create and display the activity timeline chart."""
+    # Create and display the activity timeline chart.
     st.subheader("Activity Timeline")
     
     # Convert timeline_data to pandas DataFrame
@@ -64,7 +64,7 @@ def create_activity_timeline(timeline_data):
     st.plotly_chart(fig, use_container_width=True)
 
 def display_overall_metrics(project_tree):
-    """Display the overall project metrics."""
+    # Display the overall project metrics.
     st.subheader("Overall Project Statistics")
     # Get the total number of models that have versions
     total_models = sum(1 for model in project_tree.values() if model["version_count"] > 0)
@@ -111,7 +111,7 @@ def display_overall_metrics(project_tree):
     return all_versions_df
 
 def create_contributor_chart(project_tree, pie_height=300):
-    """Create and display a pie chart of project contributors."""
+    # Create and display a pie chart of project contributors.
     st.subheader("Project Contributors")
     # Get the contributors from the version data
     all_contributors = []
@@ -145,7 +145,7 @@ def create_contributor_chart(project_tree, pie_height=300):
     st.markdown(f"**Most Active Contributor: {most_active_contributor}** with {most_active_contributor_count} contributions!")
 
 def create_source_app_chart(project_tree, pie_height=300):
-    """Create and display a pie chart of source applications."""
+    # Create and display a pie chart of source applications.
     st.subheader("Project Source Applications")
     # Get the source applications from the version data
     all_source_applications = []
@@ -178,8 +178,80 @@ def create_source_app_chart(project_tree, pie_height=300):
     most_used_source_application_count = all_source_applications.iloc[0]['Count']
     st.markdown(f"**Most Used Source Application: {most_used_source_application}** with {most_used_source_application_count} contributions!")
 
-def create_team_charts(project_tree, pie_height=300):
-    """Create and display pie charts for team versions and models."""
+def create_team_charts(project_tree, pie_height=300, bar_height=600):
+    # Create a bar chart of all the models
+    # Color the bars by team
+    # Create a separate bar for each model and group by team
+    st.subheader("Project Models by Team Bar Chart")
+    all_models = []
+    for model in project_tree.values():
+        all_models.append({
+            "model_name": model["long_name"],
+            "label_name": '/'.join(model["long_name"].split('/')[2:]),
+            "team_name": model["team_name"],
+            "version_count": model["version_count"]
+        })
+
+    # Convert all_models to DataFrame and calculate total versions per team for sorting teams
+    all_models = pd.DataFrame(all_models)
+    all_models = all_models[all_models['version_count'] > 0]  # Filter out models with no versions
+
+    team_versions = all_models.groupby('team_name')['version_count'].sum().reset_index()
+    team_versions = team_versions.sort_values('version_count', ascending=False)
+    team_order = team_versions['team_name'].tolist()
+    
+    # Create a category for team_name based on the sorted order
+    all_models['team_order'] = all_models['team_name'].apply(lambda x: team_order.index(x) if x in team_order else len(team_order))
+    
+    # Sort the dataframe: first by team order, then by version count within each team
+    all_models = all_models.sort_values(by=['team_order', 'version_count'], ascending=[True, False])
+    
+    # Make each label_name unique by appending team name if there are duplicates
+    label_counts = all_models['label_name'].value_counts()
+    duplicate_labels = label_counts[label_counts > 1].index.tolist()
+
+    # For duplicate labels, append team name
+    for i, row in all_models.iterrows():
+        if row['label_name'] in duplicate_labels:
+            all_models.at[i, 'label_name'] = f"{row['label_name']} ({row['team_name']})"
+
+    # Create a bar chart of the models
+    fig = px.bar(
+        all_models,
+        x='label_name',
+        y='version_count',
+        color='team_name',
+        labels={'model_name': 'Model Name', 'version_count': 'Version Count', 'team_name': 'Team'},
+        text='version_count',
+        category_orders={'team_name': team_order},
+        range_y=[0, all_models['version_count'].max() * 1.1],  # Add some space above the highest bar
+    )
+    fig.update_traces(texttemplate='%{text}', textposition='outside')
+    fig.update_layout(
+        showlegend=True,
+        legend_title="Teams",
+        legend=dict(
+            orientation="h",
+            yanchor="top",
+            y=1.5,
+            xanchor="left",
+            x=0.2
+        ),
+        margin=dict(l=1, r=50, t=1, b=1),
+        height=bar_height,
+        font_family="Roboto Mono",
+        font_color="#2c3e50",
+        xaxis=dict(
+            title=None,  # Hide x-axis title
+            automargin=True
+        ),
+    )
+    # Add this line to make sure y-axis scaling provides enough room for labels
+    fig.update_yaxes(rangemode='tozero', automargin=True)
+    fig.update_traces(marker=dict(line=dict(color='#000000', width=2)))
+    # Show the chart
+    st.plotly_chart(fig, use_container_width=True)
+    # Create and display pie charts for team versions and models.
     version_col, model_col = st.columns([1, 1])
 
     with version_col:
@@ -248,7 +320,7 @@ def create_team_charts(project_tree, pie_height=300):
     return all_versions_by_team, all_models_by_team
 
 def find_most_active_team(all_versions_by_team, all_models_by_team):
-    """Find and display the most active team."""
+    # Find and display the most active team.
     team_data = {}
 
     for team in all_versions_by_team['Team']:
@@ -282,7 +354,7 @@ def find_most_active_team(all_versions_by_team, all_models_by_team):
     return team_data
 
 def analyze_team_balance(project_tree):
-    """Analyze and display team balance metrics."""
+    # Analyze and display team balance metrics.
     # Calculate the most balanced team
     # The most balanced team is the one with the most equal number of versions for each team member
     balanced_data = {}
@@ -347,7 +419,7 @@ def analyze_team_balance(project_tree):
     return balanced_team_data
 
 def display_most_balanced_team(balanced_team_data, team_members):
-    """Display information about the most balanced team."""
+    # Display information about the most balanced team.
     st.subheader("Most Balanced Team Members")
     
     if not balanced_team_data:
@@ -380,7 +452,7 @@ def display_most_balanced_team(balanced_team_data, team_members):
     st.dataframe(most_balanced_team_members_df[['Version Count', 'Percentage', 'Goal Percentage', 'Difference']], use_container_width=True)
 
 def display_team_balance_scores(balanced_team_data):
-    """Display the balance scores for all teams."""
+    # Display the balance scores for all teams.
     st.subheader("Team Balance Scores")
     st.write('Team Balance Score is the Sum of Difference from ideal percentage per member. Ideal percentage is 100% / number of members. The lower the score, the more balanced the team.')
     
@@ -401,7 +473,7 @@ def display_team_balance_scores(balanced_team_data):
     st.dataframe(team_balance_scores_df[['Team', 'Ranking', 'Team Balance Score']], use_container_width=True, hide_index=True)
 
 def run(project_tree, project_id, detail_level='all'):
-    """Main function to display overall project statistics."""
+    # Main function to display overall project statistics.
     # Collect timeline data
     timeline_data = []
     for model in project_tree.values():
@@ -428,6 +500,8 @@ def run(project_tree, project_id, detail_level='all'):
     team_data = find_most_active_team(all_versions_by_team, all_models_by_team)
     
     if detail_level == 'all':
+        st.markdown('---')
+
         # Team members dictionary
         team_members = {
             "Facade": 3,
@@ -440,4 +514,4 @@ def run(project_tree, project_id, detail_level='all'):
         balanced_team_data = analyze_team_balance(project_tree)
         display_most_balanced_team(balanced_team_data, team_members)
         display_team_balance_scores(balanced_team_data)
-
+        1
