@@ -644,13 +644,35 @@ with content_container:
             # Create 9 columns: 5 for content and 4 for padding
             cols = st.columns([10, 1, 10, 1, 10, 1, 10, 1, 10])
             
-            models, client, project_id = setup_speckle_connection()
 
-            # Service column (index 0)
             with cols[0]:
                 
                 # Caption
                 st.markdown("<p style='text-align: center;'><strong>Service KPIs</strong></p>", unsafe_allow_html=True)
+            with cols[2]:
+
+                # Caption
+                st.markdown("<p style='text-align: center;'><strong>Structure KPIs</strong></p>", unsafe_allow_html=True)
+            with cols[4]:
+
+                # Caption
+                st.markdown("<p style='text-align: center;'><strong>Residential KPIs</strong></p>", unsafe_allow_html=True)
+            with cols[6]:
+
+                # Caption
+                st.markdown("<p style='text-align: center;'><strong>Industrial KPIs</strong></p>", unsafe_allow_html=True)
+            with cols[8]:
+
+                # Caption
+                st.markdown("<p style='text-align: center;'><strong>Facade KPIs</strong></p>", unsafe_allow_html=True)
+
+            # Create 9 columns: 5 for content and 4 for padding
+            cols = st.columns([10, 1, 10, 1, 10, 1, 10, 1, 10])
+
+            models, client, project_id = setup_speckle_connection()
+
+            # Service column (index 0)
+            with cols[0]:
                 
                 # Call the service dashboard to get the metrics
                 verified, team_data, model_data = service_extractor.extract(attribute_display=False)
@@ -659,9 +681,6 @@ with content_container:
                 
             # Structure column (index 2)
             with cols[2]:
-
-                # Caption
-                st.markdown("<p style='text-align: center;'><strong>Structure KPIs</strong></p>", unsafe_allow_html=True)
                 
                 verified, team_data, model_data = structure_extractor.extract(attribute_display=False)
                 structure_metrics = structure_dashboard.generate_metrics(verified, team_data)
@@ -669,9 +688,6 @@ with content_container:
             
             # Residential column (index 4)
             with cols[4]:
-
-                # Caption
-                st.markdown("<p style='text-align: center;'><strong>Residential KPIs</strong></p>", unsafe_allow_html=True)
                 
                 verified, team_data, model_data = residential_extractor.extract(attribute_display=False)
                 residential_metrics = residential_dashboard.generate_metrics(verified, team_data)
@@ -679,9 +695,6 @@ with content_container:
             
             # Industrial column (index 6)
             with cols[6]:
-
-                # Caption
-                st.markdown("<p style='text-align: center;'><strong>Industrial KPIs</strong></p>", unsafe_allow_html=True)
                 
                 verified, team_data, model_data = industrial_extractor.extract(attribute_display=False)
                 industrial_metrics = industrial_dashboard.generate_metrics(verified, team_data)
@@ -689,9 +702,6 @@ with content_container:
 
             # Facade column (index 8)
             with cols[8]:
-
-                # Caption
-                st.markdown("<p style='text-align: center;'><strong>Facade KPIs</strong></p>", unsafe_allow_html=True)
                 
                 verified, team_data, model_data = facade_extractor.extract(attribute_display=False)
                 facade_metrics = facade_dashboard.generate_metrics(verified, team_data)
