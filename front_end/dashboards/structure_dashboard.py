@@ -27,7 +27,7 @@ text_dict = {
     ],
 }
 
-presentation_model_id = '52681a9d70'
+presentation_model_id = 'c2df017258'
 
 def process_data(verified, team_data):
     if not verified:
