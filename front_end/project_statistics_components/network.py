@@ -6,7 +6,20 @@ import plotly.io as pio
 import networkx as nx
 from streamlit_plotly_events import plotly_events
 
-from dashboards.dashboard import setup_speckle_connection
+def setup_speckle_connection(models_limit=100):
+    speckle_server = "macad.speckle.xyz"
+    speckle_token = "61c9dd1efb887a27eb3d52d0144f1e7a4a23f962d7"
+    client = SpeckleClient(host=speckle_server)
+    account = get_account_from_token(speckle_token, speckle_server)
+    client.authenticate_with_account(account)
+
+    project_id = '31f8cca4e0'
+    selected_project = client.project.get(project_id=project_id)
+    project = client.project.get_with_models(
+        project_id=selected_project.id, models_limit=models_limit)
+    models = project.models.items
+
+    return models, client, project_id
 
 @st.cache_data(ttl='1h')
 # @st.cache_data()
