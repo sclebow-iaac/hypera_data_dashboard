@@ -65,7 +65,7 @@ text_dict = {
     ],
 }
 
-presentation_model_id = '89db050bc3'
+presentation_model_id = 'c2df017258'
 
 def metric_calc_energy_ratio(energy_generation, energy_demand):
     return energy_generation / energy_demand
