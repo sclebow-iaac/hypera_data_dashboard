@@ -132,7 +132,7 @@ def create_activity_by_weekday_chart(project_tree):
             x=0.8
         ),
         legend_title='Teams',
-        margin=dict(l=1, r=1, t=10, b=1),
+        margin=dict(l=1, r=30, t=1, b=1),
         height=300,
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
