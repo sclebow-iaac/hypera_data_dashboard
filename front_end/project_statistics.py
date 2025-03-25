@@ -600,6 +600,62 @@ def fetch_branch_data(repository):
     except:
         return []
     
+# Add this helper function
+def create_simple_git_graph(filtered_commit_df, author_colors):
+    """Create a simplified git graph when enhanced version fails"""
+    fig = go.Figure()
+    
+    # Add main branch line
+    fig.add_trace(go.Scatter(
+        x=filtered_commit_df["date"],
+        y=[0] * len(filtered_commit_df),
+        mode="lines",
+        line=dict(color="rgba(0,0,255,0.5)", width=2),
+        hoverinfo="skip",
+        showlegend=False
+    ))
+    
+    # Add commit nodes with author-based coloring
+    fig.add_trace(go.Scatter(
+        x=filtered_commit_df["date"],
+        y=[0] * len(filtered_commit_df),
+        mode="markers+text",
+        marker=dict(
+            color=[author_colors.get(author, "blue") for author in filtered_commit_df["author"]],
+            size=12,
+            line=dict(color="darkblue", width=1)
+        ),
+        text=filtered_commit_df["sha"],
+        textposition="top center",
+        textfont=dict(size=8),
+        hovertext=filtered_commit_df.apply(
+            lambda row: f"<b>{row['sha']}</b><br>" +
+                        f"Author: {row['author']}<br>" +
+                        f"Date: {row['date'].strftime('%Y-%m-%d %H:%M')}<br>" +
+                        f"Message: {row['message']}",
+            axis=1
+        ),
+        hoverinfo="text",
+        showlegend=False
+    ))
+    
+    # Layout customization
+    fig.update_layout(
+        height=300,
+        xaxis_title="Commit Date",
+        yaxis=dict(
+            showticklabels=False,
+            showgrid=False,
+            zeroline=False,
+            range=[-1, 1]
+        ),
+        plot_bgcolor="rgba(240,240,240,0.2)",
+        margin=dict(l=10, r=10, t=10, b=10),
+        hovermode="closest"
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
+
 def run(container=None):
     default_speckle_viewer_height = 600
 
@@ -1462,6 +1518,13 @@ def run(container=None):
                         }
                         for commit in commits
                     ])
+
+                    authors = commit_df["author"].unique()
+                    # Create colors for each author evenly spaced
+                    author_colors = {}
+                    for i, author in enumerate(authors):
+                        author_colors[author] = px.colors.qualitative.Plotly[i % len(px.colors.qualitative.Plotly)]
+                    # author_colors = px.colors.qualitative.Plotly[:len(authors)]
                     
                     if not commit_df.empty:
                         # Format end_date with time component for proper filtering
@@ -1511,65 +1574,197 @@ def run(container=None):
                             
                             # Create git graph visualization
                             st.subheader("Git Commit Graph")
-                            
-                            # Create a simplified gitgraph-like visualization
-                            fig = go.Figure()
-                            
-                            # Add main branch line
-                            fig.add_trace(go.Scatter(
-                                x=filtered_commit_df["date"],
-                                y=[0] * len(filtered_commit_df),
-                                mode="lines",
-                                line=dict(color="rgba(0,0,255,0.5)", width=2),
-                                hoverinfo="skip",
-                                showlegend=False
-                            ))
-                            
-                            # Create a color mapping for authors
-                            authors = filtered_commit_df["author"].unique()
-                            color_scale = px.colors.qualitative.Plotly[:len(authors)]
-                            author_colors = dict(zip(authors, color_scale))
-                            
-                            # Add commit nodes with author-based coloring
-                            fig.add_trace(go.Scatter(
-                                x=filtered_commit_df["date"],
-                                y=[0] * len(filtered_commit_df),
-                                mode="markers+text",
-                                marker=dict(
-                                    color=[author_colors.get(author, "blue") for author in filtered_commit_df["author"]],
-                                    size=12,
-                                    line=dict(color="darkblue", width=1)
-                                ),
-                                text=filtered_commit_df["sha"],
-                                textposition="top center",
-                                textfont=dict(size=8),
-                                hovertext=filtered_commit_df.apply(
-                                    lambda row: f"<b>{row['sha']}</b><br>" +
-                                                f"Author: {row['author']}<br>" +
-                                                f"Date: {row['date'].strftime('%Y-%m-%d %H:%M')}<br>" +
-                                                f"Message: {row['message']}",
-                                    axis=1
-                                ),
-                                hoverinfo="text",
-                                showlegend=False
-                            ))
-                            
-                            # Layout customization
-                            fig.update_layout(
-                                height=max(300, min(len(filtered_commit_df) * 15, 800)),  # Reasonable height scaling
-                                xaxis_title="Commit Date",
-                                yaxis=dict(
-                                    showticklabels=False,
-                                    showgrid=False,
-                                    zeroline=False,
-                                    range=[-1, 1]  # Fixed range for y-axis
-                                ),
-                                plot_bgcolor="rgba(240,240,240,0.2)",
-                                margin=dict(l=10, r=10, t=10, b=10),
-                                hovermode="closest"
-                            )
-                            
-                            st.plotly_chart(fig, use_container_width=True)
+
+                            if len(filtered_commit_df) > 0:
+                                # Add branch information to the commit data if available
+                                try:
+                                    # Get branch data for the repository
+                                    branches_data = fetch_branch_data(repository)
+                                    
+                                    # Create a lookup of branch tips (the latest commit on each branch)
+                                    branch_tips = {}
+                                    for branch in branches_data:
+                                        branch_name = branch["name"]
+                                        commit_sha = branch.get("commit", {}).get("sha", "")
+                                        if commit_sha:
+                                            branch_tips[commit_sha] = branch_name
+                                    
+                                    # Attempt to get full commit history with parent information
+                                    # This requires additional API calls to get full commit details
+                                    commits_with_parents = {}
+                                    for commit in commits:
+                                        sha = commit["sha"]
+                                        parents = [p["sha"] for p in commit.get("parents", [])]
+                                        commits_with_parents[sha] = {
+                                            "sha": sha,
+                                            "short_sha": sha[:7],
+                                            "parents": parents,
+                                            "date": pd.to_datetime(commit["commit"]["author"]["date"]),
+                                            "author": commit["commit"]["author"]["name"],
+                                            "message": commit["commit"]["message"].split("\n")[0]
+                                        }
+                                    
+                                    # Find branches in the commit graph
+                                    # Simplistic approach: a commit is on a branch if it's in the path from branch tip to root
+                                    branches_for_commit = {}
+                                    main_branch = "main"  # Default to main
+                                    
+                                    # Find the main branch name (main or master)
+                                    for branch in branches_data:
+                                        if branch["name"] in ["main", "master"]:
+                                            main_branch = branch["name"]
+                                            break
+                                    
+                                    # Sort commits by date
+                                    sorted_commits = sorted(
+                                        [commits_with_parents[sha] for sha in commits_with_parents], 
+                                        key=lambda x: x["date"]
+                                    )
+                                    
+                                    # Create a prettier git graph visualization
+                                    # Assign y-positions for each commit to show branching
+                                    commit_positions = {}
+                                    branch_positions = {main_branch: 0}  # Main branch at y=0
+                                    current_branches = set([main_branch])
+                                    max_branch_pos = 0
+                                    
+                                    for commit in sorted_commits:
+                                        sha = commit["sha"]
+                                        short_sha = commit["short_sha"]
+                                        
+                                        # Check if commit is at the tip of any branches
+                                        branch_name = None
+                                        for branch_sha, br_name in branch_tips.items():
+                                            if sha.startswith(branch_sha) or branch_sha.startswith(sha):
+                                                branch_name = br_name
+                                                break
+                                        
+                                        # Assign position based on branch
+                                        if branch_name and branch_name not in branch_positions:
+                                            max_branch_pos += 1
+                                            branch_positions[branch_name] = max_branch_pos
+                                            current_branches.add(branch_name)
+                                        
+                                        # Assign y position (default to 0 for main branch if we can't determine)
+                                        y_pos = branch_positions.get(branch_name, 0) if branch_name else 0
+                                        commit_positions[short_sha] = y_pos
+                                        
+                                        # Store branch info for the commit
+                                        branches_for_commit[short_sha] = branch_name or main_branch
+                                    
+                                    # Create the enhanced visualization
+                                    fig = go.Figure()
+                                    
+                                    # Add branch lines
+                                    for branch_name, y_pos in branch_positions.items():
+                                        # Get commits on this branch
+                                        branch_commits = [
+                                            commit for commit in sorted_commits 
+                                            if branches_for_commit.get(commit["short_sha"]) == branch_name
+                                        ]
+                                        
+                                        if branch_commits:
+                                            # Add branch line
+                                            branch_x = [commit["date"] for commit in branch_commits]
+                                            branch_y = [y_pos] * len(branch_commits)
+                                            
+                                            fig.add_trace(go.Scatter(
+                                                x=branch_x,
+                                                y=branch_y,
+                                                mode="lines",
+                                                line=dict(
+                                                    color=px.colors.qualitative.Plotly[y_pos % len(px.colors.qualitative.Plotly)],
+                                                    width=2
+                                                ),
+                                                name=branch_name,
+                                                hoverinfo="name"
+                                            ))
+                                    
+                                    # Add merge lines between commits
+                                    for commit in sorted_commits:
+                                        if len(commit["parents"]) > 1:  # Merge commit
+                                            for parent_sha in commit["parents"]:
+                                                parent_short_sha = parent_sha[:7]
+                                                if parent_short_sha in commit_positions and commit["short_sha"] in commit_positions:
+                                                    # Draw merge line from parent to this commit
+                                                    parent_pos = commit_positions[parent_short_sha]
+                                                    commit_pos = commit_positions[commit["short_sha"]]
+                                                    
+                                                    if parent_pos != commit_pos:  # Only draw if on different branches
+                                                        # Find parent commit object
+                                                        parent_commit = next(
+                                                            (c for c in sorted_commits if c["short_sha"] == parent_short_sha), 
+                                                            None
+                                                        )
+                                                        
+                                                        if parent_commit:
+                                                            fig.add_trace(go.Scatter(
+                                                                x=[parent_commit["date"], commit["date"]],
+                                                                y=[parent_pos, commit_pos],
+                                                                mode="lines",
+                                                                line=dict(color="rgba(150,150,150,0.5)", width=1, dash="dot"),
+                                                                showlegend=False
+                                                            ))
+                                    
+                                    # Add commits with colored nodes by author
+                                    for commit in sorted_commits:
+                                        short_sha = commit["short_sha"]
+                                        if short_sha in commit_positions:
+                                            fig.add_trace(go.Scatter(
+                                                x=[commit["date"]],
+                                                y=[commit_positions[short_sha]],
+                                                mode="markers+text",
+                                                marker=dict(
+                                                    color=author_colors.get(commit["author"], "blue"),
+                                                    size=12,
+                                                    line=dict(color="darkblue", width=1)
+                                                ),
+                                                text=short_sha,
+                                                textposition="top center",
+                                                textfont=dict(size=8),
+                                                hovertext=f"<b>{short_sha}</b><br>" +
+                                                         f"Branch: {branches_for_commit.get(short_sha, 'unknown')}<br>" +
+                                                         f"Author: {commit['author']}<br>" +
+                                                         f"Date: {commit['date'].strftime('%Y-%m-%d %H:%M')}<br>" +
+                                                         f"Message: {commit['message']}",
+                                                hoverinfo="text",
+                                                name=commit["author"],
+                                                showlegend=False
+                                            ))
+                                    
+                                    # Layout customization
+                                    fig.update_layout(
+                                        height=max(300, min(200 + (max_branch_pos + 1) * 50, 800)),
+                                        xaxis_title="Commit Date",
+                                        yaxis=dict(
+                                            title="Branches",
+                                            tickmode="array",
+                                            tickvals=list(branch_positions.values()),
+                                            ticktext=list(branch_positions.keys()),
+                                            showgrid=True,
+                                            gridcolor="rgba(200,200,200,0.2)"
+                                        ),
+                                        plot_bgcolor="rgba(250,250,250,1)",
+                                        margin=dict(l=10, r=10, t=10, b=10),
+                                        hovermode="closest",
+                                        legend=dict(
+                                            title="Branches",
+                                            orientation="h",
+                                            yanchor="bottom",
+                                            y=1.02,
+                                            xanchor="right",
+                                            x=1
+                                        )
+                                    )
+                                    
+                                    st.plotly_chart(fig, use_container_width=True)
+                                    
+                                except Exception as e:
+                                    st.warning(f"Could not create enhanced git graph visualization: {str(e)}")
+                                    # Fall back to simple visualization
+                                    create_simple_git_graph(filtered_commit_df, author_colors)
+                            else:
+                                st.info("No commits available to display in the graph.")
                             
                             # Add author legend
                             st.subheader("Commit Authors")
