@@ -52,7 +52,7 @@ def create_activity_timeline(timeline_data):
         plot_bgcolor='rgba(0,0,0,0)',
         font_family="Roboto Mono",
         font_color="#2c3e50",
-        hovermode='closest',
+        hovermode='x unified',
         hoverlabel=dict(
             bgcolor="white",
             font_size=12,
@@ -61,14 +61,93 @@ def create_activity_timeline(timeline_data):
         ),
     )
     
-    # Add hover information
-    fig.update_traces(
-        hovertemplate='<b>%{x}</b><br>Team: %{customdata}<br>Versions: %{y}<extra></extra>'
-    )
-    
     # Add team name as custom data for hover info
     fig.update_traces(customdata=timeline_grouped['team_name'])
     
+    # Show Chart
+    st.plotly_chart(fig, use_container_width=True)
+
+def create_activity_by_weekday_chart(project_tree):
+    # Create and display the activity by weekday chart.
+    st.subheader("Activity by Weekday")
+    # Get the activity data
+    all_versions_df = pd.DataFrame()
+    for model in project_tree.values():
+        for version in model["version_data"].values():
+            all_versions_df = pd.concat([all_versions_df, pd.DataFrame([{
+                "createdAt": version["createdAt"],
+                "authorUser": version["authorUser"],
+                "sourceApplication": version["sourceApplication"],
+                "team_name": model["team_name"],
+            }])], ignore_index=True)
+
+    all_versions_df['createdAt'] = pd.to_datetime(all_versions_df['createdAt'])
+    all_versions_df['date'] = all_versions_df['createdAt'].dt.date
+    all_versions_df['weekday'] = all_versions_df['createdAt'].dt.day_name()
+    all_versions_df['count'] = 1
+    all_versions_df['weekday'] = pd.Categorical(all_versions_df['weekday'],
+                                                 categories=['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+                                                 ordered=True)
+    all_versions_df['weekday'] = all_versions_df['weekday'].astype(str)
+    all_versions_df['weekday'] = all_versions_df['weekday'].str.replace('Monday', 'Mon')
+    all_versions_df['weekday'] = all_versions_df['weekday'].str.replace('Tuesday', 'Tue')
+    all_versions_df['weekday'] = all_versions_df['weekday'].str.replace('Wednesday', 'Wed')
+    all_versions_df['weekday'] = all_versions_df['weekday'].str.replace('Thursday', 'Thu')
+    all_versions_df['weekday'] = all_versions_df['weekday'].str.replace('Friday', 'Fri')
+    all_versions_df['weekday'] = all_versions_df['weekday'].str.replace('Saturday', 'Sat')
+    all_versions_df['weekday'] = all_versions_df['weekday'].str.replace('Sunday', 'Sun')
+
+    # Get the maximum y-axis range
+    # Remember that the bars will be stacked, so we need to find the maximum count for any weekday
+    y_range_max = all_versions_df.groupby('weekday')['count'].sum().max()
+
+    # Group by weekday and team, count occurrences
+    activity_by_weekday = all_versions_df.groupby(['weekday', 'team_name']).size().reset_index(name='count')
+
+    # Sort the activity_by_weekday DataFrame by weekday
+    activity_by_weekday['weekday'] = pd.Categorical(activity_by_weekday['weekday'],
+                                                     categories=['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                                                     ordered=True)
+    activity_by_weekday = activity_by_weekday.sort_values('weekday')
+
+    # Create bar chart with a bar for each team
+    fig = px.bar(
+        activity_by_weekday,
+        x='weekday',
+        y='count',
+        range_y=[0, y_range_max * 1.1],  # Add some space above the highest bar
+        color='team_name',
+        labels={'weekday': 'Weekday', 'count': 'Number of Versions', 'team_name': 'Team'},
+        color_discrete_map=team_colors,  # Add this line to use team colors
+        text='count'
+    )
+    fig.update_traces(texttemplate='%{text}', textposition='outside')
+    fig.update_layout(
+        showlegend=True,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=0.8
+        ),
+        legend_title='Teams',
+        margin=dict(l=1, r=1, t=10, b=1),
+        height=300,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font_family="Roboto Mono",
+        font_color="#2c3e50",
+        hovermode='closest',
+        hoverlabel=dict(
+            bgcolor="white",
+            font_size=12,
+            font_family="Roboto Mono",
+            font_color="#2c3e50",
+        ),
+    )
+    # Add team name as custom data for hover info
+    fig.update_traces(customdata=activity_by_weekday['team_name'])
     # Show Chart
     st.plotly_chart(fig, use_container_width=True)
 
@@ -538,6 +617,9 @@ def run(project_tree, project_id, detail_level='all'):
     # Create and display visualizations
     create_activity_timeline(timeline_data)
     all_versions_df = display_overall_metrics(project_tree)
+
+    # Create Activity by Weekday chart
+    create_activity_by_weekday_chart(project_tree)
     
     pie_height = 300
     contributer_col, source_application_col = st.columns([1, 1])
@@ -567,4 +649,4 @@ def run(project_tree, project_id, detail_level='all'):
         balanced_team_data = analyze_team_balance(project_tree)
         display_most_balanced_team(balanced_team_data, team_members)
         display_team_balance_scores(balanced_team_data)
-        1
+        
