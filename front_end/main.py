@@ -56,7 +56,7 @@ def run_slack_process():
 
 # run_slack_process() # Commented out to avoid running the process at startup
 
-def display_federated_speckle_viewer(container, project_id, height):
+def display_federated_speckle_viewer(project_id, height):
     # Function to create a federated Speckle viewer
     # With multiple models
 
@@ -82,15 +82,17 @@ def display_federated_speckle_viewer(container, project_id, height):
     # Join the model IDs into a single string
     federated_model_id = ','.join(model_ids)
 
+    container = st.container()
     display_speckle_viewer(
         container=container, 
         project_id=project_id, 
         model_id=federated_model_id,
         is_transparent=True,
-        hide_controls=False,
-        hide_selection_info=False,
+        hide_controls=True,
+        hide_selection_info=True,
         no_scroll=False,
         height=height,
+        header_text='Hyperbuilding Federated Model',
     )
 
 st.markdown("""
@@ -567,7 +569,6 @@ with content_container:
 
 
 
-
             # KPI's SLIDESHOW SECTION
             vision_container = st.container()
             with vision_container:
@@ -577,7 +578,7 @@ with content_container:
                 # Add centered title and text
                 st.markdown("""
                 <div style="text-align: center; margin-top: 50px; margin-bottom: 50px;">
-                    <h1>KPI's Definitions & Performance</h1>
+                    <h1>KPI Definitions & Performance</h1>
                 """, unsafe_allow_html=True)
 
                 # Display the full-width image
@@ -601,16 +602,53 @@ with content_container:
             # Create 9 columns: 5 for content and 4 for padding
             cols = st.columns([10, 1, 10, 1, 10, 1, 10, 1, 10])
             
+            with cols[0]:
+                # Discipline name
+                st.markdown("<h3 style='text-align: center;'>Service</h3>", unsafe_allow_html=True)
+            with cols[2]:
+                # Discipline name
+                st.markdown("<h3 style='text-align: center;'>Structure</h3>", unsafe_allow_html=True)
+            with cols[4]:
+                # Discipline name
+                st.markdown("<h3 style='text-align: center;'>Residential</h3>", unsafe_allow_html=True)
+            with cols[6]:
+                # Discipline name
+                st.markdown("<h3 style='text-align: center;'>Industrial</h3>", unsafe_allow_html=True)
+            with cols[8]:
+                # Discipline name
+                st.markdown("<h3 style='text-align: center;'>Facade</h3>", unsafe_allow_html=True)
+            
+            # Create 9 columns: 5 for content and 4 for padding
+            cols = st.columns([10, 1, 10, 1, 10, 1, 10, 1, 10])
+
+            with cols[0]:
+                # Discipline image
+                st.image("front_end/assets/Service/03/service01.png")
+
+            with cols[2]:
+                # Discipline image
+                st.image("front_end/assets/Structure/03/structure01.png")
+            
+            with cols[4]:
+                # Discipline image
+                st.image("front_end/assets/Residential/03/residential01.png")
+                
+            with cols[6]:
+                # Discipline image
+                st.image("front_end/assets/Industrial/03/industrial01.png")
+                
+            with cols[8]:
+                # Discipline image
+                st.image("front_end/assets/Facade/03/facade01.png")
+
+            # Create 9 columns: 5 for content and 4 for padding
+            cols = st.columns([10, 1, 10, 1, 10, 1, 10, 1, 10])
+            
             models, client, project_id = setup_speckle_connection()
 
             # Service column (index 0)
             with cols[0]:
-                # Discipline name
-                st.markdown("<h3 style='text-align: center;'>Service</h3>", unsafe_allow_html=True)
-
-                # Discipline image
-                st.image("front_end/assets/Service/03/service01.png")
-
+                
                 # Caption
                 st.markdown("<p style='text-align: center;'><strong>Service KPIs</strong></p>", unsafe_allow_html=True)
                 
@@ -621,12 +659,7 @@ with content_container:
                 
             # Structure column (index 2)
             with cols[2]:
-                # Discipline name
-                st.markdown("<h3 style='text-align: center;'>Structure</h3>", unsafe_allow_html=True)
-                
-                # Discipline image
-                st.image("front_end/assets/Structure/03/structure01.png")
-                
+
                 # Caption
                 st.markdown("<p style='text-align: center;'><strong>Structure KPIs</strong></p>", unsafe_allow_html=True)
                 
@@ -636,12 +669,7 @@ with content_container:
             
             # Residential column (index 4)
             with cols[4]:
-                # Discipline name
-                st.markdown("<h3 style='text-align: center;'>Residential</h3>", unsafe_allow_html=True)
-                
-                # Discipline image
-                st.image("front_end/assets/Residential/03/residential01.png")
-                
+
                 # Caption
                 st.markdown("<p style='text-align: center;'><strong>Residential KPIs</strong></p>", unsafe_allow_html=True)
                 
@@ -651,12 +679,7 @@ with content_container:
             
             # Industrial column (index 6)
             with cols[6]:
-                # Discipline name
-                st.markdown("<h3 style='text-align: center;'>Industrial</h3>", unsafe_allow_html=True)
-                
-                # Discipline image
-                st.image("front_end/assets/Industrial/03/industrial01.png")
-                
+
                 # Caption
                 st.markdown("<p style='text-align: center;'><strong>Industrial KPIs</strong></p>", unsafe_allow_html=True)
                 
@@ -666,12 +689,7 @@ with content_container:
 
             # Facade column (index 8)
             with cols[8]:
-                # Discipline name
-                st.markdown("<h3 style='text-align: center;'>Facade</h3>", unsafe_allow_html=True)
-                
-                # Discipline image
-                st.image("front_end/assets/Facade/03/facade01.png")
-                
+
                 # Caption
                 st.markdown("<p style='text-align: center;'><strong>Facade KPIs</strong></p>", unsafe_allow_html=True)
                 
@@ -679,86 +697,8 @@ with content_container:
                 facade_metrics = facade_dashboard.generate_metrics(verified, team_data)
                 display_st_metric_values(container=cols[8], metrics=facade_metrics, use_columns=False, include_header=False)
 
-            # # Add speckle inputs selection menu
-            # with input_container:  # Use the new name here
-            #     st.subheader("Inputs")
-            #     viewer_toggle, statistics_toggle = st.columns(2)
-                
-            #     show_viewer = viewer_toggle.checkbox("Show Speckle Viewer", value=True)
-            #     show_statistics = statistics_toggle.checkbox("Show Project Statistics", value=True)
-
-            #     # #-------
-            #     # #Speckle Server and Token
-            #     speckleServer = "macad.speckle.xyz"
-            #     speckleToken = "61c9dd1efb887a27eb3d52d0144f1e7a4a23f962d7"
-            #     #CLIENT
-            #     client = SpeckleClient(host=speckleServer)
-            #     #Get account from Token
-            #     account = get_account_from_token(speckleToken, speckleServer)
-            #     #Authenticate
-            #     client.authenticate_with_account(account)
-            #     # #-------
-
-            #     # # Get the team project
-            #     project_id = '31f8cca4e0'
-            #     selected_project = client.project.get(project_id=project_id)
-
-            #     # Get the project with models
-            #     project = client.project.get_with_models(project_id=selected_project.id, models_limit=100)
-            #     # print(f'Project: {project.name}')
-
-            #     # Get the models
-            #     models = project.models.items
-
-            #     # Add model selection
-            #     selected_model_name = st.selectbox(
-            #         label="Select model to analyze",
-            #         options=[m.name for m in models],
-            #         help="Select a specific model to analyze its data"
-            #     )
-
-            #     # Get the selected model object
-            #     selected_model = [m for m in models if m.name == selected_model_name][0]
-
-            #     # Get the versions for the selected model
-            #     versions = client.version.get_versions(model_id=selected_model.id, project_id=project.id, limit=100).items
-
-            #     def versionName(version):
-            #         timestamp = version.createdAt.strftime("%Y-%m-%d %H:%M:%S")
-            #         return ' - '.join([version.authorUser.name, timestamp, version.message])
-
-            #     keys = [versionName(version) for version in versions]
-
-            #     # Add version selection
-            #     selected_version_key = st.selectbox(
-            #         label="Select version to analyze",
-            #         options=keys,
-            #         help="Select a specific version to analyze"
-            #     )
-            #     try:
-            #         selected_version = versions[keys.index(selected_version_key)]
-
-            #         # Create a iframe to display the selected version
-            #         def version2viewer(project, model, version, height=400) -> str:
-            #             embed_src = f"https://macad.speckle.xyz/projects/{project.id}/models/{model.id}@{version.id}#embed=%7B%22isEnabled%22%3Atrue%2C%7D"            
-            #             # print(f'embed_src {embed_src}')  # Print the URL to verify correctness
-            #             # print()
-            #             return st.components.v1.iframe(src=embed_src, height=height)
-
-            #         if show_viewer:
-            #             with viewer:
-            #                 st.subheader("Selected Version👇")
-            #                 version2viewer(project, selected_model, selected_version)
-
-            #         if show_statistics:
-            #             statistics.show(report, client, project, models, versions)
-
-            #         # Add a separator
-            #         st.markdown("---")
-            #         # Add attribute extraction for debugging
-            #         attribute_extraction.run(selected_version, client, project)
-            #     except:
-            #         st.error("No version selected/found. Please select a version to analyze.")
+            # Add the federated Speckle viewer
+            display_federated_speckle_viewer(project_id="31f8cca4e0", height=600)
 
     else:
         with dashboard_placeholder.container():
