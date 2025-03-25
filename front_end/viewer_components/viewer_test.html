@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body, html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+      }
+      #renderer {
+        width: 100%;
+        height: 500px;
+      }
+    </style>
+    <script async src="https://unpkg.com/es-module-shims@1.7.0/dist/es-module-shims.js"></script>
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.149.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.149.0/examples/jsm/",
+        "three/examples/jsm/loaders/EXRLoader.js": "https://unpkg.com/three@0.149.0/examples/jsm/loaders/EXRLoader.js",
+        "three/examples/jsm/loaders/RGBELoader.js": "https://unpkg.com/three@0.149.0/examples/jsm/loaders/RGBELoader.js",
+        "three/examples/jsm/loaders/FontLoader.js": "https://unpkg.com/three@0.149.0/examples/jsm/loaders/FontLoader.js",
+        "js-logger": "https://unpkg.com/js-logger@1.6.0/src/js-logger.js",
+        "lodash-es": "https://unpkg.com/lodash-es@4.17.21/lodash.js",
+        "tree-model": "https://unpkg.com/tree-model@1.0.1/dist/tree-model.min.js",
+        "three/examples/jsm/lines/LineMaterial.js": "https://unpkg.com/three@0.149.0/examples/jsm/lines/LineMaterial.js",
+        "troika-three-text": "https://unpkg.com/troika-three-text@0.3.0/dist/troika-three-text.module.js",
+        
+        "@speckle/viewer": "https://unpkg.com/@speckle/viewer@2.23.10/dist/index.js"
+      }
+    }
+    </script>
+  </head>
+  <body>
+    <div id="renderer"></div>
+    
+    <script type="module">
+        import { Viewer } from '@speckle/viewer';
+
+        async function initViewer() {
+          try {
+            const container = document.getElementById("renderer");
+            const viewer = new Viewer(container);
+            await viewer.init();
+          } catch (error) {
+            console.error("Error initializing viewer:", error);
+          }
+        }
+
+        // Initialize the viewer when the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', initViewer);
+    </script>
+  </body>
+</html>
