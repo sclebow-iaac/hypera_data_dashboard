@@ -46,7 +46,7 @@ def create_activity_timeline(timeline_data):
             x=0.8
         ),
         legend_title='Teams',
-        margin=dict(l=1, r=1, t=10, b=1),
+        margin=dict(l=1, r=40, t=10, b=1),
         height=300,
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
@@ -298,7 +298,7 @@ def create_team_charts(project_tree, pie_height=300, bar_height=600):
             x=0.5,  # Center the legend
         ),
         yaxis_title="Version Count",
-        margin=dict(l=1, r=1, t=1, b=1),
+        margin=dict(l=1, r=40, t=1, b=1),
         height=bar_height * 0.5,
         font_family="Roboto Mono",
         font_color="#2c3e50",
