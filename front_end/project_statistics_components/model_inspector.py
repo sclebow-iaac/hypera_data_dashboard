@@ -6,6 +6,11 @@ import plotly.io as pio
 import networkx as nx
 from streamlit_plotly_events import plotly_events
 
+import attribute_extraction
+from dashboards.dashboard import *
+
+default_speckle_viewer_height = 600
+
 def create_network_graph(project_tree, height=800):
     st.subheader("Project Network Diagram")
 

@@ -159,7 +159,6 @@ def get_project_data():
     return project_tree, project_id
 
 def run(container=None):
-    default_speckle_viewer_height = 600
 
 
     # for key, value in project_tree.items():
