@@ -6,6 +6,9 @@ import plotly.io as pio
 import networkx as nx
 from streamlit_plotly_events import plotly_events
 
+from specklepy.api.client import SpeckleClient
+from specklepy.api.credentials import get_account_from_token
+
 def setup_speckle_connection(models_limit=100):
     speckle_server = "macad.speckle.xyz"
     speckle_token = "61c9dd1efb887a27eb3d52d0144f1e7a4a23f962d7"
