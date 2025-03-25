@@ -471,10 +471,10 @@ def display_tape_diagram(container, metric: Metric) -> None:
         arrowhead=2,
         arrowsize=1,
         arrowwidth=2,
-        arrowcolor="Salmon",
+        arrowcolor="black",
         font=dict(
             size=12,
-            color="Salmon",
+            color="black",
         ),
         xref="paper",
         yref="paper",
