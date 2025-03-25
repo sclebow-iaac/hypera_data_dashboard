@@ -198,8 +198,6 @@ def create_simple_git_graph(filtered_commit_df, author_colors):
     
     st.plotly_chart(fig, use_container_width=True)
 
-
-
 def run():
     # Add this in the dashboard_metrics_tab section
     rate_limit = check_github_rate_limit()
@@ -207,10 +205,6 @@ def run():
         with st.expander("GitHub API Rate Limit Status"):
             st.write(f"Remaining requests: {rate_limit['remaining']}/{rate_limit['limit']}")
             st.write(f"Reset time: {rate_limit['reset_time'].strftime('%Y-%m-%d %H:%M:%S')}")
-
-    # Add dashboard metrics here
-    st.subheader("Dashboard Analytics")
-    st.write('This tab displays data from the Dashboard Github Repository')
 
     github_url = "https://github.com/sclebow-iaac/hypera_data_dashboard"
     forked_url = 'https://github.com/specklesystems/specklepy'

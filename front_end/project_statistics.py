@@ -179,6 +179,7 @@ def run(container=None):
 
         with container:
             # Create tabs for the dashboard
+            st.markdown('### Select a tab to view the project statistics')
             model_inspector_tab, overall_statistics_tab, metric_analysis_tab, dashboard_metrics_tab = \
                 st.tabs(["Model Inspector", "Overall Project Statistics", "Metric Analysis", "Dashboard Analytics"])
             
@@ -189,10 +190,14 @@ def run(container=None):
                 model_inspector.run(project_tree, project_id)
 
             with overall_statistics_tab:
+                st.write('This tab shows the overall statistics of the entire project')
                 overall_statistics.run(project_tree, project_id)
 
             with metric_analysis_tab:
                 metric_analysis.run(project_tree, project_id)
 
             with dashboard_metrics_tab:
+                # Add dashboard metrics here
+                st.subheader("Dashboard Analytics")
+                st.write('This tab displays data from the Dashboard Github Repository')
                 dashboard_metrics.run()

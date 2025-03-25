@@ -26,6 +26,7 @@ import data_extraction.data_extractor as data_extractor
 
 # import statistics
 import project_statistics as statistics
+import project_statistics_components.overall_statistics as overall_statistics
 
 # import attribute extraction
 import attribute_extraction
@@ -707,7 +708,13 @@ with content_container:
                 facade_metrics = facade_dashboard.generate_metrics(verified, team_data)
                 display_st_metric_values(container=cols[8], metrics=facade_metrics, use_columns=False, include_header=False)
 
+            # Add the overall statistics
+            st.markdown('## Overall Project Statistics')
+            project_tree, project_id = statistics.get_project_data()
+            overall_statistics.run_basic(project_tree, project_id)
+
             # Add the federated Speckle viewer
+            st.markdown('---')
             display_federated_speckle_viewer(project_id="31f8cca4e0", height=600)
 
     else:
