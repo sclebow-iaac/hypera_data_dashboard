@@ -188,6 +188,46 @@ def create_source_app_chart(project_tree, pie_height=300):
     st.markdown(f"**Most Used Source Application: {most_used_source_application}** with {most_used_source_application_count} contributions!")
 
 def create_team_charts(project_tree, pie_height=300, bar_height=600):
+    # Create a bar chart of total versions by team.
+    st.subheader("Project Versions by Team Bar Chart")
+    # Get the teams from the version data
+    all_versions_by_team = {}
+
+    for model in project_tree.values():
+        for version in model["version_data"].values():
+            team_name = model["team_name"]
+            if team_name not in all_versions_by_team:
+                all_versions_by_team[team_name] = 0
+            all_versions_by_team[team_name] += 1
+    all_versions_by_team = pd.Series(all_versions_by_team).reset_index()
+    all_versions_by_team.columns = ['Team', 'Count']
+    # Remove the "Root" team from the list
+    all_versions_by_team = all_versions_by_team[all_versions_by_team['Team'] != 'Root']
+    # Sort the teams by count
+    all_versions_by_team = all_versions_by_team.sort_values('Count', ascending=False)
+
+    # Create a bar chart of the teams
+    fig = px.bar(all_versions_by_team, x='Team', y='Count', color='Team', color_discrete_map=team_colors)
+    fig.update_layout(
+        showlegend=True,
+        legend_title="Teams",
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="center",
+            x=0.5,  # Center the legend
+        ),
+        yaxis_title="Version Count",
+        margin=dict(l=1, r=1, t=1, b=1),
+        height=bar_height * 0.5,
+        font_family="Roboto Mono",
+        font_color="#2c3e50",
+    )
+    fig.update_traces(marker=dict(line=dict(color='#000000', width=2)))
+    # Show the chart
+    st.plotly_chart(fig, use_container_width=True)
+
     # Create a bar chart of all the models
     # Color the bars by team
     # Create a separate bar for each model and group by team
@@ -244,8 +284,8 @@ def create_team_charts(project_tree, pie_height=300, bar_height=600):
             orientation="h",
             yanchor="bottom",
             y=1.02,
-            xanchor="right",
-            x=0.8
+            xanchor="center",  # Changed from "right" to "center"
+            x=0.5,  # Changed from 0.8 to 0.5 to center the legend
         ),
         margin=dict(l=1, r=50, t=1, b=1),
         height=bar_height,
@@ -508,6 +548,7 @@ def run(project_tree, project_id, detail_level='all'):
     with source_application_col:
         create_source_app_chart(project_tree, pie_height)
     
+    st.markdown('---')
     all_versions_by_team, all_models_by_team = create_team_charts(project_tree, pie_height)
     team_data = find_most_active_team(all_versions_by_team, all_models_by_team)
     
