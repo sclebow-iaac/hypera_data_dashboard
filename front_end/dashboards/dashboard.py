@@ -9,14 +9,15 @@ from specklepy.api.credentials import get_account_from_token
 import os
 import time
 import math
+from PIL import Image
 
 from browser_detection import browser_detection_engine
 
-from front_end.project_statistics_components.network import get_project_data, create_network_graph
+from project_statistics_components.network import get_project_data, create_network_graph
 
 import viewer
 
-import front_end.project_statistics_components.network as network_graph
+import project_statistics_components.network as network_graph
 
 content_container_width = 8  # Adjust this value to set the width of the content container
 
@@ -102,7 +103,7 @@ class Metric:
             self.ideal_value * 100 if self.ideal_value != 0 else 0
         # Display the new value
         metric_container.metric(
-            label=f"**Goal Value:** {self.ideal_value:.2f} | **Current Value:** {new_value:.2f}",
+            label=f"**Goal Value:** {self.ideal_value:.3f} | **Current Value:** {new_value:.3f}",
             value=f"{new_value:.4f}",
             delta=f"{delta_percent:.2f}%",
         )
@@ -128,7 +129,7 @@ def generate_dashboard(selected_team: str, metrics: list[Metric], project_id: st
         with concept_tab:
             # Display the images
             header_image_container = st.container(border=True)
-            display_images(header_image_container, selected_team, "02")
+            # display_images(header_image_container, selected_team, "02")
 
             # Display the Speckle viewer
             viewer_height = 400
@@ -140,14 +141,27 @@ def generate_dashboard(selected_team: str, metrics: list[Metric], project_id: st
                 display_speckle_viewer(speckle_container, project_id, presentation_model_id, is_transparent=True,
                                 hide_controls=True, hide_selection_info=True, no_scroll=False, height=viewer_height, include_site=True)
 
+            # Display the text and poster section
+            poster_container, text_container = st.columns([1, 3], gap="small")
+            with poster_container:
+                # Display the poster image
+                poster_image_folder = f"./front_end/assets/{selected_team.capitalize()}/05/"
+                # Get the first image in the folder
+                poster_image_path = None
+                for file in os.listdir(poster_image_folder):
+                    if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+                        poster_image_path = os.path.join(poster_image_folder, file)
+                        break
+                if os.path.exists(poster_image_path):
+                    poster_container.image(poster_image_path)
+                else:
+                    poster_container.warning("Poster image not found.")
+
+            display_text(text_container, text_dict)
+
             # Display the images
             images_container = st.container(border=True)
-            display_images(images_container, selected_team, "01")
-
-
-            # Display the text section
-            text_container = st.container(border=True)
-            display_text(text_container, text_dict)
+            display_images(images_container, selected_team, "04", header=True)
 
         with metrics_tab:
             # Display the extracted data
@@ -184,73 +198,61 @@ def generate_dashboard(selected_team: str, metrics: list[Metric], project_id: st
 
             latest_version_data_per_model = {}
 
-            if selected_node_children:
-                children_ids = []
-                for child in selected_node_children:
-                    child_id = project_tree[child]['id']
-                    children_ids.append(child_id)
-                    value = project_tree[child]
-                    # Get the latest version data
+            if selected_model_name: # If a model is selected
+                if selected_node_children:
+                    children_ids = []
+                    for child in selected_node_children:
+                        child_id = project_tree[child]['id']
+                        children_ids.append(child_id)
+                        value = project_tree[child]
+                        # Get the latest version data
+                        latest_version_data = None
+                        soonest_date = None
+                        for version_id, version_info in value["version_data"].items():
+                            if latest_version_data is None or version_info["createdAt"] < soonest_date:
+                                latest_version_data = version_info
+                                soonest_date = version_info["createdAt"]
+                        latest_version_data_per_model[child] = latest_version_data
+
+                    selected_model_id = ','.join(children_ids)
+                    header_text = 'Speckle Viewer of Children Models'
+
+                else:
+                    selected_model_id = project_tree[selected_model_name]['id']
+                    header_text = 'Speckle Viewer of Selected Model'
+
+                    version_data = project_tree[selected_model_name]['version_data']
                     latest_version_data = None
                     soonest_date = None
-                    for version_id, version_info in value["version_data"].items():
+                    for version_id, version_info in version_data.items():
                         if latest_version_data is None or version_info["createdAt"] < soonest_date:
                             latest_version_data = version_info
                             soonest_date = version_info["createdAt"]
-                    latest_version_data_per_model[child] = latest_version_data
+                    latest_version_data_per_model[selected_model_name] = latest_version_data
 
-                selected_model_id = ','.join(children_ids)
-                header_text = 'Speckle Viewer of Children Models'
-
-            else:
-                selected_model_id = project_tree[selected_model_name]['id']
-                header_text = 'Speckle Viewer of Selected Model'
-
-                latest_version_data[selected_model_name] = project_tree[selected_model_name]['version_data']
-
-            if selected_model_id:
-                # Display the selected model in the Speckle viewer
-                speckle_container = st.container(border=True)
-                display_speckle_viewer(speckle_container, project_id, selected_model_id, is_transparent=True,
-                                hide_controls=True, hide_selection_info=True, no_scroll=False, height=viewer_height, include_site=False, header_text=header_text)
+                if selected_model_id:
+                    # Display the selected model in the Speckle viewer
+                    speckle_container = st.container(border=True)
+                    display_speckle_viewer(speckle_container, project_id, selected_model_id, is_transparent=True,
+                                    hide_controls=True, hide_selection_info=True, no_scroll=False, height=viewer_height, include_site=False, header_text=header_text)
+                    
+                # Display the version data
+                st.subheader("Latest Version Data for Selected Model(s)")
                 
-            # Display the version data
-            st.subheader("Latest Version Data for Selected Model(s)")
-            
-            # Create a table to display the latest version data
-            table_dict = {}
-            for child, version_info in latest_version_data_per_model.items():
-                table_dict[child] = {
-                    "Created By": version_info["authorUser"].name,
-                    "Created At": version_info["createdAt"].strftime('%Y-%m-%d %H:%M:%S %Z'),
-                    "Source Application": version_info["sourceApplication"]
-                }
-            table_df = pd.DataFrame(table_dict).T
-            table_df.index.name = 'Model Name'
-            table_df.reset_index(inplace=True)
+                # Create a table to display the latest version data
+                table_dict = {}
+                for child, version_info in latest_version_data_per_model.items():
+                    table_dict[child] = {
+                        "Created By": version_info["authorUser"].name,
+                        "Created At": version_info["createdAt"].strftime('%Y-%m-%d %H:%M:%S %Z'),
+                        "Source Application": version_info["sourceApplication"]
+                    }
+                table_df = pd.DataFrame(table_dict).T
+                table_df.index.name = 'Model Name'
+                table_df.reset_index(inplace=True)
 
-            table_df.columns = ['Model Name', 'Created By', 'Created At', 'Source Application']
-            st.dataframe(table_df, use_container_width=True, hide_index=True)
-
-            # # Display Expanders for each child model in a grid
-            # max_columns_in_row = 2
-            # columns_to_create = len(latest_version_data_per_model)
-            # columns = []
-            # while columns_to_create > 0:
-            #     columns_in_row = min(max_columns_in_row, columns_to_create)
-            #     row = st.container()
-            #     cols = row.columns(columns_in_row, gap="small")
-            #     for col in cols:
-            #         columns.append(col)
-            #     columns_to_create -= columns_in_row
-
-            # # Display the latest version data in each column
-            # for child, version_info, column in zip(latest_version_data_per_model.keys(), latest_version_data_per_model.values(), columns):
-            #     with column:
-            #         with st.expander(f"**Latest Version for {child}:**"):
-            #             st.markdown(f"**Created By:** {version_info['authorUser'].name}")
-            #             st.markdown(f"**Created At:** {version_info['createdAt'].strftime('%Y-%m-%d %H:%M:%S %Z')}")
-            #             st.markdown(f"**Source Application:** {version_info['sourceApplication']}")
+                table_df.columns = ['Model Name', 'Created By', 'Created At', 'Source Application']
+                st.dataframe(table_df, use_container_width=True, hide_index=True)
 
         pass
 
@@ -472,7 +474,7 @@ def display_metric(container, metric: Metric, add_text=True) -> None:
 
     # Display the metric value and ideal value
     container.markdown(
-        f"**Goal Value:** {metric.ideal_value:.2f} | **Current Value:** {metric.value:.2f}")
+        f"**Goal Value:** {metric.ideal_value:.3f} | **Current Value:** {metric.value:.3f}")
 
     # Display the tape diagram
     display_tape_diagram(container, metric)
@@ -825,7 +827,45 @@ def display_images(container, team_name: str, subfolder: str='01', header: bool=
     image_urls = [os.path.join(folder_path, file) for file in os.listdir(folder_path)
                   if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif'))]
     
+    # Sort the image URLs by y resolution
+    x_resolutions = []
+    y_resolutions = []
+    for image_url in image_urls:
+        with Image.open(image_url) as img:
+            x_resolutions.append(img.size[0])
+            y_resolutions.append(img.size[1])
+    sorted_image_urls = [x for _, x in sorted(zip(y_resolutions, image_urls))]
+    image_urls = sorted_image_urls
+
+    # Use the y_resolutions to determine the width of the images
+    set_height = 300
+    img_widths = []
+    for x_resolution, y_resolution in zip(x_resolutions, y_resolutions):
+        ratio = x_resolution / y_resolution
+        new_width = int(set_height * ratio)
+        img_widths.append(new_width)
+    # print("Image Widths: ", img_widths)  # Debugging: Print image widths
+
+    total_width_in_row = 1200
+    max_images_in_row = total_width_in_row // min(img_widths)  # Maximum number of images in a row
+    
     if image_urls:
+        if max_images_in_row > 0:
+            # Create columns for images
+            num_images = len(image_urls)
+            columns_to_create = num_images
+            columns = []
+            while columns_to_create > 0:
+                columns_in_row = min(max_images_in_row, columns_to_create)
+                row = container.container()
+                cols = row.columns(columns_in_row, vertical_alignment="center", gap="small")
+                for col in cols:
+                    columns.append(col)
+                columns_to_create -= columns_in_row
+        else:
+            # Create columns for images
+            columns = container.columns(len(image_urls))
+
         # Display images in the container
-        for image_url, column in zip(image_urls, container.columns(len(image_urls))):
-            column.image(image_url)
+        for image_url, column, img_width in zip(image_urls, columns, img_widths):
+            column.image(image_url, width=img_width)

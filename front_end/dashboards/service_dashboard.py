@@ -23,10 +23,24 @@ team_members = [
 ]
 
 text_dict = {
-    'design_overview': "Our service design integrates sustainable features with aesthetic considerations.",
+    'design_overview': 'Hyper A is a visionary vertical ecosystem that redefines the idea of a 24/7 “city within a city” through a seamless fusion of computation and human-scale design. Spanning a 1 km² hyper-building divided into eight distinct neighborhoods, the concept uses 3D space syntax and Kangaroo solver to optimize connectivity, adjacency, and functionality at both macro and micro scales. At its core, Hyper A prioritizes community life—interweaving neighborhoods into a dynamic social network where space is fluid, adaptable, and engaging. A voxelized workflow supports precision collaboration across teams, while innovative circulation systems ensure experiential richness. Here, movement becomes an experience, and architecture becomes infrastructure for interaction.',
     'bullet_items': [
-        "1. Service design optimized for maximum occupancy efficiency",
-        "2. Strategic service placement for maximum occupancy efficiency",
+        "Data:",
+        " 1. Collaboration with other teams",
+        " 2. Research for population & benchmark",
+        " 3. Eight neighborhoods concept",
+        " 4. Detailed program - day/evening/night",
+        " 5. Utilization rate for KPI",
+        "Allocation:",
+        " 1. Massing study in collaboration with structure team",
+        " 2. Macro and micro adjacency",
+        " 3. Kangaroo solver",
+        " 4. Data gathering and extraction for function distribution",
+        "Voxelization:",
+        " 1. Automated process",
+        " 2. Color coded functions",
+        " 3. Corridor placement",
+        " 4. Area calculation for KPI"
     ],
 }
 

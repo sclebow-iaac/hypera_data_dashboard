@@ -21,9 +21,8 @@ team_members = [
 text_dict = {
     'design_overview': 'Our structure design emphasizes safety, efficiency, and sustainability. We focus on optimizing space while ensuring structural integrity.',
     'bullet_items': [
-        "1. Column-Free Floor Area Ratio optimized for safety",
-        "2. Load Capacity per Square Meter optimized for efficiency",
-        "3. Compliance with building codes"
+        "1. Topologically optimized cores receive the neighborhoods' weight and connect the node levels",
+        "2. An exoskeleton wraps and supports the neighborhoods' slabs driving loads to the node levels"
     ],
 }
 
