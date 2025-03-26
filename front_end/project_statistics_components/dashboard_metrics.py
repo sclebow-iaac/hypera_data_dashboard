@@ -204,7 +204,7 @@ def run():
     if rate_limit:
         with st.expander("GitHub API Rate Limit Status"):
             st.write(f"Remaining requests: {rate_limit['remaining']}/{rate_limit['limit']}")
-            st.write(f"Reset time: {rate_limit['reset_time'].strftime('%Y-%m-%d %H:%M:%S')}")
+            st.write(f"Reset time: {rate_limit['reset_time'].strftime('%Y-%m-%d %H:%M:%S %Z')}")
 
     github_url = "https://github.com/sclebow-iaac/hypera_data_dashboard"
     forked_url = 'https://github.com/specklesystems/specklepy'
@@ -311,25 +311,57 @@ def run():
                 # Commit history visualization
                 st.subheader("Commit History")
                 
+                # Create a figure for commit history
+                fig = go.Figure()
+                
                 # Group by date to count commits per day
                 commit_counts = filtered_commit_df.groupby(filtered_commit_df["date"].dt.date).size().reset_index()
                 commit_counts.columns = ["date", "count"]
                 
-                # Create commit activity line chart
-                fig = px.line(
-                    commit_counts, 
-                    x="date", 
-                    y="count",
-                    labels={"date": "Date", "count": "Number of Commits"},
-                    markers=True
-                )
+                # Group by date and author to count commits per day per author
+                author_commit_counts = filtered_commit_df.groupby([
+                    filtered_commit_df["date"].dt.date, 
+                    filtered_commit_df["author"]
+                ]).size().reset_index()
+                author_commit_counts.columns = ["date", "author", "count"]
                 
+                # Add a line for each author
+                for author in filtered_commit_df["author"].unique():
+                    author_data = author_commit_counts[author_commit_counts["author"] == author]
+                    fig.add_trace(go.Scatter(
+                        x=author_data["date"],
+                        y=author_data["count"],
+                        mode="lines+markers",
+                        name=author,
+                        line=dict(color=author_colors.get(author, "blue"), width=2),
+                        marker=dict(size=6),
+                    ))
+                
+                # Add total commits line
+                fig.add_trace(go.Scatter(
+                    x=commit_counts["date"],
+                    y=commit_counts["count"],
+                    mode="lines+markers",
+                    name="Total Commits",
+                    line=dict(color="rgba(0,0,0,0.7)", width=3),
+                    marker=dict(size=8),
+                ))
+
+                # Update layout
                 fig.update_layout(
                     xaxis_title="Date",
                     yaxis_title="Number of Commits",
-                    height=300,
-                    margin=dict(l=10, r=10, t=10, b=10),
-                    hovermode="x unified"
+                    height=400,
+                    margin=dict(l=10, r=40, t=10, b=10),
+                    hovermode="x unified",
+                    legend=dict(
+                        orientation="h",
+                        yanchor="top",
+                        y=1.1,
+                        xanchor="center",
+                        x=0.5,
+                        title="Authors",
+                    )
                 )
                 
                 st.plotly_chart(fig, use_container_width=True)
@@ -593,8 +625,15 @@ def run():
                     
                     fig.update_layout(
                         height=400,
-                        margin=dict(l=10, r=10, t=50, b=10)
+                        margin=dict(l=10, r=10, t=50, b=10),
+                        showlegend=True,
+                        legend_title="Contributors",
+                        font_family="Roboto Mono",
+                        font_color="#2c3e50"
                     )
+                    
+                    # Add black border to pie segments
+                    fig.update_traces(marker=dict(line=dict(color='#000000', width=2)))
                     
                     col1, col2 = st.columns([3, 2])
                     
@@ -636,16 +675,35 @@ def run():
                 weekday_counts,
                 x='Weekday',
                 y='Count',
+                range_y=[0, weekday_counts['Count'].max() * 1.1],
                 color='Count',
                 color_continuous_scale='Viridis',
-                labels={'Count': 'Number of Commits', 'Weekday': 'Day of Week'}
+                labels={'Count': 'Number of Commits', 'Weekday': 'Day of Week'},
+                text='Count'  # Add this to show values on bars
             )
             
             fig.update_layout(
                 xaxis_title="Day of Week",
                 yaxis_title="Number of Commits",
                 height=300,
-                margin=dict(l=10, r=10, t=10, b=10)
+                margin=dict(l=10, r=10, t=10, b=10),
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                font_family="Roboto Mono",
+                font_color="#2c3e50",
+                hoverlabel=dict(
+                    bgcolor="white",
+                    font_size=12,
+                    font_family="Roboto Mono",
+                    font_color="#2c3e50"
+                )
+            )
+            
+            # Add black border to bars
+            fig.update_traces(
+                marker=dict(line=dict(color='#000000', width=2)),
+                texttemplate='%{text}',
+                textposition='outside'
             )
             
             st.plotly_chart(fig, use_container_width=True)
@@ -653,3 +711,68 @@ def run():
             # Calculate which day had the most commits
             most_active_day = weekday_counts.loc[weekday_counts['Count'].idxmax()]
             st.markdown(f"**Most active day of the week:** {most_active_day['Weekday']} with {most_active_day['Count']} commits")
+
+            # Add commit distribution by hour UTC
+            st.subheader("Commit Distribution by Hour UTC")
+
+            # Add hour to filtered dataframe
+            filtered_commit_df['hour'] = filtered_commit_df['date'].dt.hour
+
+            # Count commits by hour
+            hour_counts = filtered_commit_df['hour'].value_counts().sort_index().reset_index()
+            hour_counts.columns = ['Hour', 'Count']
+
+            # Create hour distribution chart
+            fig = px.bar(
+                hour_counts,
+                x='Hour',
+                y='Count',
+                range_y=[0, hour_counts['Count'].max() * 1.1],
+                color='Count',
+                color_continuous_scale='Viridis',
+                labels={'Count': 'Number of Commits', 'Hour': 'Hour of Day (UTC)'},
+                text='Count'  # Add this to show values on bars
+            )
+
+            fig.update_layout(
+                xaxis_title="Hour of Day (UTC)",
+                yaxis_title="Number of Commits",
+                height=300,
+                margin=dict(l=10, r=10, t=10, b=10),
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                font_family="Roboto Mono",
+                font_color="#2c3e50",
+                hoverlabel=dict(
+                    bgcolor="white",
+                    font_size=12,
+                    font_family="Roboto Mono",
+                    font_color="#2c3e50"
+                )
+            )
+
+            # Add black border to bars
+            fig.update_traces(
+                marker=dict(line=dict(color='#000000', width=2)),
+                texttemplate='%{text}',
+                textposition='outside'
+            )
+
+            st.plotly_chart(fig, use_container_width=True)
+
+            # Add Most Recent Commit by Team Member table
+            st.subheader("Most Recent Commit by Team Member")
+
+            # Get the most recent commit for each author
+            recent_commits = filtered_commit_df.groupby('author').last().reset_index()
+            recent_commits = recent_commits.sort_values('date', ascending=False)[['author', 'date', 'message', 'sha']]
+            recent_commits['date'] = recent_commits['date'].dt.strftime('%Y-%m-%d %H:%M')
+
+            recent_commits.columns = ['Author', 'Date', 'Message', 'SHA']
+
+            # Display the table with HTML formatting
+            st.dataframe(
+                recent_commits,
+                use_container_width=True,
+                hide_index=True,
+            )

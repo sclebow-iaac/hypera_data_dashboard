@@ -7,12 +7,12 @@ import data_extraction.industrial_extractor as team_extractor
 
 from dashboards.dashboard import *
 
-def process_data(verified, team_data):
+def process_data(verified, team_data, model_data):
     if not verified:
         st.error(
             "Failed to extract data, proceding with Example Data.  Use Data Dashboard to Investigate.")
         team_extractor.display_data(
-            extracted_data=team_data, header=False, show_table=False, gauge=True, simple_table=False)
+            extracted_data=team_data, model_data=model_data, header=False, show_table=False, gauge=True, simple_table=False)
 
         # Example data
         energy_generation = 750  # kWh
@@ -79,8 +79,8 @@ def metric_calc_recycled_water_ratio(recycled_water, wastewater_production):
 def metric_calc_waste_utilization_ratio(recycled_solid_waste, solid_waste_production):
     return recycled_solid_waste / solid_waste_production
 
-def generate_metrics(verified, team_data) -> list[Metric]:
-    energy_generation, energy_demand, food_production, food_demand, recycled_solid_waste, solid_waste_production, recycled_water, wastewater_production = process_data(verified, team_data)
+def generate_metrics(verified, team_data, model_data) -> list[Metric]:
+    energy_generation, energy_demand, food_production, food_demand, recycled_solid_waste, solid_waste_production, recycled_water, wastewater_production = process_data(verified, team_data, model_data)
 
     metrics = []
 
@@ -187,7 +187,7 @@ def run(selected_team: str) -> None:
     models, client, project_id = setup_speckle_connection()
     verified, team_data, model_data = team_extractor.extract(attribute_display=False)
 
-    metrics = generate_metrics(verified, team_data)
+    metrics = generate_metrics(verified, team_data, model_data)
 
     generate_dashboard(
         selected_team=selected_team,

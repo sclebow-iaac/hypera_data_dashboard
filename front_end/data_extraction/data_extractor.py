@@ -390,8 +390,16 @@ def display_data(data, extracted_data, model_data, verbose=True, header=True, sh
         if container:
             with container:
                 # st.markdown('#### Extracted Data')
+                # Define a function to apply styles based on cell values
+                def highlight_not_found(row):
+                    if row['Value'] == "Not Found":
+                        return ['background-color: #ffcccc'] * len(row)
+                    return [''] * len(row)
+                
                 st.dataframe(df.style.set_properties(
-                    **{'font-family': 'Roboto Mono', 'font-size': '18px'}), hide_index=True, use_container_width=True)
+                    **{'font-family': 'Roboto Mono', 'font-size': '18px'})
+                    .apply(highlight_not_found, axis=1), 
+                    hide_index=True, use_container_width=True)
                 # st.markdown('---')
         else:
             st.markdown('#### Extracted Data')

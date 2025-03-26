@@ -12,6 +12,8 @@ import math
 
 from browser_detection import browser_detection_engine
 
+from front_end.project_statistics_components.network import get_project_data, create_network_graph
+
 import viewer
 
 content_container_width = 8  # Adjust this value to set the width of the content container
@@ -127,7 +129,11 @@ def generate_dashboard(selected_team: str, metrics: list[Metric], project_id: st
         # Display the Speckle viewer
         viewer_height = 400
         speckle_container = st.container(border=True)
-        display_speckle_viewer(speckle_container, project_id, presentation_model_id, is_transparent=True,
+        if selected_team == "structure": # TEMPORARY FIX: Structure Model not loading correctly 
+            display_speckle_viewer(speckle_container, project_id, presentation_model_id, is_transparent=True,
+                            hide_controls=True, hide_selection_info=True, no_scroll=False, height=viewer_height, include_site=False)
+        else:
+            display_speckle_viewer(speckle_container, project_id, presentation_model_id, is_transparent=True,
                             hide_controls=True, hide_selection_info=True, no_scroll=False, height=viewer_height, include_site=True)
 
         # Display the images
