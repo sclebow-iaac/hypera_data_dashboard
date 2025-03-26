@@ -102,7 +102,7 @@ class Metric:
             self.ideal_value * 100 if self.ideal_value != 0 else 0
         # Display the new value
         metric_container.metric(
-            label=f"**Goal Value:** {self.ideal_value:.2f} | **Current Value:** {new_value:.2f}",
+            label=f"**Goal Value:** {self.ideal_value:.3f} | **Current Value:** {new_value:.3f}",
             value=f"{new_value:.4f}",
             delta=f"{delta_percent:.2f}%",
         )
@@ -453,7 +453,7 @@ def display_metric(container, metric: Metric, add_text=True) -> None:
 
     # Display the metric value and ideal value
     container.markdown(
-        f"**Goal Value:** {metric.ideal_value:.2f} | **Current Value:** {metric.value:.2f}")
+        f"**Goal Value:** {metric.ideal_value:.3f} | **Current Value:** {metric.value:.3f}")
 
     # Display the tape diagram
     display_tape_diagram(container, metric)

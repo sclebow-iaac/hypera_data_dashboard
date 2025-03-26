@@ -47,12 +47,13 @@ def process_data(verified, team_data, model_data):
         energy_generation = 1500  # kWh
         energy_required_by_industrial_team = 1000  # kWh
 
-        weight_residential = 0.5
+        # weight_residential = 0.5
+        weight_residential = 1.0
         weight_work = 0.5
         residential_area_with_daylight = 100
         total_residential_area = 200
-        work_area_with_daylight = 150
-        total_work_area = 300
+        # work_area_with_daylight = 150
+        # total_work_area = 300
 
         number_optimized_panel_type = 100
         number_starting_panel_type = 200
@@ -61,46 +62,76 @@ def process_data(verified, team_data, model_data):
         # Extracted data
         energy_generation = team_data['EnergyGeneration']
         energy_required_by_industrial_team = team_data['EnergyRequiredByIndustrialTeam']
-        weight_residential = 0.5
+        weight_residential = 1.0
         weight_work = 0.5
         residential_area_with_daylight = team_data['ResidentialAreaWithDaylight']
         total_residential_area = team_data['TotalResidentialArea']
-        work_area_with_daylight = team_data['WorkAreaWithDaylight']
-        total_work_area = team_data['TotalWorkArea']
+        # work_area_with_daylight = team_data['WorkAreaWithDaylight']
+        # total_work_area = team_data['TotalWorkArea']
 
         number_optimized_panel_type = team_data['NumberOptimizedPanelType']
         number_starting_panel_type = team_data['NumberStartingPanelType']
 
+    # Cast to float
+    energy_generation = float(energy_generation)
+    energy_required_by_industrial_team = float(energy_required_by_industrial_team)
+    weight_residential = float(weight_residential)
+    weight_work = float(weight_work)
+    residential_area_with_daylight = float(residential_area_with_daylight)
+    total_residential_area = float(total_residential_area)
+    # work_area_with_daylight = float(work_area_with_daylight)
+    # total_work_area = float(total_work_area)
+    number_optimized_panel_type = float(number_optimized_panel_type)
+    number_starting_panel_type = float(number_starting_panel_type)
+
     return (energy_generation, energy_required_by_industrial_team,
             weight_residential, weight_work,
             residential_area_with_daylight, total_residential_area,
-            work_area_with_daylight, total_work_area,
+            # work_area_with_daylight, total_work_area,
             number_optimized_panel_type, number_starting_panel_type)
 
-def metric_calc_daylight_factor(weight_residential, weight_work, residential_area_with_daylight, total_residential_area, work_area_with_daylight, total_work_area):
+# def metric_calc_daylight_factor(weight_residential, weight_work, residential_area_with_daylight, total_residential_area, work_area_with_daylight, total_work_area):
+def metric_calc_daylight_factor(weight_residential, weight_work, residential_area_with_daylight, total_residential_area):
+    # Avoid division by zero
+    if total_residential_area == 0:
+        total_residential_area = 1
+        st.warning("Total Residential Area is zero, setting to 1 to avoid division by zero.")
+    # if total_work_area == 0:
+    #     total_work_area = 1
+    #     st.warning("Total Work Area is zero, setting to 1 to avoid division by zero.")
     return (
-        weight_residential * (residential_area_with_daylight / total_residential_area) +
-        weight_work * (work_area_with_daylight / total_work_area)
+        weight_residential * (residential_area_with_daylight / total_residential_area)
     )
 
 def metric_calc_energy_ratio(energy_generation, energy_required_by_industrial_team):
+    # Avoid division by zero
+    if energy_required_by_industrial_team == 0:
+        energy_required_by_industrial_team = 1
+        st.warning("Energy Required by Industrial Team is zero, setting to 1 to avoid division by zero.")
+
     return energy_generation / energy_required_by_industrial_team
 
 def metric_calc_panel_optimization(number_optimized_panel_type, number_starting_panel_type):
+    # Avoid division by zero
+    if number_starting_panel_type == 0:
+        number_starting_panel_type = 1
+        st.warning("Number of Starting Panel Type is zero, setting to 1 to avoid division by zero.")
+
     return 1 - number_optimized_panel_type / number_starting_panel_type
 
 def generate_metrics(verified, team_data, model_data) -> list[Metric]:
     (energy_generation, energy_required_by_industrial_team,
      weight_residential, weight_work,
      residential_area_with_daylight, total_residential_area,
-     work_area_with_daylight, total_work_area,
+    #  work_area_with_daylight, total_work_area,
      number_optimized_panel_type, number_starting_panel_type) = process_data(verified, team_data, model_data)
 
     metrics = []
 
     daylight_factor_metric = Metric(
-        "Primary Daylight Factor & and Solar Loads Control for Residential Spaces and Work Spaces",
-        r'w_{resi}\frac{ResidentialAreaWithDaylight}{TotalResidentialArea} + w_{work}\frac{WorkAreaWithDaylight}{TotalWorkArea}',
+        "Daylight Factor",
+        # r'w_{resi}\frac{ResidentialAreaWithDaylight}{TotalResidentialArea} + w_{work}\frac{WorkAreaWithDaylight}{TotalWorkArea}',
+        r'\frac{TotalAreaWithDaylight}{TotalArea}',
         "Measures the proportion of floor area that receives daylight.",
         metric_calc_daylight_factor,
         './front_end/dashboards/pictures/daylight.png',
@@ -125,26 +156,26 @@ def generate_metrics(verified, team_data, model_data) -> list[Metric]:
                 "value": total_residential_area,
                 "unit": "m²"
             },
-            {
-                "name": "Work Area with Daylight",
-                "value": work_area_with_daylight,
-                "unit": "m²"
-            },
-            {
-                "name": "Total Work Area",
-                "value": total_work_area,
-                "unit": "m²"
-            }
+            # {
+            #     "name": "Work Area with Daylight",
+            #     "value": work_area_with_daylight,
+            #     "unit": "m²"
+            # },
+            # {
+            #     "name": "Total Work Area",
+            #     "value": total_work_area,
+            #     "unit": "m²"
+            # }
         ],
         min_value=0,
         max_value=0.1,
-        ideal_value=0.05
+        ideal_value=0.015
     )
     metrics.append(daylight_factor_metric)
 
     panel_optimization_metric = Metric(
         "Panel Optimization Ratio",
-        r'1 - \frac {Number of Optimized Panel Typ}{Number of Starting Panel Type}',
+        r'1 - \frac {Number of Optimized Panel Type}{Number of Starting Panel Type}',
         "Measures the efficiency of panel area usage.",
         metric_calc_panel_optimization,
         './front_end/dashboards/pictures/panel.png',
