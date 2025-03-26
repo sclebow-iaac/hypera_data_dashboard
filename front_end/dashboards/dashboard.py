@@ -16,6 +16,8 @@ from front_end.project_statistics_components.network import get_project_data, cr
 
 import viewer
 
+import front_end.project_statistics_components.network as network_graph
+
 content_container_width = 8  # Adjust this value to set the width of the content container
 
 class Metric:
@@ -139,6 +141,20 @@ def generate_dashboard(selected_team: str, metrics: list[Metric], project_id: st
         # Display the images
         images_container = st.container(border=True)
         display_images(images_container, selected_team, "01")
+
+        # Add a network graph for the selected team
+        project_tree, project_id = network_graph.get_project_data()
+        
+        # Remove models in the project tree that are not in the selected team
+        filtered_project_tree = {}
+        for key, model in project_tree.items():
+            if selected_team in key:
+                filtered_project_tree[key] = model
+
+        # Create the network graph
+        network_graph_container = st.container(border=True)
+        with network_graph_container:
+            network_graph.create_network_graph(filtered_project_tree, show_team_selector=False, selected_team=selected_team)
 
         # Display the text section
         text_container = st.container(border=True)

@@ -167,7 +167,7 @@ def get_project_data():
 
     return project_tree, project_id
 
-def create_network_graph(project_tree, height=800, show_team_selector=True):
+def create_network_graph(project_tree, height=800, show_team_selector=True, selected_team=None):
     st.subheader("Project Network Diagram")
 
     # Add expander for click instructions
@@ -197,22 +197,43 @@ def create_network_graph(project_tree, height=800, show_team_selector=True):
                 # Reset the highlighted node in session state
                 st.session_state.highlighted_node = None
                 st.rerun()
+    if selected_team != None:
+        if show_team_selector:
+            # Add a checkbox for each team to filter the models
+            st.markdown("###### Show/Hide Teams")
+            teams = set()
+            for model in project_tree.values():
+                # Extract the team name from the model's long name
+                team_name = model["team_name"]
+                teams.add(team_name)
 
-    if show_team_selector:
-        # Add a checkbox for each team to filter the models
-        st.markdown("###### Show/Hide Teams")
+            teams.remove("Root")  # Remove the root team from the list
+
+            team_columns = st.columns(len(teams))
+            selected_teams = []
+            for team, col in zip(teams, team_columns):
+                with col:
+                    if st.checkbox(team, value=True):
+                        selected_teams.append(team)
+
+            selected_teams.append("Root")  # Always include the root team
+
+            # Filter the project tree based on the selected teams
+            filtered_project_tree = {key: value for key, value in project_tree.items() if value["team_name"] in selected_teams}
+            project_tree = filtered_project_tree
+    
+    else:
+        # If a team is selected, filter the project tree based on the selected team
         teams = set()
         for model in project_tree.values():
             # Extract the team name from the model's long name
             team_name = model["team_name"]
             teams.add(team_name)
-        # teams = sorted(teams)
-        team_columns = st.columns(len(teams))
+
         selected_teams = []
-        for team, col in zip(teams, team_columns):
-            with col:
-                if st.checkbox(team, value=True):
-                    selected_teams.append(team)
+        for team in teams:
+            if team == selected_team or team == "Root":
+                selected_teams.append(team)
         
         # Filter the project tree based on the selected teams
         filtered_project_tree = {key: value for key, value in project_tree.items() if value["team_name"] in selected_teams}
