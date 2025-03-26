@@ -117,69 +117,140 @@ def get_content_container_columns():
 def generate_dashboard(selected_team: str, metrics: list[Metric], project_id: str, team_members: list[dict], team_extractor, extracted_data, model_data, text_dict: list[dict], presentation_model_id) -> None:
     left_margin, content_container, right_margin = st.columns([1, content_container_width, 1], gap="small")
     with content_container:
-        # Display the images
-        header_image_container = st.container(border=True)
-        display_images(header_image_container, selected_team, "02")
-
         # Display the page title
         display_page_title(selected_team)
 
         # Display the Team Members
         team_members_container = st.container()
         display_team_members(team_members_container, team_members)
-
-        # Display the Speckle viewer
-        viewer_height = 400
-        speckle_container = st.container(border=True)
-        if selected_team == "structure": # TEMPORARY FIX: Structure Model not loading correctly 
-            display_speckle_viewer(speckle_container, project_id, presentation_model_id, is_transparent=True,
-                            hide_controls=True, hide_selection_info=True, no_scroll=False, height=viewer_height, include_site=False)
-        else:
-            display_speckle_viewer(speckle_container, project_id, presentation_model_id, is_transparent=True,
-                            hide_controls=True, hide_selection_info=True, no_scroll=False, height=viewer_height, include_site=True)
-
-        # Display the images
-        images_container = st.container(border=True)
-        display_images(images_container, selected_team, "01")
-
-        # Add a network graph for the selected team
-        project_tree, project_id = network_graph.get_project_data()
         
-        # Remove models in the project tree that are not in the selected team
-        filtered_project_tree = {}
-        for key, model in project_tree.items():
-            if selected_team in key:
-                filtered_project_tree[key] = model
+        concept_tab, metrics_tab, network_graph_tab = st.tabs(["Design Concept", "Metric Analysis", "Speckle Model Explorer"])
+        with concept_tab:
+            # Display the images
+            header_image_container = st.container(border=True)
+            display_images(header_image_container, selected_team, "02")
 
-        # Create the network graph
-        network_graph_container = st.container(border=True)
-        with network_graph_container:
-            network_graph.create_network_graph(filtered_project_tree, show_team_selector=False, selected_team=selected_team)
+            # Display the Speckle viewer
+            viewer_height = 400
+            speckle_container = st.container(border=True)
+            if selected_team == "structure": # TEMPORARY FIX: Structure Model not loading correctly 
+                display_speckle_viewer(speckle_container, project_id, presentation_model_id, is_transparent=True,
+                                hide_controls=True, hide_selection_info=True, no_scroll=False, height=viewer_height, include_site=False)
+            else:
+                display_speckle_viewer(speckle_container, project_id, presentation_model_id, is_transparent=True,
+                                hide_controls=True, hide_selection_info=True, no_scroll=False, height=viewer_height, include_site=True)
 
-        # Display the text section
-        text_container = st.container(border=True)
-        display_text(text_container, text_dict)
+            # Display the images
+            images_container = st.container(border=True)
+            display_images(images_container, selected_team, "01")
 
-        # Display the extracted data
-        extracted_data_container = st.container(border=True)
-        team_extractor.display_data(extracted_data=extracted_data, model_data=model_data,
-                                     header=True, show_table=True,
-                                    gauge=False, simple_table=True, container=extracted_data_container)
 
-        # Display the KPI section
-        kpi_container = st.container(border=True)
-        display_st_metric_values(kpi_container, metrics, use_columns=True)
+            # Display the text section
+            text_container = st.container(border=True)
+            display_text(text_container, text_dict)
 
-        # Display the detailed metrics
-        detailed_metrics_container = st.container(border=True)
-        display_metric_visualizations(
-            detailed_metrics_container, metrics, add_text=True)
+        with metrics_tab:
+            # Display the extracted data
+            extracted_data_container = st.container(border=True)
+            team_extractor.display_data(extracted_data=extracted_data, model_data=model_data,
+                                        header=True, show_table=True,
+                                        gauge=False, simple_table=True, container=extracted_data_container)
 
-        # Display the interactive calculators
-        interactive_calculator_container = st.container(border=True)
-        grid = True if len(metrics) > 2 else False
-        display_interactive_calculators(
-            interactive_calculator_container, metrics, grid=grid)
+            # Display the KPI section
+            kpi_container = st.container(border=True)
+            display_st_metric_values(kpi_container, metrics, use_columns=True)
+
+            # Display the detailed metrics
+            detailed_metrics_container = st.container(border=True)
+            display_metric_visualizations(
+                detailed_metrics_container, metrics, add_text=True)
+
+            # Display the interactive calculators
+            interactive_calculator_container = st.container(border=True)
+            grid = True if len(metrics) > 2 else False
+            display_interactive_calculators(
+                interactive_calculator_container, metrics, grid=grid)
+
+        with network_graph_tab:
+            st.warning('Further Statistics and Analysis of the Models can be found in the Model Inspector Tab of the Project Statistics Dashboard')
+
+            # Add a network graph for the selected team
+            project_tree, project_id = network_graph.get_project_data()
+            
+            # Create the network graph
+            network_graph_container = st.container(border=True)
+            with network_graph_container:
+                selected_model_name, selected_node_children = network_graph.create_network_graph(project_tree, show_team_selector=True, selected_team=selected_team)
+
+            latest_version_data_per_model = {}
+
+            if selected_node_children:
+                children_ids = []
+                for child in selected_node_children:
+                    child_id = project_tree[child]['id']
+                    children_ids.append(child_id)
+                    value = project_tree[child]
+                    # Get the latest version data
+                    latest_version_data = None
+                    soonest_date = None
+                    for version_id, version_info in value["version_data"].items():
+                        if latest_version_data is None or version_info["createdAt"] < soonest_date:
+                            latest_version_data = version_info
+                            soonest_date = version_info["createdAt"]
+                    latest_version_data_per_model[child] = latest_version_data
+
+                selected_model_id = ','.join(children_ids)
+                header_text = 'Speckle Viewer of Children Models'
+
+            else:
+                selected_model_id = project_tree[selected_model_name]['id']
+                header_text = 'Speckle Viewer of Selected Model'
+
+                latest_version_data[selected_model_name] = project_tree[selected_model_name]['version_data']
+
+            if selected_model_id:
+                # Display the selected model in the Speckle viewer
+                speckle_container = st.container(border=True)
+                display_speckle_viewer(speckle_container, project_id, selected_model_id, is_transparent=True,
+                                hide_controls=True, hide_selection_info=True, no_scroll=False, height=viewer_height, include_site=False, header_text=header_text)
+                
+            # Display the version data
+            st.subheader("Latest Version Data for Selected Model(s)")
+            
+            # Create a table to display the latest version data
+            table_dict = {}
+            for child, version_info in latest_version_data_per_model.items():
+                table_dict[child] = {
+                    "Created By": version_info["authorUser"].name,
+                    "Created At": version_info["createdAt"].strftime('%Y-%m-%d %H:%M:%S %Z'),
+                    "Source Application": version_info["sourceApplication"]
+                }
+            table_df = pd.DataFrame(table_dict).T
+            table_df.index.name = 'Model Name'
+            table_df.reset_index(inplace=True)
+
+            table_df.columns = ['Model Name', 'Created By', 'Created At', 'Source Application']
+            st.dataframe(table_df, use_container_width=True, hide_index=True)
+
+            # # Display Expanders for each child model in a grid
+            # max_columns_in_row = 2
+            # columns_to_create = len(latest_version_data_per_model)
+            # columns = []
+            # while columns_to_create > 0:
+            #     columns_in_row = min(max_columns_in_row, columns_to_create)
+            #     row = st.container()
+            #     cols = row.columns(columns_in_row, gap="small")
+            #     for col in cols:
+            #         columns.append(col)
+            #     columns_to_create -= columns_in_row
+
+            # # Display the latest version data in each column
+            # for child, version_info, column in zip(latest_version_data_per_model.keys(), latest_version_data_per_model.values(), columns):
+            #     with column:
+            #         with st.expander(f"**Latest Version for {child}:**"):
+            #             st.markdown(f"**Created By:** {version_info['authorUser'].name}")
+            #             st.markdown(f"**Created At:** {version_info['createdAt'].strftime('%Y-%m-%d %H:%M:%S %Z')}")
+            #             st.markdown(f"**Source Application:** {version_info['sourceApplication']}")
 
         pass
 

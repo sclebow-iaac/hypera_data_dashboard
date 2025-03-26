@@ -197,7 +197,9 @@ def create_network_graph(project_tree, height=800, show_team_selector=True, sele
                 # Reset the highlighted node in session state
                 st.session_state.highlighted_node = None
                 st.rerun()
-    if selected_team == None:
+    print('not(selected_team)', not(selected_team))
+    print('bool(selected_team)', bool(selected_team))
+    if not(selected_team):
         if show_team_selector:
             # Add a checkbox for each team to filter the models
             st.markdown("###### Show/Hide Teams")
@@ -206,7 +208,6 @@ def create_network_graph(project_tree, height=800, show_team_selector=True, sele
                 # Extract the team name from the model's long name
                 team_name = model["team_name"]
                 teams.add(team_name)
-                print(f'team_name: {team_name}')
 
             teams.remove("Root")  # Remove the root team from the list
 
@@ -229,20 +230,25 @@ def create_network_graph(project_tree, height=800, show_team_selector=True, sele
         for model in project_tree.values():
             # Extract the team name from the model's long name
             team_name = model["team_name"]
+            print(f'team_name: {team_name}')
             teams.add(team_name)
-
+        print(f'teams: {teams}')
         selected_teams = []
         for team in teams:
-            if team == selected_team:
+            if selected_team.lower() in team.lower():
                 selected_teams.append(team)
 
         selected_teams.append("Root")  # Always include the root team
+        print('selected_teams', selected_teams)
 
         # Filter the project tree based on the selected teams
         filtered_project_tree = {key: value for key, value in project_tree.items() if value["team_name"] in selected_teams}
         project_tree = filtered_project_tree
 
         print(f'len(filtered_project_tree): {len(filtered_project_tree)}')
+        for key, value in filtered_project_tree.items():
+            print(f'filtered_project_tree: {key}')
+            
 
     G = nx.DiGraph()  # Use a directed graph for clearer parent/child relationships
 

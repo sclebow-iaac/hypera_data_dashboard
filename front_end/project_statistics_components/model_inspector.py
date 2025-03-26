@@ -9,7 +9,8 @@ from streamlit_plotly_events import plotly_events
 import attribute_extraction
 from dashboards.dashboard import *
 
-from project_statistics_components.network import create_network_graph
+# from project_statistics_components.network import create_network_graph
+import project_statistics_components.network as network
 
 default_speckle_viewer_height = 600
 
@@ -17,7 +18,7 @@ def run(project_tree, project_id):
     st.write('This tab allows you to explore the project tree and select models for analysis.')
 
     # Create the network diagram
-    selected_model_name, selected_node_children = create_network_graph(project_tree)
+    selected_model_name, selected_node_children = network.create_network_graph(project_tree, show_team_selector=True)
 
     # Sort the children by their long name
     selected_node_children.sort()
