@@ -293,6 +293,25 @@ def analyze_team_performance(service_metrics, structure_metrics, residential_met
         )
 
 def run(project_tree, project_id):
+    # Get metrics from extractors
+    extractors = [
+        service_extractor, structure_extractor, residential_extractor, 
+        industrial_extractor, facade_extractor
+    ]
+    dashboards = [
+        service_dashboard, structure_dashboard, residential_dashboard, 
+        industrial_dashboard, facade_dashboard
+    ]
+    team_metrics = []
+    for extractor, dashboard in zip(extractors, dashboards):
+        # Extract data
+        verified, team_data, model_data = extractor.extract(attribute_display=False)
+        metrics = dashboard.generate_metrics(verified, team_data, model_data)
+        team_metrics.append(metrics)
+        
+    # Unpack the metrics
+    service_metrics, structure_metrics, residential_metrics, industrial_metrics, facade_metrics = team_metrics
+
     # Create 9 columns: 5 for content and 4 for padding
     cols = st.columns([10, 1, 10, 1, 10, 1, 10, 1, 10])
 
@@ -304,70 +323,51 @@ def run(project_tree, project_id):
     # Create another set of columns for metrics
     cols = st.columns([10, 1, 10, 1, 10, 1, 10, 1, 10])
 
-    # Service column (index 0)
     with cols[0]:
         # Caption
         st.markdown("<p style='text-align: center;'><strong>Service KPIs</strong></p>", unsafe_allow_html=True)
-        
-        # Call the service dashboard to get the metrics
-        verified, team_data, model_data = service_extractor.extract(attribute_display=False)
-        service_metrics = service_dashboard.generate_metrics(verified, team_data)
+
+    with cols[2]:
+        # Caption
+        st.markdown("<p style='text-align: center;'><strong>Structure KPIs</strong></p>", unsafe_allow_html=True)
+
+    with cols[4]:
+        # Caption
+        st.markdown("<p style='text-align: center;'><strong>Residential KPIs</strong></p>", unsafe_allow_html=True)
+
+    with cols[6]:
+        # Caption
+        st.markdown("<p style='text-align: center;'><strong>Industrial KPIs</strong></p>", unsafe_allow_html=True)
+
+    with cols[8]:
+        # Caption
+        st.markdown("<p style='text-align: center;'><strong>Facade KPIs</strong></p>", unsafe_allow_html=True)
+
+    # Create another set of columns for metrics
+    cols = st.columns([10, 1, 10, 1, 10, 1, 10, 1, 10])
+    
+    # Service column (index 0)
+    with cols[0]:
         display_st_metric_values(container=cols[0], metrics=service_metrics, use_columns=False, include_header=False)
         
     # Structure column (index 2)
     with cols[2]:
-        # Caption
-        st.markdown("<p style='text-align: center;'><strong>Structure KPIs</strong></p>", unsafe_allow_html=True)
-        
-        verified, team_data, model_data = structure_extractor.extract(attribute_display=False)
-        structure_metrics = structure_dashboard.generate_metrics(verified, team_data)
         display_st_metric_values(container=cols[2], metrics=structure_metrics, use_columns=False, include_header=False)
     
     # Residential column (index 4)
     with cols[4]:
-        # Caption
-        st.markdown("<p style='text-align: center;'><strong>Residential KPIs</strong></p>", unsafe_allow_html=True)
-        
-        verified, team_data, model_data = residential_extractor.extract(attribute_display=False)
-        residential_metrics = residential_dashboard.generate_metrics(verified, team_data)
         display_st_metric_values(container=cols[4], metrics=residential_metrics, use_columns=False, include_header=False)
     
     # Industrial column (index 6)
     with cols[6]:
-        # Caption
-        st.markdown("<p style='text-align: center;'><strong>Industrial KPIs</strong></p>", unsafe_allow_html=True)
-        
-        verified, team_data, model_data = industrial_extractor.extract(attribute_display=False)
-        industrial_metrics = industrial_dashboard.generate_metrics(verified, team_data)
         display_st_metric_values(container=cols[6], metrics=industrial_metrics, use_columns=False, include_header=False)
 
     # Facade column (index 8)
     with cols[8]:
-        # Caption
-        st.markdown("<p style='text-align: center;'><strong>Facade KPIs</strong></p>", unsafe_allow_html=True)
-        
-        verified, team_data, model_data = facade_extractor.extract(attribute_display=False)
-        facade_metrics = facade_dashboard.generate_metrics(verified, team_data)
         display_st_metric_values(container=cols[8], metrics=facade_metrics, use_columns=False, include_header=False)
 
     # After displaying the KPIs, add the performance analysis
     st.markdown("---")  # Add a separator
-    
-    # Get metrics from extractors
-    verified, team_data, model_data = service_extractor.extract(attribute_display=False)
-    service_metrics = service_dashboard.generate_metrics(verified, team_data)
-    
-    verified, team_data, model_data = structure_extractor.extract(attribute_display=False)
-    structure_metrics = structure_dashboard.generate_metrics(verified, team_data)
-    
-    verified, team_data, model_data = residential_extractor.extract(attribute_display=False)
-    residential_metrics = residential_dashboard.generate_metrics(verified, team_data)
-    
-    verified, team_data, model_data = industrial_extractor.extract(attribute_display=False)
-    industrial_metrics = industrial_dashboard.generate_metrics(verified, team_data)
-    
-    verified, team_data, model_data = facade_extractor.extract(attribute_display=False)
-    facade_metrics = facade_dashboard.generate_metrics(verified, team_data)
 
     # Analyze and display team performance
     analyze_team_performance(
