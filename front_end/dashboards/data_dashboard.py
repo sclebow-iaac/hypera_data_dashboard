@@ -10,12 +10,30 @@ import data_extraction.service_extractor as service_extractor
 import data_extraction.structure_extractor as structure_extractor
 import data_extraction.industrial_extractor as industrial_extractor
 
-from dashboards.dashboard import get_content_container_columns, content_container_width
+from dashboards.dashboard import get_content_container_columns, content_container_width, display_page_title, display_team_members
+
+team_members = [
+    {
+        'name': 'Scott Lebow',
+        'link': 'https://blog.iaac.net/user/sclebow/',
+    },
+    {
+        'name': 'Mahnoor Fatima',
+        'link': 'https://blog.iaac.net/user/mahnoor/',
+    },
+    {
+        'name': 'Biel Pitman',
+        'link': 'https://blog.iaac.net/user/bielpitman/'
+    }
+]
 
 def run(selected_team: str = "") -> None:
     left_margin, content_container, right_margin = get_content_container_columns()
     with content_container:
-        st.title("Data Dashboard")
+        # Set up the page title and layout
+        display_page_title('Data Dashboard')
+        # Display the team members
+        display_team_members(st.container(), team_members)
         st.markdown(
             "This dashboard is used to aggregate data from the metric models in the project")
         st.markdown("------")
@@ -26,11 +44,11 @@ def run(selected_team: str = "") -> None:
         with col1:
             header = st.checkbox("Header", value=True)
         with col2:
-            table = st.checkbox("Table", value=False)
+            table = st.checkbox("Table", value=True)
         with col3:
             gauge = st.checkbox("Gauge", value=True)
         with col4:
-            display_grid = st.checkbox("Display as Grid", value=True)
+            display_grid = st.checkbox("Display as Grid", value=False)
 
     if display_grid:
         l_0, facade_container, residential_container, r_0 = st.columns([1, content_container_width / 2, content_container_width / 2, 1], border=False)
