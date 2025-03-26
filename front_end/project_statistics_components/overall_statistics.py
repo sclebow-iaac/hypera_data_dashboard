@@ -151,6 +151,95 @@ def create_activity_by_weekday_chart(project_tree):
     # Show Chart
     st.plotly_chart(fig, use_container_width=True)
 
+def create_activity_by_time_of_day_chart(project_tree):
+    # Create and display the activity by hour of day chart.
+    st.subheader("Activity by Hour of Day")
+    # Get the activity data
+    all_versions_df = pd.DataFrame()
+    for model in project_tree.values():
+        for version in model["version_data"].values():
+            all_versions_df = pd.concat([all_versions_df, pd.DataFrame([{
+                "createdAt": version["createdAt"],
+                "authorUser": version["authorUser"],
+                "sourceApplication": version["sourceApplication"],
+                "team_name": model["team_name"],
+            }])], ignore_index=True)
+    all_versions_df['createdAt'] = pd.to_datetime(all_versions_df['createdAt'])
+    all_versions_df['hour'] = all_versions_df['createdAt'].dt.hour
+    all_versions_df['count'] = 1
+    all_versions_df['hour'] = all_versions_df['hour'].astype(str)
+    all_versions_df['hour'] = all_versions_df['hour'].str.zfill(2)  # Add leading zero for single digit hours
+
+    hour_conversion = {
+        '00': '12 AM', '01': '1 AM', '02': '2 AM', '03': '3 AM', '04': '4 AM',
+        '05': '5 AM', '06': '6 AM', '07': '7 AM', '08': '8 AM', '09': '9 AM',
+        '10': '10 AM', '11': '11 AM', '12': '12 PM', '13': '1 PM', '14': '2 PM',
+        '15': '3 PM', '16': '4 PM', '17': '5 PM', '18': '6 PM', '19': '7 PM',
+        '20': '8 PM', '21': '9 PM', '22': '10 PM', '23': '11 PM'
+    }
+    all_versions_df['hour'] = all_versions_df['hour'].map(hour_conversion)
+    all_versions_df['hour'] = pd.Categorical(all_versions_df['hour'],
+                                                 categories=list(hour_conversion.values()),
+                                                 ordered=True)
+    # Group by hour and team, count occurrences
+    activity_by_hour = all_versions_df.groupby(['hour', 'team_name']).size().reset_index(name='count')
+    # Sort the activity_by_hour DataFrame by hour
+    activity_by_hour['hour'] = pd.Categorical(activity_by_hour['hour'],
+                                                 categories=list(hour_conversion.values()),
+                                                 ordered=True)
+    activity_by_hour = activity_by_hour.sort_values('hour')
+    # Get the maximum y-axis range
+    # Remember that the bars will be stacked, so we need to find the maximum count for any hour
+    y_range_max = activity_by_hour.groupby('hour')['count'].sum().max()
+    # Create bar chart with a bar for each team
+    # Filter out zero counts
+    activity_by_hour = activity_by_hour[activity_by_hour['count'] > 0]
+    
+    fig = px.bar(
+        activity_by_hour,
+        x='hour',
+        y='count',
+        range_y=[0, y_range_max * 1.1],  # Add some space above the highest bar
+        color='team_name',
+        labels={'hour': 'Hour of Day (UTC)', 'count': 'Number of Versions', 'team_name': 'Team'},
+        color_discrete_map=team_colors,  # Add this line to use team colors
+        text='count'
+    )
+    fig.update_traces(texttemplate='%{text}', textposition='outside')
+    fig.update_layout(
+        showlegend=True,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=0.8
+        ),
+        legend_title='Teams',
+        margin=dict(l=1, r=30, t=1, b=1),
+        height=500,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font_family="Roboto Mono",
+        font_color="#2c3e50",
+        hovermode='closest',
+        hoverlabel=dict(
+            bgcolor="white",
+            font_size=12,
+            font_family="Roboto Mono",
+            font_color="#2c3e50",
+        ),
+    )
+    # Add team name as custom data for hover info
+    fig.update_traces(customdata=activity_by_hour['team_name'])
+    # Show Chart
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Add a celebration message for the most active hour
+    most_active_hour = activity_by_hour.groupby('hour').size().idxmax()
+    most_active_count = activity_by_hour.groupby('hour').size().max()
+    st.markdown(f"<div style='text-align: center;'><b>Most Active Hour: {most_active_hour} (UTC)</b> with {most_active_count} contributions!</div>", unsafe_allow_html=True)
+
 def display_overall_metrics(project_tree):
     # Display the overall project metrics.
     st.subheader("Overall Project Statistics")
@@ -620,6 +709,9 @@ def run(project_tree, project_id, detail_level='all'):
 
     # Create Activity by Weekday chart
     create_activity_by_weekday_chart(project_tree)
+
+    # Create Activity by Time of Day chart
+    create_activity_by_time_of_day_chart(project_tree)
     
     pie_height = 300
     contributer_col, source_application_col = st.columns([1, 1])

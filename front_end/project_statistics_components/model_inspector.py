@@ -292,19 +292,25 @@ def run(project_tree, project_id):
                     font_family="Roboto Mono",
                     font_color="#2c3e50",
                     plot_bgcolor='rgba(240,240,240,0.2)',
-                    hovermode='closest',
+                    hovermode='x unified',
                     showlegend=False,
                 )
-
                 # Add connecting lines for each model to better visualize the sequence
                 for model_name in all_versions_df['model_name'].unique():
                     model_data = all_versions_df[all_versions_df['model_name'] == model_name].sort_values('createdAt')
+                    
+                    # Get the color from the existing scatter trace for this model
+                    model_color = None
+                    for trace in fig.data:
+                        if isinstance(trace, go.Scatter) and trace.mode == 'markers' and trace.name == model_name:
+                            model_color = trace.marker.color
+                            break
                     
                     fig.add_trace(go.Scatter(
                         x=model_data['createdAt'],
                         y=[model_name] * len(model_data),
                         mode='lines',
-                        line=dict(width=1.5, dash='dot'),
+                        line=dict(width=1.5, dash='dot', color=model_color),
                         showlegend=False,
                         opacity=0.7,
                         hoverinfo='skip'
