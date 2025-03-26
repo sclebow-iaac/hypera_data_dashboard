@@ -141,7 +141,7 @@ def generate_metrics(verified, team_data, model_data) -> list[Metric]:
     metrics.append(daylight_factor_metric)
 
     panel_optimization_metric = Metric(
-        "Panel Optimization",
+        "Panel Optimization Ratio",
         r'1 - \frac {Number of Optimized Panel Typ}{Number of Starting Panel Type}',
         "Measures the efficiency of panel area usage.",
         metric_calc_panel_optimization,
