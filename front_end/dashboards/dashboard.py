@@ -184,73 +184,54 @@ def generate_dashboard(selected_team: str, metrics: list[Metric], project_id: st
 
             latest_version_data_per_model = {}
 
-            if selected_node_children:
-                children_ids = []
-                for child in selected_node_children:
-                    child_id = project_tree[child]['id']
-                    children_ids.append(child_id)
-                    value = project_tree[child]
-                    # Get the latest version data
-                    latest_version_data = None
-                    soonest_date = None
-                    for version_id, version_info in value["version_data"].items():
-                        if latest_version_data is None or version_info["createdAt"] < soonest_date:
-                            latest_version_data = version_info
-                            soonest_date = version_info["createdAt"]
-                    latest_version_data_per_model[child] = latest_version_data
+            if selected_model_name: # If a model is selected
+                if selected_node_children:
+                    children_ids = []
+                    for child in selected_node_children:
+                        child_id = project_tree[child]['id']
+                        children_ids.append(child_id)
+                        value = project_tree[child]
+                        # Get the latest version data
+                        latest_version_data = None
+                        soonest_date = None
+                        for version_id, version_info in value["version_data"].items():
+                            if latest_version_data is None or version_info["createdAt"] < soonest_date:
+                                latest_version_data = version_info
+                                soonest_date = version_info["createdAt"]
+                        latest_version_data_per_model[child] = latest_version_data
 
-                selected_model_id = ','.join(children_ids)
-                header_text = 'Speckle Viewer of Children Models'
+                    selected_model_id = ','.join(children_ids)
+                    header_text = 'Speckle Viewer of Children Models'
 
-            else:
-                selected_model_id = project_tree[selected_model_name]['id']
-                header_text = 'Speckle Viewer of Selected Model'
+                else:
+                    selected_model_id = project_tree[selected_model_name]['id']
+                    header_text = 'Speckle Viewer of Selected Model'
 
-                latest_version_data[selected_model_name] = project_tree[selected_model_name]['version_data']
+                    latest_version_data[selected_model_name] = project_tree[selected_model_name]['version_data']
 
-            if selected_model_id:
-                # Display the selected model in the Speckle viewer
-                speckle_container = st.container(border=True)
-                display_speckle_viewer(speckle_container, project_id, selected_model_id, is_transparent=True,
-                                hide_controls=True, hide_selection_info=True, no_scroll=False, height=viewer_height, include_site=False, header_text=header_text)
+                if selected_model_id:
+                    # Display the selected model in the Speckle viewer
+                    speckle_container = st.container(border=True)
+                    display_speckle_viewer(speckle_container, project_id, selected_model_id, is_transparent=True,
+                                    hide_controls=True, hide_selection_info=True, no_scroll=False, height=viewer_height, include_site=False, header_text=header_text)
+                    
+                # Display the version data
+                st.subheader("Latest Version Data for Selected Model(s)")
                 
-            # Display the version data
-            st.subheader("Latest Version Data for Selected Model(s)")
-            
-            # Create a table to display the latest version data
-            table_dict = {}
-            for child, version_info in latest_version_data_per_model.items():
-                table_dict[child] = {
-                    "Created By": version_info["authorUser"].name,
-                    "Created At": version_info["createdAt"].strftime('%Y-%m-%d %H:%M:%S %Z'),
-                    "Source Application": version_info["sourceApplication"]
-                }
-            table_df = pd.DataFrame(table_dict).T
-            table_df.index.name = 'Model Name'
-            table_df.reset_index(inplace=True)
+                # Create a table to display the latest version data
+                table_dict = {}
+                for child, version_info in latest_version_data_per_model.items():
+                    table_dict[child] = {
+                        "Created By": version_info["authorUser"].name,
+                        "Created At": version_info["createdAt"].strftime('%Y-%m-%d %H:%M:%S %Z'),
+                        "Source Application": version_info["sourceApplication"]
+                    }
+                table_df = pd.DataFrame(table_dict).T
+                table_df.index.name = 'Model Name'
+                table_df.reset_index(inplace=True)
 
-            table_df.columns = ['Model Name', 'Created By', 'Created At', 'Source Application']
-            st.dataframe(table_df, use_container_width=True, hide_index=True)
-
-            # # Display Expanders for each child model in a grid
-            # max_columns_in_row = 2
-            # columns_to_create = len(latest_version_data_per_model)
-            # columns = []
-            # while columns_to_create > 0:
-            #     columns_in_row = min(max_columns_in_row, columns_to_create)
-            #     row = st.container()
-            #     cols = row.columns(columns_in_row, gap="small")
-            #     for col in cols:
-            #         columns.append(col)
-            #     columns_to_create -= columns_in_row
-
-            # # Display the latest version data in each column
-            # for child, version_info, column in zip(latest_version_data_per_model.keys(), latest_version_data_per_model.values(), columns):
-            #     with column:
-            #         with st.expander(f"**Latest Version for {child}:**"):
-            #             st.markdown(f"**Created By:** {version_info['authorUser'].name}")
-            #             st.markdown(f"**Created At:** {version_info['createdAt'].strftime('%Y-%m-%d %H:%M:%S %Z')}")
-            #             st.markdown(f"**Source Application:** {version_info['sourceApplication']}")
+                table_df.columns = ['Model Name', 'Created By', 'Created At', 'Source Application']
+                st.dataframe(table_df, use_container_width=True, hide_index=True)
 
         pass
 
