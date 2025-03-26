@@ -32,10 +32,11 @@ text_dict = {
 
 presentation_model_id = '76b50ad007'
 
-def process_data(verified, team_data):
+def process_data(verified, team_data, model_data):
     if not verified:
         st.error("Failed to extract data, proceding with Example Data.  Use Data Dashboard to Investigate.")
-        team_extractor.display_data(extracted_data=team_data, header=False, show_table=False, gauge=True, simple_table=False)
+        team_extractor.display_data(
+            extracted_data=team_data, model_data=model_data, header=False, show_table=False, gauge=True, simple_table=False)
 
         function_names = ["Function1", "Function2", "Function3"]
         utilization_rate = [0.8, 0.6, 0.7]
@@ -68,8 +69,8 @@ def metric_calc_occupancy_efficiency(utilization_rate, active_hours, function_ex
     occupancy_efficiency = numerator / (float(total_available_hours_per_day) * float(total_area))
     return occupancy_efficiency
 
-def generate_metrics(verified, team_data) -> list[Metric]:
-    function_names, utilization_rate, active_hours, function_exchange_factor, total_available_hours_per_day, total_area, area_of_functions = process_data(verified, team_data)
+def generate_metrics(verified, team_data, model_data) -> list[Metric]:
+    function_names, utilization_rate, active_hours, function_exchange_factor, total_available_hours_per_day, total_area, area_of_functions = process_data(verified, team_data, model_data)
 
     metrics = []
 
@@ -129,7 +130,7 @@ def run(selected_team: str) -> None:
     models, client, project_id = setup_speckle_connection()
     verified, team_data, model_data = team_extractor.extract(attribute_display=False)
 
-    metrics = generate_metrics(verified, team_data)
+    metrics = generate_metrics(verified, team_data, model_data)
 
     generate_dashboard(
         selected_team=selected_team,

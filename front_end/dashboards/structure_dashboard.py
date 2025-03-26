@@ -29,12 +29,12 @@ text_dict = {
 
 presentation_model_id = 'c2df017258'
 
-def process_data(verified, team_data):
+def process_data(verified, team_data, model_data):
     if not verified:
         st.error(
             "Failed to extract data, proceding with Example Data.  Use Data Dashboard to Investigate.")
         team_extractor.display_data(
-            extracted_data=team_data, header=False, show_table=False, gauge=True, simple_table=False)
+            extracted_data=team_data, model_data=model_data, header=False, show_table=False, gauge=True, simple_table=False)
 
         # Example data
         total_column_free_floor_area = 800
@@ -60,9 +60,9 @@ def metric_calc_column_free_floor_area_ratio(total_column_free_floor_area, total
 def metric_calc_load_capacity_per_square_meter(load_capacity, self_weight_of_structure):
     return float(load_capacity) / float(self_weight_of_structure)
 
-def generate_metrics(verified, team_data) -> list[Metric]:
+def generate_metrics(verified, team_data, model_data) -> list[Metric]:
     # Extract data
-    total_column_free_floor_area, total_floor_area, load_capacity, self_weight_of_structure = process_data(verified, team_data)
+    total_column_free_floor_area, total_floor_area, load_capacity, self_weight_of_structure = process_data(verified, team_data, model_data)
 
     metrics = []
 
@@ -122,7 +122,7 @@ def run(selected_team: str) -> None:
     models, client, project_id = setup_speckle_connection()
     verified, team_data, model_data = team_extractor.extract(attribute_display=False)
 
-    metrics = generate_metrics(verified, team_data)
+    metrics = generate_metrics(verified, team_data, model_data)
 
     generate_dashboard(
         selected_team=selected_team,

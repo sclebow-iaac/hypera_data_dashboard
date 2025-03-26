@@ -12,6 +12,8 @@ from specklepy.api.credentials import get_account_from_token
 def setup_speckle_connection(models_limit=100):
     speckle_server = "macad.speckle.xyz"
     speckle_token = "61c9dd1efb887a27eb3d52d0144f1e7a4a23f962d7"
+
+    from specklepy.api.client import SpeckleClient
     client = SpeckleClient(host=speckle_server)
     account = get_account_from_token(speckle_token, speckle_server)
     client.authenticate_with_account(account)

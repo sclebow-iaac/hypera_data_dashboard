@@ -12,7 +12,9 @@ data_names = [
     "TotalFinalPanelArea",
     "TotalInitialPanelArea",
     "EnergyGeneration",
-    "EnergyRequiredByIndustrialTeam"
+    "EnergyRequiredByIndustrialTeam",
+    "NumberOptimizedPanelType",
+    "NumberStartingPanelType"
 ]
 
 data_types = [
@@ -23,7 +25,9 @@ data_types = [
     "float",
     "float",
     "float",
-    "float"
+    "float",
+    "int",
+    "int"
 ]
 
 data_units = [
@@ -34,7 +38,9 @@ data_units = [
     "Square Meters",
     "Square Meters",
     "Kilowatt Hours",
-    "Kilowatt Hours"
+    "Kilowatt Hours",
+    "Count",
+    "Count"
 ]
 
 data = dict(zip(data_names, zip(data_types, data_units)))

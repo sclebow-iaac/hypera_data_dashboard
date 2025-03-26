@@ -37,10 +37,11 @@ text_dict = {
 
 presentation_model_id = '0194dfc3b9'
 
-def process_data(verified, team_data):
+def process_data(verified, team_data, model_data):
     if not verified:
         st.error("Failed to extract data, proceeding with Example Data. Use Data Dashboard to Investigate.")
-        team_extractor.display_data(extracted_data=team_data, header=False, show_table=False, gauge=True, simple_table=False)
+        team_extractor.display_data(
+            extracted_data=team_data, model_data=model_data, header=False, show_table=False, gauge=True, simple_table=False)
         # Example data
         number_of_units = [40, 60, 30, 20]
         unit_types = ['Housing', 'Social', 'Commercial', 'Open Space']
@@ -59,8 +60,8 @@ def metric_calc_index(number_of_units, unit_types, total_number_of_units):
     denominator = float(total_number_of_units) * (float(total_number_of_units) - 1)
     return 1 - (numerator / denominator) if denominator != 0 else None
 
-def generate_metrics(verified, team_data) -> list[Metric]:
-    number_of_units, unit_types, total_number_of_units = process_data(verified, team_data)
+def generate_metrics(verified, team_data, model_data) -> list[Metric]:
+    number_of_units, unit_types, total_number_of_units = process_data(verified, team_data, model_data)
     
     metrics = []
 
@@ -104,7 +105,7 @@ def run(selected_team: str) -> None:
     models, client, project_id = setup_speckle_connection()
     verified, team_data, model_data = team_extractor.extract(attribute_display=False)
 
-    metrics = generate_metrics(verified, team_data)
+    metrics = generate_metrics(verified, team_data, model_data)
 
     generate_dashboard(
         selected_team=selected_team,

@@ -36,10 +36,11 @@ text_dict = {
 
 presentation_model_id = '29bc37af8e'
 
-def process_data(verified, team_data):
+def process_data(verified, team_data, model_data):
     if not verified:
         st.error("Failed to extract data, proceeding with Example Data. Use Data Dashboard to Investigate.")
-        team_extractor.display_data(extracted_data=team_data, header=False, show_table=False, gauge=True, simple_table=False)
+        team_extractor.display_data(
+            extracted_data=team_data, model_data=model_data, header=False, show_table=False, gauge=True, simple_table=False)
         # Example data
         energy_generation = 1500  # kWh
         energy_required_by_industrial_team = 1000  # kWh
@@ -51,8 +52,8 @@ def process_data(verified, team_data):
         work_area_with_daylight = 150
         total_work_area = 300
 
-        total_final_panel_area = 100
-        total_initial_panel_area = 200
+        number_optimized_panel_type = 100
+        number_starting_panel_type = 200
 
     else:
         # Extracted data
@@ -65,14 +66,14 @@ def process_data(verified, team_data):
         work_area_with_daylight = team_data['WorkAreaWithDaylight']
         total_work_area = team_data['TotalWorkArea']
 
-        total_final_panel_area = team_data['TotalFinalPanelArea']
-        total_initial_panel_area = team_data['TotalInitialPanelArea']
+        number_optimized_panel_type = team_data['NumberOptimizedPanelType']
+        number_starting_panel_type = team_data['NumberStartingPanelType']
 
     return (energy_generation, energy_required_by_industrial_team,
             weight_residential, weight_work,
             residential_area_with_daylight, total_residential_area,
             work_area_with_daylight, total_work_area,
-            total_final_panel_area, total_initial_panel_area)
+            number_optimized_panel_type, number_starting_panel_type)
 
 def metric_calc_daylight_factor(weight_residential, weight_work, residential_area_with_daylight, total_residential_area, work_area_with_daylight, total_work_area):
     return (
@@ -83,15 +84,15 @@ def metric_calc_daylight_factor(weight_residential, weight_work, residential_are
 def metric_calc_energy_ratio(energy_generation, energy_required_by_industrial_team):
     return energy_generation / energy_required_by_industrial_team
 
-def metric_calc_panel_optimization(total_final_panel_area, total_initial_panel_area):
-    return total_final_panel_area / total_initial_panel_area
+def metric_calc_panel_optimization(number_optimized_panel_type, number_starting_panel_type):
+    return 1 - number_optimized_panel_type / number_starting_panel_type
 
-def generate_metrics(verified, team_data) -> list[Metric]:
+def generate_metrics(verified, team_data, model_data) -> list[Metric]:
     (energy_generation, energy_required_by_industrial_team,
      weight_residential, weight_work,
      residential_area_with_daylight, total_residential_area,
      work_area_with_daylight, total_work_area,
-     total_final_panel_area, total_initial_panel_area) = process_data(verified, team_data)
+     number_optimized_panel_type, number_starting_panel_type) = process_data(verified, team_data, model_data)
 
     metrics = []
 
@@ -141,29 +142,29 @@ def generate_metrics(verified, team_data) -> list[Metric]:
 
     panel_optimization_metric = Metric(
         "Panel Optimization",
-        r'\frac {Total Final Panel Area}{Total Initial Panel Area}',
+        r'1 - \frac {Number of Optimized Panel Typ}{Number of Starting Panel Type}',
         "Measures the efficiency of panel area usage.",
         metric_calc_panel_optimization,
         './front_end/dashboards/pictures/panel.png',
         [
             {
-                "name": "Total Final Panel Area",
-                "value": total_final_panel_area,
+                "name": "Number of Optimized Panel Type",
+                "value": number_optimized_panel_type,
                 "min": 0,
                 "max": 2000,
                 "unit": "m²"
             },
             {
-                "name": "Total Initial Panel Area",
-                "value": total_initial_panel_area,
+                "name": "Number of Starting Panel Type",
+                "value": number_starting_panel_type,
                 "min": 1,
                 "max": 2000,
                 "unit": "m²"
             }
         ],
         min_value=0,
-        max_value=3,
-        ideal_value=1.0
+        max_value=1,
+        ideal_value=0.2
     )
     metrics.append(panel_optimization_metric)
     
@@ -198,7 +199,7 @@ def run(selected_team: str) -> None:
     models, client, project_id = setup_speckle_connection()
     verified, team_data, model_data = team_extractor.extract(attribute_display=False)
 
-    metrics = generate_metrics(verified, team_data)
+    metrics = generate_metrics(verified, team_data, model_data)
 
     generate_dashboard(
         selected_team=selected_team,
