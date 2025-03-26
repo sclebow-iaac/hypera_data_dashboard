@@ -141,8 +141,22 @@ def generate_dashboard(selected_team: str, metrics: list[Metric], project_id: st
                 display_speckle_viewer(speckle_container, project_id, presentation_model_id, is_transparent=True,
                                 hide_controls=True, hide_selection_info=True, no_scroll=False, height=viewer_height, include_site=True)
 
-            # Display the text section
-            text_container = st.container(border=True)
+            # Display the text and poster section
+            poster_container, text_container = st.columns([1, 3], gap="small")
+            with poster_container:
+                # Display the poster image
+                poster_image_folder = f"./front_end/assets/{selected_team.capitalize()}/05/"
+                # Get the first image in the folder
+                poster_image_path = None
+                for file in os.listdir(poster_image_folder):
+                    if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+                        poster_image_path = os.path.join(poster_image_folder, file)
+                        break
+                if os.path.exists(poster_image_path):
+                    poster_container.image(poster_image_path)
+                else:
+                    poster_container.warning("Poster image not found.")
+
             display_text(text_container, text_dict)
 
             # Display the images
