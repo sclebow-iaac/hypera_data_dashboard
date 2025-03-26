@@ -31,7 +31,7 @@ def run(selected_team: str = "") -> None:
     left_margin, content_container, right_margin = get_content_container_columns()
     with content_container:
         # Set up the page title and layout
-        display_page_title('Data Dashboard')
+        display_page_title('Data')
         # Display the team members
         display_team_members(st.container(), team_members)
         st.markdown(
