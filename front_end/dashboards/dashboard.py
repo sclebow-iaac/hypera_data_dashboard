@@ -134,12 +134,14 @@ def generate_dashboard(selected_team: str, metrics: list[Metric], project_id: st
             # Display the Speckle viewer
             viewer_height = 400
             speckle_container = st.container(border=True)
-            if selected_team == "structure": # TEMPORARY FIX: Structure Model not loading correctly 
-                display_speckle_viewer(speckle_container, project_id, presentation_model_id, is_transparent=True,
-                                hide_controls=True, hide_selection_info=True, no_scroll=False, height=viewer_height, include_site=False)
-            else:
-                display_speckle_viewer(speckle_container, project_id, presentation_model_id, is_transparent=True,
-                                hide_controls=True, hide_selection_info=True, no_scroll=False, height=viewer_height, include_site=True)
+            # if selected_team == "structure": # TEMPORARY FIX: Structure Model not loading correctly 
+            #     display_speckle_viewer(speckle_container, project_id, presentation_model_id, is_transparent=True,
+            #                     hide_controls=True, hide_selection_info=True, no_scroll=False, height=viewer_height, include_site=False)
+            # else:
+            #     display_speckle_viewer(speckle_container, project_id, presentation_model_id, is_transparent=True,
+            #                     hide_controls=True, hide_selection_info=True, no_scroll=False, height=viewer_height, include_site=True)
+            display_speckle_viewer(speckle_container, project_id, presentation_model_id, is_transparent=True,
+                            hide_controls=True, hide_selection_info=True, no_scroll=False, height=viewer_height, include_site=True)
 
             # Display the text and poster section
             poster_container, text_container = st.columns([1, 3], gap="small")
