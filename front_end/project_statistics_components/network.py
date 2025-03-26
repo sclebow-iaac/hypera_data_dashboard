@@ -27,7 +27,6 @@ def setup_speckle_connection(models_limit=100):
     return models, client, project_id
 
 @st.cache_data(ttl='1h')
-# @st.cache_data()
 def get_project_data():
     print(f'get_project_data(models, client, project_id)')
     
@@ -197,8 +196,8 @@ def create_network_graph(project_tree, height=800, show_team_selector=True, sele
                 # Reset the highlighted node in session state
                 st.session_state.highlighted_node = None
                 st.rerun()
-    print('not(selected_team)', not(selected_team))
-    print('bool(selected_team)', bool(selected_team))
+    # print('not(selected_team)', not(selected_team))
+    # print('bool(selected_team)', bool(selected_team))
     if not(selected_team):
         if show_team_selector:
             # Add a checkbox for each team to filter the models
@@ -230,24 +229,24 @@ def create_network_graph(project_tree, height=800, show_team_selector=True, sele
         for model in project_tree.values():
             # Extract the team name from the model's long name
             team_name = model["team_name"]
-            print(f'team_name: {team_name}')
+            # print(f'team_name: {team_name}')
             teams.add(team_name)
-        print(f'teams: {teams}')
+        # print(f'teams: {teams}')
         selected_teams = []
         for team in teams:
             if selected_team.lower() in team.lower():
                 selected_teams.append(team)
 
         selected_teams.append("Root")  # Always include the root team
-        print('selected_teams', selected_teams)
+        # print('selected_teams', selected_teams)
 
         # Filter the project tree based on the selected teams
         filtered_project_tree = {key: value for key, value in project_tree.items() if value["team_name"] in selected_teams}
         project_tree = filtered_project_tree
 
-        print(f'len(filtered_project_tree): {len(filtered_project_tree)}')
-        for key, value in filtered_project_tree.items():
-            print(f'filtered_project_tree: {key}')
+        # print(f'len(filtered_project_tree): {len(filtered_project_tree)}')
+        # for key, value in filtered_project_tree.items():
+            # print(f'filtered_project_tree: {key}')
             
 
     G = nx.DiGraph()  # Use a directed graph for clearer parent/child relationships
@@ -264,19 +263,19 @@ def create_network_graph(project_tree, height=800, show_team_selector=True, sele
             G.add_edge(key, value["parent"])
             
             # Debug info to trace the edge being created
-            print(f"Adding edge: {key} -> {value['parent']}")
+            # print(f"Adding edge: {key} -> {value['parent']}")
             
-            # Validate that parent exists in the tree
-            if value["parent"] not in project_tree:
-                print(f"WARNING: Parent {value['parent']} for {key} not found in project_tree!")
+            # # Validate that parent exists in the tree
+            # if value["parent"] not in project_tree:
+            #     print(f"WARNING: Parent {value['parent']} for {key} not found in project_tree!")
 
     # After adding all edges, check for any disconnected components
     components = list(nx.weakly_connected_components(G))
-    print(f"Number of disconnected components: {len(components)}")
-    for i, component in enumerate(components):
-        print(f"Component {i} has {len(component)} nodes")
-        if len(component) < 5:  # Print small components to help identify the issue
-            print(f"  Nodes in component {i}: {component}")
+    # print(f"Number of disconnected components: {len(components)}")
+    # for i, component in enumerate(components):
+    #     print(f"Component {i} has {len(component)} nodes")
+        # if len(component) < 5:  # Print small components to help identify the issue
+        #     print(f"  Nodes in component {i}: {component}")
     
     # Calculate node depths from root
     node_depths = {}
@@ -396,7 +395,7 @@ def create_network_graph(project_tree, height=800, show_team_selector=True, sele
                 node_hover_text.append(f"Author: {latest_version['authorUser'].name}")
                 node_hover_text.append(f"Source: {latest_version['sourceApplication']}")
         else:
-            node_hover_text.append("This is a Parent Node")
+            node_hover_text.append("This is an Empty Node")
         
         node_hover_text = '<br>'.join(node_hover_text)
 

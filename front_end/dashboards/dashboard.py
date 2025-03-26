@@ -221,7 +221,14 @@ def generate_dashboard(selected_team: str, metrics: list[Metric], project_id: st
                     selected_model_id = project_tree[selected_model_name]['id']
                     header_text = 'Speckle Viewer of Selected Model'
 
-                    latest_version_data[selected_model_name] = project_tree[selected_model_name]['version_data']
+                    version_data = project_tree[selected_model_name]['version_data']
+                    latest_version_data = None
+                    soonest_date = None
+                    for version_id, version_info in version_data.items():
+                        if latest_version_data is None or version_info["createdAt"] < soonest_date:
+                            latest_version_data = version_info
+                            soonest_date = version_info["createdAt"]
+                    latest_version_data_per_model[selected_model_name] = latest_version_data
 
                 if selected_model_id:
                     # Display the selected model in the Speckle viewer
