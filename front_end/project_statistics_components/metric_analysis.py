@@ -222,7 +222,7 @@ def analyze_team_performance(service_metrics, structure_metrics, residential_met
     # Display the DataFrame
     st.dataframe(
         df,
-        height=400,
+        height=450,
         use_container_width=True
     )
 
