@@ -384,7 +384,23 @@ def create_network_graph(project_tree, height=800, show_team_selector=True, sele
             display_name = node.split("/")[-1] if "/" in node else node
 
         node_text.append(f'{display_name}')
-        hover_text.append(project_tree[node]["long_name"])
+        node_hover_text = []
+        node_hover_text.append(project_tree[node]["long_name"])
+
+        # Get version data if available
+        if "version_data" in project_tree[node]:
+            version_data = project_tree[node]["version_data"]
+            if version_data:
+                latest_version = max(version_data.values(), key=lambda x: x["createdAt"])
+                node_hover_text.append(f"Latest Version: {latest_version['createdAt'].strftime('%Y-%m-%d')}")
+                node_hover_text.append(f"Author: {latest_version['authorUser'].name}")
+                node_hover_text.append(f"Source: {latest_version['sourceApplication']}")
+        else:
+            node_hover_text.append("This is a Parent Node")
+        
+        node_hover_text = '<br>'.join(node_hover_text)
+
+        hover_text.append(node_hover_text)
 
     max_distance = max(node_distances) if node_distances else 0
     # Reverse the distances to get the distance from the root node
