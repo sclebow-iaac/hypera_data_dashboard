@@ -12,11 +12,11 @@ import math
 
 from browser_detection import browser_detection_engine
 
-from front_end.project_statistics_components.network import get_project_data, create_network_graph
+from project_statistics_components.network import get_project_data, create_network_graph
 
 import viewer
 
-import front_end.project_statistics_components.network as network_graph
+import project_statistics_components.network as network_graph
 
 content_container_width = 8  # Adjust this value to set the width of the content container
 
