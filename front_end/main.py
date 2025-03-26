@@ -674,45 +674,55 @@ with content_container:
 
             # Service column (index 0)
             with cols[0]:
-                
-                # Call the service dashboard to get the metrics
-                verified, team_data, model_data = service_extractor.extract(attribute_display=False)
-                service_metrics = service_dashboard.generate_metrics(verified, team_data)
-                display_st_metric_values(container=cols[0], metrics=service_metrics, use_columns=False, include_header=False)
+                try:
+                    # Call the service dashboard to get the metrics
+                    verified, team_data, model_data = service_extractor.extract(attribute_display=False)
+                    service_metrics = service_dashboard.generate_metrics(verified, team_data, model_data)
+                    display_st_metric_values(container=cols[0], metrics=service_metrics, use_columns=False, include_header=False)
+                except Exception as e:
+                    st.error(f"Error extracting data for Service: {e}")
                 
             # Structure column (index 2)
             with cols[2]:
-                
-                verified, team_data, model_data = structure_extractor.extract(attribute_display=False)
-                structure_metrics = structure_dashboard.generate_metrics(verified, team_data)
-                display_st_metric_values(container=cols[2], metrics=structure_metrics, use_columns=False, include_header=False)
-            
+                try:
+                    verified, team_data, model_data = structure_extractor.extract(attribute_display=False)
+                    structure_metrics = structure_dashboard.generate_metrics(verified, team_data, model_data)
+                    display_st_metric_values(container=cols[2], metrics=structure_metrics, use_columns=False, include_header=False)
+                except Exception as e:
+                    st.error(f"Error extracting data for Structure: {e}")            
             # Residential column (index 4)
             with cols[4]:
-                
-                verified, team_data, model_data = residential_extractor.extract(attribute_display=False)
-                residential_metrics = residential_dashboard.generate_metrics(verified, team_data)
-                display_st_metric_values(container=cols[4], metrics=residential_metrics, use_columns=False, include_header=False)
-            
+                try:
+                    verified, team_data, model_data = residential_extractor.extract(attribute_display=False)
+                    residential_metrics = residential_dashboard.generate_metrics(verified, team_data, model_data)
+                    display_st_metric_values(container=cols[4], metrics=residential_metrics, use_columns=False, include_header=False)
+                except Exception as e:
+                    st.error(f"Error extracting data for Residential: {e}")            
             # Industrial column (index 6)
             with cols[6]:
-                
-                verified, team_data, model_data = industrial_extractor.extract(attribute_display=False)
-                industrial_metrics = industrial_dashboard.generate_metrics(verified, team_data)
-                display_st_metric_values(container=cols[6], metrics=industrial_metrics, use_columns=False, include_header=False)
-
+                try:
+                    verified, team_data, model_data = industrial_extractor.extract(attribute_display=False)
+                    industrial_metrics = industrial_dashboard.generate_metrics(verified, team_data, model_data)
+                    display_st_metric_values(container=cols[6], metrics=industrial_metrics, use_columns=False, include_header=False)
+                except Exception as e:
+                    st.error(f"Error extracting data for Industrial: {e}")
             # Facade column (index 8)
             with cols[8]:
-                
-                verified, team_data, model_data = facade_extractor.extract(attribute_display=False)
-                facade_metrics = facade_dashboard.generate_metrics(verified, team_data)
-                display_st_metric_values(container=cols[8], metrics=facade_metrics, use_columns=False, include_header=False)
+                try:
+                    verified, team_data, model_data = facade_extractor.extract(attribute_display=False)
+                    facade_metrics = facade_dashboard.generate_metrics(verified, team_data, model_data)
+                    display_st_metric_values(container=cols[8], metrics=facade_metrics, use_columns=False, include_header=False)
+                except Exception as e:
+                    st.error(f"Error extracting data for Facade: {e}")
 
             # Add the overall statistics
             st.markdown('## Overall Project Statistics')
+            st.warning("Additional statistics can be found in the Project Statistics dashboard.")
             project_tree, project_id = statistics.get_project_data()
             overall_statistics.run(project_tree, project_id, detail_level='basic')
 
+            st.warning("The statistics above are based on the latest data from the Speckle server. For more detailed statistics, please refer to the Project Statistics dashboard.")
+            
             # Add the federated Speckle viewer
             st.markdown('---')
             display_federated_speckle_viewer(project_id="31f8cca4e0", height=600)
