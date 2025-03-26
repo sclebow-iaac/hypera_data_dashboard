@@ -14,7 +14,6 @@ from data_extraction import (
 from datetime import datetime, timedelta
 
 def analyze_team_performance(service_metrics, structure_metrics, residential_metrics, industrial_metrics, facade_metrics):
-    st.subheader("Team Performance Analysis")
 
     # Create a dictionary to store team performance data
     team_performance = {
@@ -47,8 +46,31 @@ def analyze_team_performance(service_metrics, structure_metrics, residential_met
         # Calculate average score for the team
         team_data['total_score'] = sum(kpi['score'] for kpi in team_data['kpi_scores']) / len(team_data['kpi_scores'])
 
-    # Prepare data for bar chart
+    st.subheader("Team Performance Above Goal (Logarithmic Scale)")
 
+    # Add a metric card for each team in columns
+    cols = st.columns(len(team_performance))
+    for idx, (team_name, data) in enumerate(team_performance.items()):
+        with cols[idx]:
+            # Determine background color based on score
+            bg_color = "#D6F6D6" if data['total_score'] > 0 else "#FFD6D6"  # Light green for positive, light red for negative
+            text_color = "#006400" if data['total_score'] > 0 else "#8B0000"  # Dark green for positive, dark red for negative
+            
+            # Create a styled metric with colored background
+            st.markdown(
+                f"""
+                <div style="background-color: {bg_color}; padding: 10px; border-radius: 5px; text-align: center;">
+                    <div style="font-weight: bold; margin-bottom: 5px;">{team_name}</div>
+                    <div style="font-size: 1.5rem; color: {text_color};">{data['total_score']:.1f}%</div>
+                </div>
+                """, 
+                unsafe_allow_html=True
+            )
+            # Add a hidden tooltip since custom HTML doesn't support native tooltips
+            st.markdown(
+                """<div style="font-size: 0.7rem; text-align: center; color: gray;">Average performance across all KPIs</div>""",
+                unsafe_allow_html=True
+            )
 
     # Create DataFrame for the bar chart
     performance_df = pd.DataFrame([
@@ -72,7 +94,7 @@ def analyze_team_performance(service_metrics, structure_metrics, residential_met
     # Create bar chart with both positive and negative bars
     fig = go.Figure()
 
-    # Add positive bars
+    # Add positive bars with team-specific colors
     fig.add_trace(go.Bar(
         x=performance_df['Team'],
         y=[signed_log(x, log_offset) if x > 0 else 0 for x in performance_df['Score']],
@@ -82,10 +104,10 @@ def analyze_team_performance(service_metrics, structure_metrics, residential_met
         textposition='auto',
     ))
 
-    # Add negative bars
+    # Add negative bars with team-specific colors but darker shade
     fig.add_trace(go.Bar(
         x=performance_df['Team'],
-        y=[-signed_log(-x, log_offset) if x < 0 else 0 for x in performance_df['Score']],  # Negate the log for negative values
+        y=[-signed_log(-x, log_offset) if x < 0 else 0 for x in performance_df['Score']],
         marker_color='#FF4444',
         name='Below Target',
         text=[f"{x:.1f}%" if x < 0 else "" for x in performance_df['Score']],
@@ -94,21 +116,33 @@ def analyze_team_performance(service_metrics, structure_metrics, residential_met
 
     # Calculate tick values for the y-axis
     max_abs_log = max(abs(signed_log(x, log_offset)) for x in performance_df['Score'])
-    tick_count = 11  # Odd number to include zero
-    log_ticks = np.linspace(-max_abs_log, max_abs_log, tick_count)
-    tick_values = [(10**abs(x) - log_offset) * np.sign(x) for x in log_ticks]
+    # Round up to the next integer to get a clean range
+    max_abs_log_rounded = np.ceil(max_abs_log)
+    
+    # Create ticks at powers of 10 in both positive and negative directions
+    pos_log_ticks = [0]  # Start with zero
+    for i in range(int(max_abs_log_rounded) + 1):
+        if i > 0:  # Skip 0 as we already added it
+            pos_log_ticks.append(i)  # Add powers of 10: 1, 2, 3... (log10(10), log10(100), log10(1000))
+    
+    # Create negative counterparts
+    log_ticks = sorted([-x for x in pos_log_ticks if x > 0] + pos_log_ticks)
+    
+    # Calculate the actual percentage values these log ticks represent - EXACT powers of 10
+    tick_values = []
+    for x in log_ticks:
+        if x == 0:
+            tick_values.append(0)
+        else:
+            # Use exact powers of 10 for the tick labels
+            sign = np.sign(x)
+            value = sign * (10 ** abs(x))
+            tick_values.append(value)
 
-    # Update layout
+    # Update layout to match overall_statistics.py style
     fig.update_layout(
-        title={
-            'text': "Team Performance Comparison (Logarithmic Scale)",
-            'y': 0.95,
-            'x': 0.5,
-            'xanchor': 'center',
-            'yanchor': 'top'
-        },
         xaxis_title="Teams",
-        yaxis_title="Performance Score (%) - Log Scale",
+        yaxis_title="Performance Above Goal (%) - Log Scale",
         height=500,
         barmode='overlay',
         paper_bgcolor='rgba(0,0,0,0)',
@@ -120,8 +154,8 @@ def analyze_team_performance(service_metrics, structure_metrics, residential_met
             orientation="h",
             yanchor="bottom",
             y=1.02,
-            xanchor="right",
-            x=1
+            xanchor="center",
+            x=0.5
         ),
         yaxis=dict(
             tickmode='array',
@@ -130,15 +164,27 @@ def analyze_team_performance(service_metrics, structure_metrics, residential_met
             zeroline=True,
             zerolinewidth=2,
             zerolinecolor='black',
-            gridcolor='rgba(0,0,0,0.1)'
+            gridcolor='rgba(0,0,0,0.1)',
+            range=[-1, max_abs_log * 1.2],  # Extend the range a bit for better visualization
+        ),
+        margin=dict(l=1, r=40, t=10, b=1),
+        hovermode='closest',
+        hoverlabel=dict(
+            bgcolor="white",
+            font_size=12,
+            font_family="Roboto Mono",
+            font_color="#2c3e50",
         )
     )
+
+    # Add black outlines to bars to match overall_statistics.py style
+    fig.update_traces(marker=dict(line=dict(color='#000000', width=2)))
 
     # Add annotation explaining the scale
     fig.add_annotation(
         text="Note: Y-axis uses logarithmic scale for better visualization",
         xref="paper", yref="paper",
-        x=0, y=1.05,
+        x=0, y=1.02,
         showarrow=False,
         font=dict(size=10, color="gray"),
         xanchor='left'
@@ -184,9 +230,8 @@ def analyze_team_performance(service_metrics, structure_metrics, residential_met
     most_overperforming_team = max(team_performance.items(), key=lambda x: x[1]['total_score'])
     most_overperforming_metric = max(most_overperforming_team[1]['kpi_scores'], key=lambda x: x['score'])
     
-    st.markdown(f"### Most Overperforming Team: **{most_overperforming_team[0]}**")
-    st.markdown(f"**Total Score:** {most_overperforming_team[1]['total_score']:.1f}%")
-    st.markdown(f"**Most Overperforming Metric:** {most_overperforming_metric['name']} with a score of **{most_overperforming_metric['score']:.1f}%**")
+    st.markdown(f"<div style='text-align: center;'><b>Most Overperforming Team: {most_overperforming_team[0]}</b> with a score of <b>{most_overperforming_team[1]['total_score']:.1f}%</b></div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='text-align: center;'><b>Most Overperforming Metric:</b> {most_overperforming_metric['name']} with a score of <b>{most_overperforming_metric['score']:.1f}%</b></div>", unsafe_allow_html=True)
 
 def run(project_tree, project_id):
     # Get metrics from extractors
