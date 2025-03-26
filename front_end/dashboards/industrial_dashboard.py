@@ -57,11 +57,21 @@ team_members = [
 ]
 
 text_dict = {
-    'design_overview': 'Our industrial design integrates sustainable features with aesthetic considerations.',
+    'design_overview': 'Our industrial design is focused on generating on-site utilities and food to meet the building\'s needs.',
     'bullet_items': [
-        "1. Energy generation optimized for maximum efficiency",
-        "2. Food production systems to meet dietary needs",
-        "3. Water recycling systems for sustainability"
+        'Electricity:',
+        '1. Integration of locally available energy potentials',
+        '2. Harvesting of energy flows between different space programs',
+        '3. Efficient energy delivery systems',
+        'Food:',
+        '1. 100 % food supply for residents',
+        '2. Locally harvested food',
+        '3. Vegetable based calories',
+        '4. Varied food production, type, height, climate, …',
+        'Zero Waste:',
+        '1. Locally managed waste',
+        '2. Reducing waste by circular and regenerative cycles',
+        '3. Enhanced natural water cycles',
     ],
 }
 

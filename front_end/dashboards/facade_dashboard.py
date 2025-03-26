@@ -26,11 +26,13 @@ team_members = [
 ]
 
 text_dict = {
-    'design_overview': 'Our facade design integrates sustainable features with aesthetic considerations.',
+    'design_overview': 'We chose to frame our KEYPOINTS as open questions, the same ones that guided our design process. These questions reflect the challenges we faced and the strategies we developed to create a responsive, efficient, and integrated facade system. Through our project, we will explore and attempt to answer them',
     'bullet_items': [
-        "1. Solar panels optimized for maximum energy generation",
-        "2. Strategic window placement for natural daylight",
-        "3. Thermal insulation systems for energy efficiency"
+        "1. Can a kinetic component applied to a facade help to improve thermal comfort and reduce glare and overheating?",
+        "2. Can a facade concept be adapted to respond to different functions and light requirements?",
+        "3. Can we optimize the number of different panels to create a buildable and cost-efficient design?",
+        "4. Can a facade generate energy while optimizing the number of photovoltaic panels?",
+        "5. How does collaboration between disciplines influence facade design decisions?"
     ]
 }
 

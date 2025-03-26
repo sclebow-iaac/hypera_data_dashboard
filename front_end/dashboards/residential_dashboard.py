@@ -27,11 +27,12 @@ team_members = [
 ]    
 
 text_dict = {
-    'design_overview': 'Our residential design integrates sustainable features with aesthetic considerations.',
+    'design_overview': 'Our residential design focuses on creating a high-density, livable space that integrates seamlessly with the urban fabric of Tokyo. The design emphasizes modularity and efficient use of space, ensuring that each unit is optimized for comfort and functionality.',
     'bullet_items': [
-        "1. Mixed Use Index optimized for safety",
-        "2. Efficient use of materials",
-        "3. Compliance with building codes"
+        'Goal 01: Neighborhood hyper vertical building.',
+        'Goal 02: High density building to match the urban of Tokyo city.',
+        'Goal 03: High density building but yet livable spaces.',
+        'Goal 04: Voxelised design to use modularity & modular construction.'
     ]
 }
 
