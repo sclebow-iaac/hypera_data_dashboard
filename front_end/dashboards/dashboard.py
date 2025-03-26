@@ -847,10 +847,4 @@ def display_images(container, team_name: str, subfolder: str='01', header: bool=
 
         # Display images in the container
         for image_url, column, img_width in zip(image_urls, columns, img_widths):
-            # column.image(image_url, width=img_width)
-            st.markdown(
-                f'<div style="display: flex; justify-content: center;">'
-                f'<img src="{image_url}" style="width: {img_width}px; height: auto; margin: 10px;" />'
-                f'</div>',
-                unsafe_allow_html=True
-            )
+            column.image(image_url, width=img_width)
