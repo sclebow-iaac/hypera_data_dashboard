@@ -1,3 +1,6 @@
+import plotly.graph_objects as go
+import pandas as pd
+import numpy as np
 import streamlit as st
 from dashboards.dashboard import display_st_metric_values
 from dashboards import (
@@ -11,286 +14,179 @@ from data_extraction import (
 from datetime import datetime, timedelta
 
 def analyze_team_performance(service_metrics, structure_metrics, residential_metrics, industrial_metrics, facade_metrics):
-    st.subheader("Team Overperformance Analysis")
+    st.subheader("Team Performance Analysis")
 
     # Create a dictionary to store team performance data
     team_performance = {
-        'Service': {'metrics': service_metrics, 'overperformance_score': 0, 'kpi_scores': []},
-        'Structure': {'metrics': structure_metrics, 'overperformance_score': 0, 'kpi_scores': []},
-        'Residential': {'metrics': residential_metrics, 'overperformance_score': 0, 'kpi_scores': []},
-        'Industrial': {'metrics': industrial_metrics, 'overperformance_score': 0, 'kpi_scores': []},
-        'Facade': {'metrics': facade_metrics, 'overperformance_score': 0, 'kpi_scores': []}
+        'Service': {'metrics': service_metrics, 'total_score': 0, 'kpi_scores': []},
+        'Structure': {'metrics': structure_metrics, 'total_score': 0, 'kpi_scores': []},
+        'Residential': {'metrics': residential_metrics, 'total_score': 0, 'kpi_scores': []},
+        'Industrial': {'metrics': industrial_metrics, 'total_score': 0, 'kpi_scores': []},
+        'Facade': {'metrics': facade_metrics, 'total_score': 0, 'kpi_scores': []}
     }
 
-    # Calculate overperformance scores for each team
+    # Calculate performance scores for each team
     for team_name, team_data in team_performance.items():
         metrics = team_data['metrics']
         for metric in metrics:
-            if metric.ideal_value != 0:  # Avoid division by zero
-                # Calculate percentage above ideal value
-                performance_ratio = (metric.value / metric.ideal_value) * 100
-                overperformance = max(performance_ratio - 100, 0)  # Only count values above 100%
+            actual_value = float(metric.value) if isinstance(metric.value, (int, float)) else float(metric.value.replace('%', '')) / 100
+            ideal_value = float(metric.ideal_value) if isinstance(metric.ideal_value, (int, float)) else float(metric.ideal_value.replace('%', '')) / 100
+            
+            if ideal_value != 0:  # Avoid division by zero
+                percentage_diff = ((actual_value - ideal_value) / abs(ideal_value)) * 100
             else:
-                overperformance = 0
+                percentage_diff = 0
             
             team_data['kpi_scores'].append({
                 'name': metric.title,
-                'actual': metric.value,
-                'ideal': metric.ideal_value,
-                'overperformance': overperformance
+                'actual': actual_value,
+                'ideal': ideal_value,
+                'score': percentage_diff
             })
         
-        # Calculate average overperformance for the team
-        team_data['overperformance_score'] = sum(kpi['overperformance'] for kpi in team_data['kpi_scores']) / len(team_data['kpi_scores'])
+        # Calculate average score for the team
+        team_data['total_score'] = sum(kpi['score'] for kpi in team_data['kpi_scores']) / len(team_data['kpi_scores'])
 
-    # Prepare data for visualization
-    import plotly.graph_objects as go
-    import pandas as pd
-    import numpy as np
+    # Prepare data for bar chart
 
-    # Create DataFrame for the visualization
+
+    # Create DataFrame for the bar chart
     performance_df = pd.DataFrame([
-        {'Team': team_name, 'Overperformance': data['overperformance_score']}
+        {'Team': team_name, 'Score': data['total_score']}
         for team_name, data in team_performance.items()
     ])
 
-    # Add a small constant to avoid log(0)
-    min_non_zero = performance_df['Overperformance'][performance_df['Overperformance'] > 0].min()
-    log_offset = min_non_zero / 10 if min_non_zero > 0 else 0.1
-    
-    # Calculate logarithmic values for visualization
-    performance_df['Log_Overperformance'] = np.log10(performance_df['Overperformance'] + log_offset)
+    # Function to apply signed log transformation while preserving zero
+    def signed_log(x, log_offset=1):
+        if abs(x) < 1:  # Treat very small values as zero
+            return 0
+        sign = np.sign(x)
+        log_val = np.log10(abs(x) + log_offset)
+        return sign * log_val
 
-    # Create bar chart
+    # Calculate log offset based on smallest non-zero absolute value
+    non_zero_vals = [abs(x) for x in performance_df['Score'] if abs(x) > 0.01]
+    min_non_zero = min(non_zero_vals) if non_zero_vals else 1
+    log_offset = min_non_zero / 10
+    
+    # Create bar chart with both positive and negative bars
     fig = go.Figure()
 
-    # Add bars using logarithmic values
+    # Add positive bars
     fig.add_trace(go.Bar(
         x=performance_df['Team'],
-        y=performance_df['Log_Overperformance'],
-        text=performance_df['Overperformance'].round(1).astype(str) + '%',  # Show actual percentages in labels
+        y=[signed_log(x, log_offset) if x > 0 else 0 for x in performance_df['Score']],
+        marker_color='#00CC00',
+        name='Above Target',
+        text=[f"+{x:.1f}%" if x > 0 else "" for x in performance_df['Score']],
         textposition='auto',
-        marker_color=['#00CC00' if score > 0 else '#808080' for score in performance_df['Overperformance']],
     ))
 
-    # Calculate tick values and labels for logarithmic scale
-    max_value = performance_df['Overperformance'].max()
-    log_max = np.log10(max_value + log_offset)
-    tick_values = np.linspace(0, log_max, 6)
-    tick_labels = [f"{(10**val - log_offset):.1f}%" for val in tick_values]
+    # Add negative bars
+    fig.add_trace(go.Bar(
+        x=performance_df['Team'],
+        y=[-signed_log(-x, log_offset) if x < 0 else 0 for x in performance_df['Score']],  # Negate the log for negative values
+        marker_color='#FF4444',
+        name='Below Target',
+        text=[f"{x:.1f}%" if x < 0 else "" for x in performance_df['Score']],
+        textposition='auto',
+    ))
+
+    # Calculate tick values for the y-axis
+    max_abs_log = max(abs(signed_log(x, log_offset)) for x in performance_df['Score'])
+    tick_count = 11  # Odd number to include zero
+    log_ticks = np.linspace(-max_abs_log, max_abs_log, tick_count)
+    tick_values = [(10**abs(x) - log_offset) * np.sign(x) for x in log_ticks]
 
     # Update layout
     fig.update_layout(
         title={
-            'text': "Team Overperformance Analysis (Logarithmic Scale)",
-            'y': 0.9,
+            'text': "Team Performance Comparison (Logarithmic Scale)",
+            'y': 0.95,
             'x': 0.5,
             'xanchor': 'center',
             'yanchor': 'top'
         },
         xaxis_title="Teams",
-        yaxis_title="Overperformance (log scale)",
-        yaxis=dict(
-            tickvals=tick_values,
-            ticktext=tick_labels,
-            title="Overperformance (logarithmic scale)"
-        ),
-        height=400,
-        showlegend=False,
+        yaxis_title="Performance Score (%) - Log Scale",
+        height=500,
+        barmode='overlay',
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
         font_family="Roboto Mono",
-        font_color="#2c3e50"
+        font_color="#2c3e50",
+        showlegend=True,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        ),
+        yaxis=dict(
+            tickmode='array',
+            tickvals=log_ticks,
+            ticktext=[f"{x:.1f}%" for x in tick_values],
+            zeroline=True,
+            zerolinewidth=2,
+            zerolinecolor='black',
+            gridcolor='rgba(0,0,0,0.1)'
+        )
     )
 
     # Add annotation explaining the scale
     fig.add_annotation(
         text="Note: Y-axis uses logarithmic scale for better visualization",
         xref="paper", yref="paper",
-        x=0, y=1.1,
+        x=0, y=1.05,
         showarrow=False,
         font=dict(size=10, color="gray"),
         xanchor='left'
     )
 
-    # Display the chart
+    # Display the bar chart
     st.plotly_chart(fig, use_container_width=True)
 
-    # Display detailed overperformance table
-    st.subheader("Detailed Overperformance Analysis")
+    # Display detailed performance table
+    st.subheader("Detailed Performance Analysis")
     
     # Create a DataFrame for the performance table
     performance_data = []
     for team_name, team_data in team_performance.items():
         for kpi in team_data['kpi_scores']:
+            # Determine status with symbols
+            if kpi['score'] > 0:
+                status = "✅ Exceeding"
+            elif kpi['score'] < 0:
+                status = "❌ Below Target"
+            else:
+                status = "➖ On Target"
+                
             performance_data.append({
                 'Team': team_name,
                 'KPI': kpi['name'],
                 'Actual Value': f"{kpi['actual']:.2f}",
-                'Ideal Value': f"{kpi['ideal']:.2f}",
-                'Overperformance': f"{kpi['overperformance']:.1f}%"
+                'Target Value': f"{kpi['ideal']:.2f}",
+                'Difference %': f"{kpi['score']:.1f}%",
+                'Status': status  # Added status column with symbols
             })
     
     df = pd.DataFrame(performance_data)
-    st.dataframe(df, use_container_width=True)
 
-    # Display summary of overperforming teams
-    st.subheader("Overperformance Summary")
-    cols = st.columns(len(team_performance))
-    for (team_name, data), col in zip(team_performance.items(), cols):
-        with col:
-            delta = None
-            if data['overperformance_score'] > 0:
-                delta = f"Exceeding by {data['overperformance_score']:.1f}%"
-            st.metric(
-                label=team_name,
-                value=f"{data['overperformance_score']:.1f}%",
-                delta=delta
-            )
-
-    # After the existing summary section
-    st.markdown("---")
-    st.subheader("Team Performance Analysis")
-
-    # Radar chart in full width
-    all_values = [kpi['overperformance'] 
-                 for team_data in team_performance.values() 
-                 for kpi in team_data['kpi_scores']]
-    min_non_zero = min([x for x in all_values if x > 0]) if any(x > 0 for x in all_values) else 0.1
-    log_offset = min_non_zero / 10
-
-    fig_radar = go.Figure()
-
-    for team_name, team_data in team_performance.items():
-        kpi_scores = [kpi['overperformance'] for kpi in team_data['kpi_scores']]
-        # Apply log transformation
-        log_scores = [np.log10(score + log_offset) if score > 0 else 0 for score in kpi_scores]
-        kpi_names = [kpi['name'] for kpi in team_data['kpi_scores']]
-        
-        fig_radar.add_trace(go.Scatterpolar(
-            r=log_scores,
-            theta=kpi_names,
-            name=team_name,
-            fill='toself',
-            opacity=0.6,
-            hovertemplate="<b>%{theta}</b><br>" +
-                        "Overperformance: %{text}%<br>" +
-                        "<extra></extra>",
-            text=[f"{score:.1f}" for score in kpi_scores]
-        ))
-
-    # Calculate tick values for logarithmic scale
-    max_value = max(all_values)
-    log_max = np.log10(max_value + log_offset)
-    tick_values = np.linspace(0, log_max, 5)
-    tick_labels = [f"{(10**val - log_offset):.1f}%" for val in tick_values]
-
-    fig_radar.update_layout(
-        polar=dict(
-            radialaxis=dict(
-                visible=True,
-                range=[0, log_max],
-                tickvals=tick_values,
-                ticktext=tick_labels,
-                title="Overperformance (log scale)",
-                tickfont={'size': 12}
-            ),
-            angularaxis=dict(
-                tickfont={'size': 12}
-            )
-        ),
-        showlegend=True,
-        height=600,
-        font_family="Roboto Mono",
-        legend=dict(
-            yanchor="middle",
-            y=0.5,
-            xanchor="left",
-            x=1.1,
-            orientation="v",
-            font=dict(size=12)
-        ),
-        margin=dict(
-            l=50,
-            r=150,
-            t=80,
-            b=80
-        )
-    )
-
-    # Add annotation explaining the scale
-    fig_radar.add_annotation(
-        text="Note: Radial axis uses logarithmic scale for better visualization",
-        xref="paper", yref="paper",
-        x=0, y=-0.15,
-        showarrow=False,
-        font=dict(size=12, color="gray"),
-        xanchor='left'
-    )
-
-    st.plotly_chart(fig_radar, use_container_width=True)
-
-    # Add a detailed breakdown table with sorting capabilities
-    st.subheader("Sortable Performance Matrix")
-    
-    # Create a more detailed DataFrame for analysis
-    detailed_df = pd.DataFrame([
-        {
-            'Team': team_name,
-            'KPI': kpi['name'],
-            'Actual Value': kpi['actual'],
-            'Target Value': kpi['ideal'],
-            'Overperformance %': round(kpi['overperformance'], 1),
-            'Status': '🟢 Exceeding' if kpi['overperformance'] > 0 else '🔸 At Target' if kpi['overperformance'] == 0 else '🔴 Below Target'
-        }
-        for team_name, team_data in team_performance.items()
-        for kpi in team_data['kpi_scores']
-    ])
-
-    # Add styling to the DataFrame
+    # Display the DataFrame
     st.dataframe(
-        detailed_df.style.background_gradient(
-            subset=['Overperformance %'],
-            cmap='RdYlGn',
-            vmin=0,
-            vmax=detailed_df['Overperformance %'].max()
-        ),
+        df,
         height=400,
         use_container_width=True
     )
 
-    # Add key statistics
-    st.subheader("Key Performance Statistics")
-    stats_cols = st.columns(3)
+    # Add Most Overperforming Team Banner
+    most_overperforming_team = max(team_performance.items(), key=lambda x: x[1]['total_score'])
+    most_overperforming_metric = max(most_overperforming_team[1]['kpi_scores'], key=lambda x: x['score'])
     
-    with stats_cols[0]:
-        top_performer = max(team_performance.items(), key=lambda x: x[1]['overperformance_score'])
-        st.metric(
-            "Top Performing Team",
-            top_performer[0],
-            f"{top_performer[1]['overperformance_score']:.1f}% above target"
-        )
-        
-    with stats_cols[1]:
-        avg_overperformance = np.mean([team_data['overperformance_score'] 
-                                     for team_data in team_performance.values()])
-        st.metric(
-            "Average Team Overperformance",
-            f"{avg_overperformance:.1f}%"
-        )
-        
-    with stats_cols[2]:
-        best_kpi = max(
-            [(team_name, kpi['name'], kpi['overperformance']) 
-             for team_name, team_data in team_performance.items()
-             for kpi in team_data['kpi_scores']],
-            key=lambda x: x[2]
-        )
-        st.metric(
-            "Highest Individual KPI",
-            f"{best_kpi[0]} - {best_kpi[1]}",
-            f"{best_kpi[2]:.1f}% above target"
-        )
+    st.markdown(f"### Most Overperforming Team: **{most_overperforming_team[0]}**")
+    st.markdown(f"**Total Score:** {most_overperforming_team[1]['total_score']:.1f}%")
+    st.markdown(f"**Most Overperforming Metric:** {most_overperforming_metric['name']} with a score of **{most_overperforming_metric['score']:.1f}%**")
 
 def run(project_tree, project_id):
     # Get metrics from extractors
