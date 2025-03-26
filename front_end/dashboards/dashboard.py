@@ -9,6 +9,7 @@ from specklepy.api.credentials import get_account_from_token
 import os
 import time
 import math
+from PIL import Image
 
 from browser_detection import browser_detection_engine
 
@@ -128,7 +129,7 @@ def generate_dashboard(selected_team: str, metrics: list[Metric], project_id: st
         with concept_tab:
             # Display the images
             header_image_container = st.container(border=True)
-            display_images(header_image_container, selected_team, "02")
+            # display_images(header_image_container, selected_team, "02")
 
             # Display the Speckle viewer
             viewer_height = 400
@@ -140,14 +141,13 @@ def generate_dashboard(selected_team: str, metrics: list[Metric], project_id: st
                 display_speckle_viewer(speckle_container, project_id, presentation_model_id, is_transparent=True,
                                 hide_controls=True, hide_selection_info=True, no_scroll=False, height=viewer_height, include_site=True)
 
-            # Display the images
-            images_container = st.container(border=True)
-            display_images(images_container, selected_team, "01")
-
-
             # Display the text section
             text_container = st.container(border=True)
             display_text(text_container, text_dict)
+
+            # Display the images
+            images_container = st.container(border=True)
+            display_images(images_container, selected_team, "04", header=True)
 
         with metrics_tab:
             # Display the extracted data
@@ -806,7 +806,51 @@ def display_images(container, team_name: str, subfolder: str='01', header: bool=
     image_urls = [os.path.join(folder_path, file) for file in os.listdir(folder_path)
                   if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif'))]
     
+    # Sort the image URLs by y resolution
+    x_resolutions = []
+    y_resolutions = []
+    for image_url in image_urls:
+        with Image.open(image_url) as img:
+            x_resolutions.append(img.size[0])
+            y_resolutions.append(img.size[1])
+    sorted_image_urls = [x for _, x in sorted(zip(y_resolutions, image_urls))]
+    image_urls = sorted_image_urls
+
+    # Use the y_resolutions to determine the width of the images
+    set_height = 300
+    img_widths = []
+    for x_resolution, y_resolution in zip(x_resolutions, y_resolutions):
+        ratio = x_resolution / y_resolution
+        new_width = int(set_height * ratio)
+        img_widths.append(new_width)
+    # print("Image Widths: ", img_widths)  # Debugging: Print image widths
+
+    total_width_in_row = 1200
+    max_images_in_row = total_width_in_row // min(img_widths)  # Maximum number of images in a row
+    
     if image_urls:
+        if max_images_in_row > 0:
+            # Create columns for images
+            num_images = len(image_urls)
+            columns_to_create = num_images
+            columns = []
+            while columns_to_create > 0:
+                columns_in_row = min(max_images_in_row, columns_to_create)
+                row = container.container()
+                cols = row.columns(columns_in_row, vertical_alignment="center", gap="small")
+                for col in cols:
+                    columns.append(col)
+                columns_to_create -= columns_in_row
+        else:
+            # Create columns for images
+            columns = container.columns(len(image_urls))
+
         # Display images in the container
-        for image_url, column in zip(image_urls, container.columns(len(image_urls))):
-            column.image(image_url)
+        for image_url, column, img_width in zip(image_urls, columns, img_widths):
+            # column.image(image_url, width=img_width)
+            st.markdown(
+                f'<div style="display: flex; justify-content: center;">'
+                f'<img src="{image_url}" style="width: {img_width}px; height: auto; margin: 10px;" />'
+                f'</div>',
+                unsafe_allow_html=True
+            )
