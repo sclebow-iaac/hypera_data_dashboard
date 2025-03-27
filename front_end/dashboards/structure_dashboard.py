@@ -109,7 +109,7 @@ def generate_metrics(verified, team_data, model_data) -> list[Metric]:
         ],
         min_value = 0,
         max_value = 3,
-        ideal_value = 2
+        ideal_value = 1.55
     )
     metrics.append(load_capacity_metric)
 

@@ -100,7 +100,7 @@ def metric_calc_daylight_factor(weight_residential, weight_work, residential_are
     #     total_work_area = 1
     #     st.warning("Total Work Area is zero, setting to 1 to avoid division by zero.")
     return (
-        weight_residential * (residential_area_with_daylight / total_residential_area)
+        (residential_area_with_daylight / total_residential_area)
     )
 
 def metric_calc_energy_ratio(energy_generation, energy_required_by_industrial_team):
@@ -131,7 +131,7 @@ def generate_metrics(verified, team_data, model_data) -> list[Metric]:
     daylight_factor_metric = Metric(
         "Daylight Factor",
         # r'w_{resi}\frac{ResidentialAreaWithDaylight}{TotalResidentialArea} + w_{work}\frac{WorkAreaWithDaylight}{TotalWorkArea}',
-        r'\frac{TotalAreaWithDaylight}{TotalArea}',
+        r'\frac{TotalAreaWithTargetDaylight}{TotalArea}',
         "Measures the proportion of floor area that receives daylight.",
         metric_calc_daylight_factor,
         './front_end/dashboards/pictures/daylight.png',
@@ -147,12 +147,12 @@ def generate_metrics(verified, team_data, model_data) -> list[Metric]:
                 "unit": ""
             },
             {
-                "name": "Residential Area with Daylight",
+                "name": "Area with Target Daylight",
                 "value": residential_area_with_daylight,
                 "unit": "m²"
             },
             {
-                "name": "Total Residential Area",
+                "name": "Total Area",
                 "value": total_residential_area,
                 "unit": "m²"
             },
@@ -169,7 +169,7 @@ def generate_metrics(verified, team_data, model_data) -> list[Metric]:
         ],
         min_value=0,
         max_value=0.1,
-        ideal_value=0.015
+        ideal_value=0.8
     )
     metrics.append(daylight_factor_metric)
 
